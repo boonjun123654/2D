@@ -37,4 +37,19 @@ class GameState:
     def get_round_id(self):
         return self.round_id
 
+    def is_locked(self):
+        return self.locked
+
+    def set_winning_number(self, number):
+        self.winning_number = number
+
+    def get_winners(self):
+        winners = []
+        for uid, bets in self.bets.items():
+            for num, _ in bets:
+                if str(num).zfill(2) == self.winning_number:
+                    winners.append(uid)
+                    break
+        return winners
+
 state = GameState()
