@@ -98,4 +98,5 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("in", handle_input_command))
     app.add_handler(CallbackQueryHandler(handle_result_button, pattern=r"^set_result:"))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_result_input))
+
     app.run_polling()
