@@ -34,21 +34,22 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await asyncio.sleep(20)
     state.lock()
 
-    # ✅ 检查是否有人下注
     has_valid_bet = any(len(bet_list) > 0 for bet_list in state.get_all_bets().values())
     if not has_valid_bet:
         await context.bot.send_message(
-          chat_id=GROUP_ID,
-          text=f"⚠️ 第 {state.get_round_id()} 局无人下注，本轮作废"
+            chat_id=GROUP_ID,
+            text=f"⚠️ 第 {state.get_round_id()} 局无人下注，本轮作废"
         )  
         state.next_round()
         return
 
-        await context.bot.send_photo(
-          chat_id=GROUP_ID,
-          photo="https://i.imgur.com/MG7HLrk.jpg",  # 换为锁注横幅图
-          caption="🔒 已锁注，无法再下注！"
-        )
+    # ✅ 只有有人下注才执行这一段
+    await context.bot.send_photo(
+        chat_id=GROUP_ID,
+        photo="https://i.imgur.com/hmoP26c.png",  # ✅ 替换为你的锁注横幅图
+        caption="🔒 已锁注，无法再下注！"
+    )
+
 
 
 # 玩家下注
