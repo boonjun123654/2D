@@ -12,6 +12,13 @@ GROUP_ID = int(os.getenv("GROUP_ID") or -1001234567890)  # 替换为你的群组
 
 print("✅ 正在运行最新版本的 bot.py")
 # 开始游戏
+
+async def print_group_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    if chat.type in ["group", "supergroup"]:
+        await update.message.reply_text(f"✅ 本群组 ID 是：{chat.id}")
+        print("📢 群组 ID 是：", chat.id)
+
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.lower() != "开始":
         return
@@ -95,6 +102,7 @@ async def handle_result_input(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("getid", print_group_id))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, start_game))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_bet))
     app.add_handler(CommandHandler("in", handle_input_command))
