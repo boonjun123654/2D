@@ -19,7 +19,10 @@ class GameState:
 
     def next_round(self):
         self.round_number += 1
-        self.reset()
+        self.round_id = self.generate_round_id()
+        self.locked = False
+        self.bets.clear()
+        self.total_bets.clear()
 
     def add_bet(self, user_id, number, amount):
         if self.locked:
