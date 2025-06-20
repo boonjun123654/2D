@@ -25,7 +25,7 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         caption=f"🎯 第 {state.get_round_id()} 局开始下注！\n请输入格式如：27/10 表示下注 27号 RM10\n⏳ 20 秒后自动锁注"
     )
     await asyncio.sleep(20)
-    state.lock_bets()
+    state.lock()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="🔒 已锁注，无法再下注！")
 
 # 玩家下注
