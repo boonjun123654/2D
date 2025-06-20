@@ -27,13 +27,28 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     state.reset()
     await context.bot.send_photo(
-        chat_id=update.effective_chat.id,
+        chat_id=GROUP_ID,
         photo="https://i.imgur.com/53ybo9o.png",  # 替换为你自己的图片链接
         caption=f"🎯 第 {state.get_round_id()} 局开始下注！\n请输入格式如：27/10 表示下注 27号 RM10\n⏳ 20 秒后自动锁注"
     )
     await asyncio.sleep(20)
     state.lock()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🔒 已锁注，无法再下注！")
+
+    # ✅ 检查是否有人下注
+    if not state.get_all_bets():
+        await context.bot.send_message(
+          chat_id=GROUP_ID,
+          text=f"⚠️ 第 {state.get_round_id()} 局无人下注，本轮作废"
+      )  
+      state.next_round()
+      return
+
+        await context.bot.send_photo(
+          chat_id=GROUP_ID,
+          photo="https://i.imgur.com/MG7HLrk.jpg",  # 换为锁注横幅图
+          caption="🔒 已锁注，无法再下注！"
+        )
+
 
 # 玩家下注
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
