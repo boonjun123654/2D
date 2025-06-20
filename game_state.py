@@ -36,3 +36,5 @@ class GameState:
 
     def get_round_id(self):
         return self.round_id
+
+state = GameState()
