@@ -35,7 +35,8 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state.lock()
 
     # ✅ 检查是否有人下注
-    if not state.get_all_bets():
+    has_valid_bet = any(len(bet_list) > 0 for bet_list in state.get_all_bets().values())
+    if not has_valid_bet:
         await context.bot.send_message(
           chat_id=GROUP_ID,
           text=f"⚠️ 第 {state.get_round_id()} 局无人下注，本轮作废"
