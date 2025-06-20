@@ -10,7 +10,7 @@ TOKEN = os.getenv("TOKEN") or "YOUR_BOT_TOKEN"
 ADMIN_ID = int(os.getenv("ADMIN_ID") or 123456789)  # 替换为你自己的 Telegram ID
 GROUP_ID = int(os.getenv("GROUP_ID") or -1001234567890)  # 替换为你的群组 ID
 
-print("当前 telegram bot 版本:", telegram.__version__)
+print("✅ 正在运行最新版本的 bot.py")
 # 开始游戏
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.lower() != "开始":
