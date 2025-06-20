@@ -3,14 +3,14 @@ from datetime import datetime
 
 class GameState:
     def __init__(self):
+        self.round_number = 1
         self.reset()
 
     def reset(self):
-        self.bets = defaultdict(list)  # user_id: [(number, amount)]
-        self.total_bets = defaultdict(int)  # number: total_amount
+        self.bets = defaultdict(list)
+        self.total_bets = defaultdict(int)
         self.locked = False
         self.round_id = self.generate_round_id()
-        self.round_number = 1
 
     def generate_round_id(self):
         now = datetime.now()
