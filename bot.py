@@ -21,7 +21,7 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state.reset()
     await context.bot.send_photo(
         chat_id=update.effective_chat.id,
-        photo="https://yourdomain.com/start.jpg",  # 替换为你自己的图片链接
+        photo="https://i.imgur.com/53ybo9o.png",  # 替换为你自己的图片链接
         caption=f"🎯 第 {state.get_round_id()} 局开始下注！\n请输入格式如：27/10 表示下注 27号 RM10\n⏳ 20 秒后自动锁注"
     )
     await asyncio.sleep(20)
