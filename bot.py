@@ -39,9 +39,9 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
           chat_id=GROUP_ID,
           text=f"⚠️ 第 {state.get_round_id()} 局无人下注，本轮作废"
-      )  
-      state.next_round()
-      return
+        )  
+        state.next_round()
+        return
 
         await context.bot.send_photo(
           chat_id=GROUP_ID,
