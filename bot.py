@@ -19,8 +19,10 @@ def generate_round_id():
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+
     if chat_id not in games:
         games[chat_id] = GameState()
+
     games[chat_id].start_new_round()
     await update.message.reply_photo(photo="https://i.imgur.com/53yb9o.png",caption="🎯 本局下注已开启！请输入格式如 27/10 进行下注")
 
