@@ -131,9 +131,9 @@ if __name__ == '__main__':
     app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_bet))
+    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_bet))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(CommandHandler("in", handle_in))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_open_number))
+    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_open_number))
 
     app.run_polling()
