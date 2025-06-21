@@ -31,7 +31,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    print("当前下注状态：", chat_id, games.get(chat_id).is_betting_open)
+    print("当前下注状态：", chat_id, getattr(games.get(chat_id), "is_betting_open", "无状态"))
 
     if chat_id not in games or not games[chat_id].is_betting_open:
         await update.message.reply_text("⚠️ 当前无法下注，可能本局尚未开始或已经锁注！")
@@ -49,6 +49,7 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     games[chat_id].add_bet(number, amount)
+    print(f"记录下注：号码={number} 金额={amount}")
     await update.message.reply_text("✅ 下注成功！下注后不能修改或撤回")
 
 async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
