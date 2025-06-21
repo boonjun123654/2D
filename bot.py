@@ -30,6 +30,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
     user_id = update.effective_user.id
     name = update.effective_user.full_name
     games[chat_id].add_bet(number, amount, user_id, name)
