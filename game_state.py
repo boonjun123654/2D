@@ -7,12 +7,16 @@ class GameState:
         self.round_id = None
         self.bets = defaultdict(int)  # number -> total amount
         self.is_betting_open = False
+        self.winning_w = None  # 单个头奖号码
+        self.winning_t = []    # 特别奖号码列表
 
     def start_new_round(self):
         now = datetime.now()
         self.round_id = f"{now.strftime('%y%m%d')}{str(now.microsecond)[:3]}"
         self.bets.clear()
         self.is_betting_open = True
+        self.winning_w = None  # 单个头奖号码
+        self.winning_t = []    # 特别奖号码列表
 
     def add_bet(self, number: int, amount: int):
         if self.is_betting_open:
