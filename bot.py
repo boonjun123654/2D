@@ -30,8 +30,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    print("当前下注状态：", chat_id, getattr(games.get(chat_id), "is_betting_open", "无状态"))
+    user_id = update.effective_user.id
+    name = update.effective_user.full_name
+    games[chat_id].add_bet(number, amount, user_id, name)
 
     if chat_id not in games or not games[chat_id].is_betting_open:
         await update.message.reply_text("⚠️ 当前无法下注，可能本局尚未开始或已经锁注！")
@@ -101,22 +102,22 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # 结算下注结果
     bets = game.get_total_bets()
     results = []
-    for number, amount in bets.items():
-        if number == game.winning_w:
-            payout = amount * 66
-            results.append((number, amount, "头奖", payout))
-        elif number in game.winning_t:
-            payout = amount * 6.6
-            results.append((number, amount, "特别奖", payout))
+    for number, entries in game.get_total_bets().items():
+        for user_id, name, amount in entries:
+            if number == game.winning_w:
+                payout = amount * 66
+                results.append((user_id, name, number, amount, "头奖", payout))
+            elif number in game.winning_t:
+                payout = amount * 6.6
+                results.append((user_id, name, number, amount, "特别奖", payout))
 
     if results:
         msg = "🏆 本局中奖名单：\n"
-        for num, amt, prize, win in results:
-            msg += f"🎯 号码 {num:02d}【{prize}】下注 RM{amt}，赢得 RM{win:.2f}\n"
-    else:
-        msg = "😢 本局无人中奖。"
+        for uid, name, num, amt, prize, win in results:
+            mention = f"[{name}](tg://user?id={uid})"
+            msg += f"{mention} 🎯 号码 {num:02d}（{prize}）下注 RM{amt}，赢得 RM{win:.2f}\n"
 
-    await context.bot.send_message(group_id, msg)
+        await context.bot.send_message(group_id, msg, parse_mode="Markdown")
 
 async def handle_in(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != ChatType.PRIVATE:
