@@ -5,7 +5,7 @@ from datetime import datetime
 class GameState:
     def __init__(self):
         self.round_id = None
-        self.bets = defaultdict(int)  # number -> total amount
+        self.bets = defaultdict(list)  # number -> total amount
         self.is_betting_open = False
         self.winning_w = None  # 单个头奖号码
         self.winning_t = []    # 特别奖号码列表
@@ -18,9 +18,9 @@ class GameState:
         self.winning_w = None  # 单个头奖号码
         self.winning_t = []    # 特别奖号码列表
 
-    def add_bet(self, number: int, amount: int):
+    def add_bet(self, number: int, amount: int, user_id: int, name: str):
         if self.is_betting_open:
-            self.bets[number] += amount
+            self.bets[number].append((user_id, name, amount))
 
     def lock_bets(self):
         self.is_betting_open = False
