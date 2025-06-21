@@ -27,8 +27,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     games[chat_id].start_new_round()
     await update.message.reply_photo(photo="https://i.imgur.com/53yb9o.png",caption="🎯 本局下注已开启！请输入格式如 27/10 进行下注")
 
-    await asyncio.sleep(20)
-    await lock_bets(chat_id, context)
+    context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -107,10 +106,17 @@ async def handle_in(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]]
     await update.message.reply_text("👇 请选择要输入开奖号码的局号", reply_markup=InlineKeyboardMarkup(keyboard))
 
-async def lock_bets(chat_id, context):
-    games[chat_id].is_betting_open = False
-    await context.bot.send_photo(chat_id=chat_id, photo="https://i.imgur.com/hmoP26c.png",
-                                 caption="⛔️ 本局已锁注，无法再下注！")
+async def lock_bets_job(context: ContextTypes.DEFAULT_TYPE):
+    job = context.job
+    chat_id = job.data
+
+    if chat_id in games:
+        games[chat_id].is_betting_open = False
+        await context.bot.send_photo(
+            chat_id=chat_id,
+            photo="https://i.imgur.com/hmoP26c.png",
+            caption="⛔️ 本局已锁注，无法再下注！"
+        )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
