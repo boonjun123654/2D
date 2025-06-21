@@ -9,6 +9,7 @@ from datetime import datetime
 
 # 初始化游戏状态（群组为单位）
 games = {}
+latest_input_round = {}
 
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
