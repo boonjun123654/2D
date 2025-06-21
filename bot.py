@@ -54,6 +54,7 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # 玩家下注
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("🎯 handle_bet triggered")
     if state.is_locked():
         return
     try:
@@ -67,7 +68,9 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         user_id = update.effective_user.id
         if state.add_bet(user_id, number, amount):
-            await update.message.reply_text("✅ 下注成功！下注后不能修改 / 撤回")
+            await update.message.reply_text(
+              f"✅ 下注成功！你下注了 {number} 号，金额 RM{amount}。\n下注后不能修改或撤回"
+            )
     except:
         return
 
