@@ -123,8 +123,8 @@ async def handle_result_input(update: Update, context: ContextTypes.DEFAULT_TYPE
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("getid", print_group_id))
-    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, start_game))
-    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_bet))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start_game))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_bet))
     app.add_handler(CommandHandler("in", handle_input_command))
     app.add_handler(CallbackQueryHandler(handle_result_button, pattern=r"^set_result:"))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_result_input))
