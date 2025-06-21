@@ -1,59 +1,31 @@
+# game_state.py
 from collections import defaultdict
 from datetime import datetime
 
 class GameState:
     def __init__(self):
-        self.round_number = 1
-        self.reset()
+        self.round_id = None
+        self.bets = defaultdict(int)  # number -> total amount
+        self.is_betting_open = False
 
-    def reset(self):
-        self.bets = defaultdict(list)
-        self.total_bets = defaultdict(int)
-        self.locked = False
-        self.round_id = self.generate_round_id()
-
-    def generate_round_id(self):
+    def start_new_round(self):
         now = datetime.now()
-        date_str = now.strftime("%y%m%d")  # e.g. 250620
-        return f"2D{date_str}{self.round_number:03d}"
-
-    def next_round(self):
-        self.round_number += 1
-        self.round_id = self.generate_round_id()
-        self.locked = False
+        self.round_id = f"{now.strftime('%y%m%d')}{str(now.microsecond)[:3]}"
         self.bets.clear()
-        self.total_bets.clear()
+        self.is_betting_open = True
 
-    def add_bet(self, user_id, number, amount):
-        print(f"[add_bet] user {user_id} bet {number}/{amount}, locked={self.locked}")
-        if self.locked:
-            return False
-        self.bets[user_id].append((number, amount))
-        self.total_bets[number] += amount
-        return True
+    def add_bet(self, number: int, amount: int):
+        if self.is_betting_open:
+            self.bets[number] += amount
 
-    def lock(self):
-        self.locked = True
+    def lock_bets(self):
+        self.is_betting_open = False
 
-    def get_all_bets(self):
-        return self.bets
+    def get_total_bets(self):
+        return dict(self.bets)
 
-    def get_round_id(self):
-        return self.round_id
-
-    def is_locked(self):
-        return self.locked
-
-    def set_winning_number(self, number):
-        self.winning_number = number
-
-    def get_winners(self):
-        winners = []
-        for uid, bets in self.bets.items():
-            for num, _ in bets:
-                if str(num).zfill(2) == self.winning_number:
-                    winners.append(uid)
-                    break
-        return winners
-
-state = GameState()
+    def get_top_bettor(self):
+        if not self.bets:
+            return None, 0
+        sorted_bets = sorted(self.bets.items(), key=lambda x: x[1], reverse=True)
+        return sorted_bets[0]
