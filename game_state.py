@@ -25,6 +25,7 @@ class GameState:
         self.total_bets.clear()
 
     def add_bet(self, user_id, number, amount):
+        print(f"[add_bet] user {user_id} bet {number}/{amount}, locked={self.locked}")
         if self.locked:
             return False
         self.bets[user_id].append((number, amount))
