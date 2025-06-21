@@ -61,24 +61,62 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not group_id or group_id not in games:
         return
 
-    if not games[group_id].is_waiting_result:
+    game = games[group_id]
+    if not game.is_waiting_result:
         return
 
     text = update.message.text.strip()
-    if not text.isdigit():
-        await update.message.reply_text("⚠️ 请输入 01–99 的开奖号码")
+    lines = text.splitlines()
+
+    if len(lines) != 2:
+        await update.message.reply_text("⚠️ 输入格式错误，应为两行：\nW-号码\nT-号码/号码/...")
         return
 
-    number = int(text)
-    if number < 1 or number > 99:
-        await update.message.reply_text("⚠️ 请输入 01–99 的开奖号码")
+    try:
+        if not lines[0].startswith("W-"):
+            raise ValueError
+        w_number = int(lines[0][2:])
+        if w_number < 1 or w_number > 99:
+            raise ValueError
+
+        if not lines[1].startswith("T-"):
+            raise ValueError
+        t_numbers = [int(n) for n in lines[1][2:].split("/") if 1 <= int(n) <= 99]
+        if len(t_numbers) != 5:
+            raise ValueError
+
+    except ValueError:
+        await update.message.reply_text("⚠️ 输入错误，请用以下格式：\nW-14\nT-15/88/99/87/62")
         return
 
-    games[group_id].is_waiting_result = False
-    await context.bot.send_message(group_id, f"🎉 本局开奖号码为：{number:02d}")
+    game.winning_w = w_number
+    game.winning_t = t_numbers
+    game.is_waiting_result = False
 
-    # （可扩展：比对下注记录，判断是否中奖）
+    await context.bot.send_message(
+        group_id,
+        f"🎉 开奖结果：\n🎯 头奖：{w_number:02d}\n✨ 特别奖：{'/'.join(f'{n:02d}' for n in t_numbers)}"
+    )
 
+    # 结算下注结果
+    bets = game.get_total_bets()
+    results = []
+    for number, amount in bets.items():
+        if number == game.winning_w:
+            payout = amount * 66
+            results.append((number, amount, "头奖", payout))
+        elif number in game.winning_t:
+            payout = amount * 6.6
+            results.append((number, amount, "特别奖", payout))
+
+    if results:
+        msg = "🏆 本局中奖名单：\n"
+        for num, amt, prize, win in results:
+            msg += f"🎯 号码 {num:02d}【{prize}】下注 RM{amt}，赢得 RM{win:.2f}\n"
+    else:
+        msg = "😢 本局无人中奖。"
+
+    await context.bot.send_message(group_id, msg)
 
 async def handle_in(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != ChatType.PRIVATE:
