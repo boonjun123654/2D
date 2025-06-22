@@ -3,7 +3,6 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from game_state import GameState
 from telegram.constants import ChatType
-from utils import send_game_image
 import asyncio
 import os
 from datetime import datetime
