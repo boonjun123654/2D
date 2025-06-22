@@ -124,7 +124,7 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # 获取下注记录（数据库）
     round_id = game.round_id
     bets = execute_query(
-        "SELECT number, user_id, user_name, amount FROM bets WHERE round_id = %s AND group_id = %s",
+        "SELECT number, user_id, user_name, amount bets_2d WHERE round_id = %s AND group_id = %s",
         (round_id, group_id)
     )
 
