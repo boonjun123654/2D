@@ -4,6 +4,7 @@ from datetime import datetime
 
 class GameState:
     def __init__(self):
+        self.round_counter_per_day = round_counter_per_day
         self.round_id = None
         self.bets = defaultdict(list)  # number -> total amount
         self.is_betting_open = False
@@ -15,7 +16,7 @@ class GameState:
         today_str = now.strftime('%y%m%d')
 
         # 增加今天的局号计数
-        round_counter_per_day[today_str] += 1
+        self.round_counter_per_day[today_str] += 1
         count = round_counter_per_day[today_str]
 
         # 计算字母和数字部分
