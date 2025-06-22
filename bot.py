@@ -99,7 +99,7 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
     msg = (
         f"🎉 开奖结果：\n"
         f"🎯 头奖：{w_number:02d}\n"
-        f"✨ 特别奖：{' - '.join(f'{n:02d}' for n in t_numbers)}"
+        f"✨ 特别奖：{' ~ '.join(f'{n:02d}' for n in t_numbers)}"
     )
 
     # 结算下注结果
