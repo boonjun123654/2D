@@ -16,13 +16,14 @@ ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 # 创建游戏局号
 
-async def send_game_image(update, filename, caption=""):
+async def send_game_image(update, filename, caption="", chat_id=None):
     path = os.path.join(IMAGE_FOLDER, filename)
     if not os.path.isfile(path):
         await update.message.reply_text("⚠️ 图片文件不存在！")
         return
     with open(path, "rb") as f:
-        await update.message.reply_photo(photo=f, caption=caption)
+        target = chat_id or update.message.chat_id
+        await update.get_bot().send_photo(chat_id=target, photo=f, caption=caption)
 
 def generate_round_id():
     now = datetime.now()
