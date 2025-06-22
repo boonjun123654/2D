@@ -27,7 +27,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     games[chat_id].start_new_round()
     round_id = games[chat_id].round_id
     await update.message.reply_photo(
-    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting ! Code: {round_id}")
+    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting 📌{round_id}")
 
     context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
