@@ -3,13 +3,13 @@ from collections import defaultdict
 from datetime import datetime
 
 class GameState:
-    def __init__(self):
+    def __init__(self, round_counter_per_day):
         self.round_counter_per_day = round_counter_per_day
         self.round_id = None
-        self.bets = defaultdict(list)  # number -> total amount
+        self.bets = defaultdict(list)
         self.is_betting_open = False
-        self.winning_w = None  # 单个头奖号码
-        self.winning_t = []    # 特别奖号码列表
+        self.winning_w = None
+        self.winning_t = []
 
     def start_new_round(self):
         now = datetime.now()
@@ -17,13 +17,13 @@ class GameState:
 
         # 增加今天的局号计数
         self.round_counter_per_day[today_str] += 1
-        count = round_counter_per_day[today_str]
+        count = self.round_counter_per_day[today_str]
 
         # 计算字母和数字部分
-        batch_letter = chr(ord('A') + (count - 1) // 99)  # A~Z
-        serial_number = (count - 1) % 99 + 1               # 1~99
+        batch_letter = chr(ord('A') + (count - 1) // 99)     # A-Z
+        serial_number = (count - 1) % 99 + 1                 # 1-99
 
-        # 格式化局号，例如：250622A01
+        # 格式化局号，例：250622A01
         self.round_id = f"{today_str}{batch_letter}{serial_number:02d}"
 
         # 其他初始化
