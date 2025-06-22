@@ -25,6 +25,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         games[chat_id] = GameState()
 
     games[chat_id].start_new_round()
+    round_id = games[chat_id].round_id
     await update.message.reply_photo(photo="https://i.imgur.com/53yb9o.png",caption=f"🎯 本局下注已开启！（局号：{round_id}）\n请输入格式如 27/10 进行下注")
 
     context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
