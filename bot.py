@@ -95,15 +95,17 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
     game.winning_t = t_numbers
     game.is_waiting_result = False
 
-    await context.bot.send_message(
-        group_id,
-        f"🎉 开奖结果：\n🎯 头奖：{w_number:02d}\n✨ 特别奖：{' - '.join(f'{n:02d}' for n in t_numbers)}"
+    # 构造开奖信息
+    msg = (
+        f"🎉 开奖结果：\n"
+        f"🎯 头奖：{w_number:02d}\n"
+        f"✨ 特别奖：{' - '.join(f'{n:02d}' for n in t_numbers)}"
     )
 
     # 结算下注结果
     bets = game.get_total_bets()
     results = []
-    for number, entries in game.get_total_bets().items():
+    for number, entries in bets.items():
         for user_id, name, amount in entries:
             if number == game.winning_w:
                 payout = amount * 66
@@ -113,12 +115,13 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 results.append((user_id, name, number, amount, "特别奖", payout))
 
     if results:
-        msg = "🏆 本局中奖名单：\n"
+        msg += "\n-------------------------------\n🏆 本局中奖名单：\n"
         for uid, name, num, amt, prize, win in results:
             mention = f"[{name}](tg://user?id={uid})"
             msg += f"{mention} 🎯 号码 {num:02d}（{prize}）下注 RM{amt}，赢得 RM{win:.2f}\n"
 
-        await context.bot.send_message(group_id, msg, parse_mode="Markdown")
+    # 发送合并后的消息
+    await context.bot.send_message(group_id, msg, parse_mode="Markdown")
 
 async def handle_in(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != ChatType.PRIVATE:
