@@ -33,7 +33,6 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
     name = update.effective_user.full_name
-    games[chat_id].add_bet(number, amount, user_id, name)
 
     if chat_id not in games or not games[chat_id].is_betting_open:
         await update.message.reply_text("⚠️ 当前无法下注，可能本局尚未开始或已经锁注！")
@@ -50,7 +49,7 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if number < 1 or number > 99 or amount <= 0:
         return
 
-    games[chat_id].add_bet(number, amount)
+    games[chat_id].add_bet(number, amount, user_id, name)
     print(f"记录下注：号码={number} 金额={amount}")
     await update.message.reply_text("✅ 下注成功！下注后不能修改或撤回")
 
