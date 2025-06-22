@@ -24,7 +24,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
     if chat_id not in games:
-        games[chat_id] = GameState()
+        games[chat_id] = GameState(round_counter_per_day)
 
     games[chat_id].start_new_round()
     round_id = games[chat_id].round_id
