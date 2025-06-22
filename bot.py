@@ -106,7 +106,7 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # 构造开奖信息
     msg = (
-        f"🎉 Draw Results\n"
+        f"✨ Draw Results ✨\n"
         f"🎯 1st Prize：{w_number:02d}\n"
         f"🎯 Special Prize：{' ~ '.join(f'{n:02d}' for n in t_numbers)}"
     )
@@ -124,7 +124,7 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 results.append((user_id, name, number, amount, "Special", payout))
 
     if results:
-        msg += "\n-------------------------------\n🏆 Winning List\n"
+        msg += "\n-------------------------------\n🏆 Winning List 🏆\n"
         for uid, name, num, amt, prize, win in results:
             mention = f"[{name}](tg://user?id={uid})"
             msg += f"{mention} 🎯 Number {num:02d}（{prize}）Bet RM{amt}，Win RM{win:.2f}\n"
