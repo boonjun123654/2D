@@ -57,6 +57,7 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Format error. Use 27+28+29/10")
         return
 
+    round_id = games[chat_id].round_id
     # 执行下注逻辑
     for number in numbers:
         games[chat_id].add_bet(number, amount, user_id, name)
