@@ -37,23 +37,31 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.effective_user.full_name
 
     if chat_id not in games or not games[chat_id].is_betting_open:
-        await update.message.reply_text("⚠️Betting is currently unavailable")
+        await update.message.reply_text("⚠️ Betting is currently unavailable")
         return
 
     text = update.message.text.strip()
     if "/" not in text:
         return
-    number, amount = text.split("/", 1)
-    if not number.isdigit() or not amount.isdigit():
-        return
-    number = int(number)
-    amount = int(amount)
-    if number < 1 or number > 99 or amount <= 0:
+
+    try:
+        number_part, amount_part = text.split("/", 1)
+        numbers = [int(n) for n in number_part.split("+") if 1 <= int(n) <= 99]
+        amount = int(amount_part)
+        if not numbers or amount <= 0:
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text("❌ Format error. Use 27+28+29/10")
         return
 
-    games[chat_id].add_bet(number, amount, user_id, name)
-    print(f"记录下注：号码={number} 金额={amount}")
-    await update.message.reply_text("✅ Successfully")
+    # 执行下注逻辑
+    for number in numbers:
+        games[chat_id].add_bet(number, amount, user_id, name)
+        print(f"记录下注：号码={number} 金额={amount}")
+
+    total = len(numbers) * amount
+    number_str = ", ".join(f"{n:02d}" for n in numbers)
+    await update.message.reply_text(f"✅Successfully")
 
 async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != ChatType.PRIVATE or update.effective_user.id != ADMIN_ID:
