@@ -162,9 +162,41 @@ async def lock_bets_job(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
     chat_id = job.data
 
-    if chat_id in games:
-        games[chat_id].is_betting_open = False
-        await context.bot.send_photo(chat_id=chat_id,photo="https://i.imgur.com/sTG7AiW.jpeg",caption="🚫 Betting has ended for this round! ")
+    if chat_id not in games:
+        return
+
+    game = games[chat_id]
+    game.is_betting_open = False
+
+    # 整理下注信息
+    bets = game.get_total_bets()  # { number: [(user_id, name, amount), ...] }
+    user_bets = {}
+
+    for number, entries in bets.items():
+        for user_id, name, amount in entries:
+            if name not in user_bets:
+                user_bets[name] = {}
+            if amount not in user_bets[name]:
+                user_bets[name][amount] = []
+            user_bets[name][amount].append(number)
+
+    # 构建参与者下注文字
+    lines = ["📋 Participants:"]
+    for name, bet_dict in user_bets.items():
+        parts = []
+        for amount, nums in bet_dict.items():
+            nums_str = "+".join(f"{n:02d}" for n in sorted(nums))
+            parts.append(f"{nums_str}/{amount}")
+        lines.append(f"{name} → {', '.join(parts)}")
+
+    summary_text = "\n".join(lines)
+
+    # 发送锁注图片和下注名单
+    await context.bot.send_photo(
+        chat_id=chat_id,
+        photo="https://i.imgur.com/sTG7AiW.jpeg",  # 你当前使用的锁注图
+        caption=f"🚫 Betting has ended for this round!\n\n{summary_text}"
+    )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
