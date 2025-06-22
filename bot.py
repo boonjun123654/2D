@@ -3,6 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from game_state import GameState
 from telegram.constants import ChatType
+from collections import defaultdict
 import asyncio
 import os
 from datetime import datetime
@@ -10,6 +11,7 @@ from datetime import datetime
 # 初始化游戏状态（群组为单位）
 games = {}
 latest_input_round = {}
+round_counter_per_day = defaultdict(int)
 
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
