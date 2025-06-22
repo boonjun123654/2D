@@ -27,7 +27,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     games[chat_id].start_new_round()
     round_id = games[chat_id].round_id
     await update.message.reply_photo(
-    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting! Code: {round_id}\n\nBet Format: Number/Amount")
+    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting ! Code: {round_id}")
 
     context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
@@ -37,7 +37,7 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.effective_user.full_name
 
     if chat_id not in games or not games[chat_id].is_betting_open:
-        await update.message.reply_text("⚠️ Betting is currently unavailable")
+        await update.message.reply_text("⚠️Betting is currently unavailable")
         return
 
     text = update.message.text.strip()
@@ -53,7 +53,7 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     games[chat_id].add_bet(number, amount, user_id, name)
     print(f"记录下注：号码={number} 金额={amount}")
-    await update.message.reply_text("✅ Successfully！")
+    await update.message.reply_text("✅ Successfully")
 
 async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != ChatType.PRIVATE or update.effective_user.id != ADMIN_ID:
@@ -98,9 +98,9 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # 构造开奖信息
     msg = (
-        f"🎉 Draw Results：\n"
+        f"🎉 Draw Results\n\n"
         f"🎯 1st Prize：{w_number:02d}\n"
-        f"✨ Special Prize：{' ~ '.join(f'{n:02d}' for n in t_numbers)}"
+        f"🎯 Special Prize：{' ~ '.join(f'{n:02d}' for n in t_numbers)}"
     )
 
     # 结算下注结果
@@ -116,7 +116,7 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 results.append((user_id, name, number, amount, "特别奖", payout))
 
     if results:
-        msg += "\n-------------------------------\n🏆 Winning List：\n"
+        msg += "\n-------------------------------\n🏆 Winning List\n"
         for uid, name, num, amt, prize, win in results:
             mention = f"[{name}](tg://user?id={uid})"
             msg += f"{mention} 🎯 Number {num:02d}（{prize}）Bet RM{amt}，Win RM{win:.2f}\n"
