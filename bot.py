@@ -155,11 +155,7 @@ async def lock_bets_job(context: ContextTypes.DEFAULT_TYPE):
 
     if chat_id in games:
         games[chat_id].is_betting_open = False
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo="https://i.imgur.com/hmoP26c.png",
-            caption="⛔️ 本局已锁注，无法再下注！"
-        )
+        await send_image_to_group(context, chat_id, "lock.jpg", "🚫 Betting has ended for this round!")
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
