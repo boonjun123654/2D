@@ -4,6 +4,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from game_state import GameState
 from telegram.constants import ChatType
 from collections import defaultdict
+from db import execute_query
 import asyncio
 import os
 from datetime import datetime
@@ -59,7 +60,14 @@ async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 执行下注逻辑
     for number in numbers:
         games[chat_id].add_bet(number, amount, user_id, name)
-        print(f"记录下注：号码={number} 金额={amount}")
+    
+        # ✅ 保存到数据库
+        execute_query("""
+            INSERT INTO bets_2d (group_id, round_id, user_id, user_name, number, amount)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (chat_id, round_id, user_id, name, number, amount))
+
+        print(f"记录下注: 号码={number} 金额={amount}")
 
     total = len(numbers) * amount
     number_str = ", ".join(f"{n:02d}" for n in numbers)
@@ -113,17 +121,22 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
         f"🎯 Special Prize：{' ~ '.join(f'{n:02d}' for n in t_numbers)}"
     )
 
-    # 结算下注结果
-    bets = game.get_total_bets()
+    # 获取下注记录（数据库）
+    round_id = game.round_id
+    bets = execute_query(
+        "SELECT number, user_id, user_name, amount FROM bets WHERE round_id = %s AND group_id = %s",
+        (round_id, group_id)
+    )
+
+    # 结算
     results = []
-    for number, entries in bets.items():
-        for user_id, name, amount in entries:
-            if number == game.winning_w:
-                payout = amount * 66
-                results.append((user_id, name, number, amount, "1st", payout))
-            elif number in game.winning_t:
-                payout = amount * 6.6
-                results.append((user_id, name, number, amount, "Special", payout))
+    for number, user_id, name, amount in bets:
+        if number == game.winning_w:
+            payout = amount * 66
+            results.append((user_id, name, number, amount, "1st", payout))
+        elif number in game.winning_t:
+            payout = amount * 6.6
+            results.append((user_id, name, number, amount, "Special", payout))
 
     if results:
         msg += "\n-------------------------------\n🏆 Winning List 🏆\n"
