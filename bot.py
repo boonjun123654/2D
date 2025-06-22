@@ -10,21 +10,10 @@ from datetime import datetime
 # 初始化游戏状态（群组为单位）
 games = {}
 latest_input_round = {}
-IMAGE_FOLDER = "image"
 
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 # 创建游戏局号
-
-async def send_game_image(update, filename, caption="", chat_id=None):
-    path = os.path.join(IMAGE_FOLDER, filename)
-    if not os.path.isfile(path):
-        await update.message.reply_text("⚠️ 图片文件不存在！")
-        return
-    with open(path, "rb") as f:
-        target = chat_id or update.message.chat_id
-        await update.get_bot().send_photo(chat_id=target, photo=f, caption=caption)
-
 def generate_round_id():
     now = datetime.now()
     return f"{now.strftime('%y%m%d')}{str(now.microsecond)[0:3]}"
@@ -37,7 +26,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     games[chat_id].start_new_round()
     round_id = games[chat_id].round_id
-    await send_game_image(update, "start.jpg", f"🎯 Start Betting！Code：{round_id}\n\nBet Format: Number/Amount")
+    await update.message.reply_photo(
+    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting! Code: {round_id}\n\nBet Format: Number/Amount")
 
     context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
@@ -166,7 +156,7 @@ async def lock_bets_job(context: ContextTypes.DEFAULT_TYPE):
 
     if chat_id in games:
         games[chat_id].is_betting_open = False
-        await send_image_to_group(context, chat_id, "lock.jpg", "🚫 Betting has ended for this round!")
+        await context.bot.send_photo(chat_id=chat_id,photo="https://i.imgur.com/sTG7AiW.jpeg",caption="🚫 Betting has ended for this round! ")
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
