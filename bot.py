@@ -3,6 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from game_state import GameState
 from telegram.constants import ChatType
+from utils import send_game_image
 import asyncio
 import os
 from datetime import datetime
@@ -10,10 +11,20 @@ from datetime import datetime
 # 初始化游戏状态（群组为单位）
 games = {}
 latest_input_round = {}
+IMAGE_FOLDER = "image"
 
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 # 创建游戏局号
+
+async def send_game_image(update, filename, caption=""):
+    path = os.path.join(IMAGE_FOLDER, filename)
+    if not os.path.isfile(path):
+        await update.message.reply_text("⚠️ 图片文件不存在！")
+        return
+    with open(path, "rb") as f:
+        await update.message.reply_photo(photo=f, caption=caption)
+
 def generate_round_id():
     now = datetime.now()
     return f"{now.strftime('%y%m%d')}{str(now.microsecond)[0:3]}"
