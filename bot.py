@@ -110,13 +110,13 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
         for user_id, name, amount in entries:
             if number == game.winning_w:
                 payout = amount * 66
-                results.append((user_id, name, number, amount, "头奖", payout))
+                results.append((user_id, name, number, amount, "1st", payout))
             elif number in game.winning_t:
                 payout = amount * 6.6
-                results.append((user_id, name, number, amount, "特别奖", payout))
+                results.append((user_id, name, number, amount, "Special", payout))
 
     if results:
-        msg += "\n-------------------------------\n🏆 Winning List\n"
+        msg += "\n-------------------------------\n🏆 Winning List\n\n"
         for uid, name, num, amt, prize, win in results:
             mention = f"[{name}](tg://user?id={uid})"
             msg += f"{mention} 🎯 Number {num:02d}（{prize}）Bet RM{amt}，Win RM{win:.2f}\n"
