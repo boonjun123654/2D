@@ -131,7 +131,12 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # 结算
     results = []
-    for number, user_id, name, amount in bets:
+    for row in bets:
+        number = row["number"]
+        user_id = row["user_id"]
+        name = row["user_name"]
+        amount = row["amount"]
+
         if number == game.winning_w:
             payout = amount * 66
             results.append((user_id, name, number, amount, "1st", payout))
