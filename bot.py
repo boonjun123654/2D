@@ -276,6 +276,6 @@ if __name__ == '__main__':
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(CommandHandler("in", handle_in))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_open_number))
-    application.add_handler(CallbackQueryHandler(handle_history_button, pattern=r'^view_history:'))
+    app.add_handler(CallbackQueryHandler(handle_history_button, pattern=r'^view_history:'))
 
     app.run_polling()
