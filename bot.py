@@ -150,14 +150,16 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
             mention = f"[{name}](tg://user?id={uid})"
             msg += f"{mention} 🎯 Number {num:02d}（{prize}）Bet RM{amt}，Win RM{win:.2f}\n"
 
-    # 发送合并后的消息
-    await context.bot.send_message(group_id, msg, parse_mode="Markdown")
+    # 创建按钮
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📜 查看历史记录", callback_data=f"view_history:{group_id}")]
     ])
+
+    # 一次发送 文案 + 按钮
     await context.bot.send_message(
         chat_id=group_id,
-        text="请选择操作：",
+        text=msg,  # msg 就是 draw results 内容
+        parse_mode="Markdown",
         reply_markup=keyboard
     )
 
