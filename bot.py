@@ -152,7 +152,7 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # 发送合并后的消息
     await context.bot.send_message(group_id, msg, parse_mode="Markdown")
-        keyboard = InlineKeyboardMarkup([
+    keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📜 查看历史记录", callback_data=f"view_history:{group_id}")]
     ])
     await context.bot.send_message(
