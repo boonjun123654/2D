@@ -165,7 +165,6 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
 
     data = query.data
     if not data.startswith("view_history:"):
