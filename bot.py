@@ -152,6 +152,40 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # 发送合并后的消息
     await context.bot.send_message(group_id, msg, parse_mode="Markdown")
+        keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📜 查看历史记录", callback_data=f"view_history:{group_id}")]
+    ])
+    await context.bot.send_message(
+        chat_id=group_id,
+        text="请选择操作：",
+        reply_markup=keyboard
+    )
+
+async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+    if not data.startswith("view_history:"):
+        return
+
+    group_id = int(data.split(":")[1])
+
+    rows = execute_query(
+        "SELECT round_id, winning_w, winning_t FROM results_2d WHERE group_id = %s ORDER BY created_at DESC LIMIT 10",
+        (group_id,)
+    )
+
+    if not rows:
+        await query.answer("暂无开奖记录", show_alert=True)
+        return
+
+    text = "📜 最近10局开奖记录：\n"
+    for row in rows:
+        rid, w, t_list = row
+        text += f"• {rid}: 🎯{w:02d} ✨{' ~ '.join(f'{n:02d}' for n in t_list)}\n"
+
+    await query.answer(text, show_alert=True)
 
 async def handle_in(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != ChatType.PRIVATE:
@@ -242,5 +276,6 @@ if __name__ == '__main__':
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(CommandHandler("in", handle_in))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_open_number))
+    application.add_handler(CallbackQueryHandler(handle_history_button, pattern=r'^view_history:'))
 
     app.run_polling()
