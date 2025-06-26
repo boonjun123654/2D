@@ -1,6 +1,7 @@
 # game_state.py
 from collections import defaultdict
 from datetime import datetime
+from db import execute_query
 
 class GameState:
     def __init__(self, round_counter_per_day):
