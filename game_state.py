@@ -11,19 +11,30 @@ class GameState:
         self.winning_w = None
         self.winning_t = []
 
-    def start_new_round(self):
+    def start_new_round(self, group_id):
         now = datetime.now()
         today_str = now.strftime('%y%m%d')
 
-        # 增加今天的局号计数
-        self.round_counter_per_day[today_str] += 1
-        count = self.round_counter_per_day[today_str]
+        # 查询数据库中今天的最大局号
+        result = execute_query(
+            "SELECT round_id FROM results_2d WHERE group_id = %s AND round_id LIKE %s ORDER BY created_at DESC LIMIT 1",
+            (group_id, f"{today_str}%")
+        )
 
-        # 计算字母和数字部分
-        batch_letter = chr(ord('A') + (count - 1) // 99)     # A-Z
-        serial_number = (count - 1) % 99 + 1                 # 1-99
+        if result:
+            last_round_id = result[0][0]  # 例如 "250625A03"
+            last_batch = last_round_id[6]      # A
+            last_serial = int(last_round_id[7:])  # 03
+            batch_index = ord(last_batch) - ord('A')
+            count = batch_index * 99 + last_serial + 1
+        else:
+            count = 1  # 今天第一局
 
-        # 格式化局号，例：250622A01
+        # 转换为字母+编号
+        batch_letter = chr(ord('A') + (count - 1) // 99)  # A-Z
+        serial_number = (count - 1) % 99 + 1              # 1–99
+
+        # 构建新的 round_id
         self.round_id = f"{today_str}{batch_letter}{serial_number:02d}"
 
         # 其他初始化
