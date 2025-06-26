@@ -18,7 +18,7 @@ class GameState:
 
         # 查询数据库中今天的最大局号
         result = execute_query(
-            "SELECT round_id FROM results_2d WHERE group_id = %s AND round_id LIKE %s ORDER BY created_at DESC LIMIT 1",
+            "SELECT round_id FROM bets_2d WHERE group_id = %s AND round_id LIKE %s ORDER BY created_at DESC LIMIT 1",
             (group_id, f"{today_str}%")
         )
 
