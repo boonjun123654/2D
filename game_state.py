@@ -23,7 +23,7 @@ class GameState:
         )
 
         if result and len(result) > 0:
-            last_round_id = result[0][0]  # 例如 "250625A03"
+            last_round_id = result[0]["round_id"]  # 例如 "250625A03"
             last_batch = last_round_id[6]      # A
             last_serial = int(last_round_id[7:])  # 03
             batch_index = ord(last_batch) - ord('A')
