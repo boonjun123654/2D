@@ -27,7 +27,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_id not in games:
         games[chat_id] = GameState(round_counter_per_day)
 
-    games[chat_id].start_new_round()
+    games[chat_id].start_new_round(chat_id)
     round_id = games[chat_id].round_id
     await update.message.reply_photo(
     photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting 📌{round_id}")
