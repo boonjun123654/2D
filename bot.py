@@ -24,13 +24,21 @@ def generate_round_id():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
+    # 若该群已有游戏，且正在下注中 → 阻止重复开局
+    if chat_id in games and games[chat_id].is_betting:
+        await update.message.reply_text("⚠️ 当前已有一局正在进行中，请稍后再试！")
+        return
+
     if chat_id not in games:
         games[chat_id] = GameState(round_counter_per_day)
 
     games[chat_id].start_new_round(chat_id)
     round_id = games[chat_id].round_id
+
     await update.message.reply_photo(
-    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting 📌{round_id}")
+        photo="https://i.imgur.com/iXzN6Bm.jpeg",
+        caption=f"🎯 Start Betting 📌 {round_id}"
+    )
 
     context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
