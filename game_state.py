@@ -7,6 +7,7 @@ class GameState:
     def __init__(self, round_counter_per_day):
         self.round_counter_per_day = round_counter_per_day
         self.round_id = None
+        self.is_betting = False
         self.bets = defaultdict(list)
         self.is_betting_open = False
         self.winning_w = None
