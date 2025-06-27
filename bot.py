@@ -5,6 +5,7 @@ from game_state import GameState
 from telegram.constants import ChatType
 from collections import defaultdict
 from db import execute_query
+import json
 import asyncio
 import os
 from datetime import datetime
@@ -171,6 +172,14 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup=keyboard
     )
 
+        execute_query(
+            """
+            INSERT INTO win_numbers (group_id, round_id, number, types, created_at)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (group_id, round_id, game.winning_w, json.dumps(game.winning_t), datetime.now())
+        )
+
 async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
@@ -181,7 +190,7 @@ async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TY
     group_id = int(data.split(":")[1])
 
     rows = execute_query(
-        "SELECT round_id, winning_w, winning_t FROM results_2d WHERE group_id = %s ORDER BY created_at DESC LIMIT 10",
+        "SELECT round_id, winning_w, winning_t FROM win_numbers WHERE group_id = %s ORDER BY created_at DESC LIMIT 10",
         (group_id,)
     )
 
@@ -191,7 +200,8 @@ async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TY
 
     text = "📜 最近10局开奖记录：\n"
     for row in rows:
-        rid, w, t_list = row
+        rid, w, t_json = row
+        t_list = json.loads(t_json)
         text += f"• {rid}: 🎯{w:02d} ✨{' ~ '.join(f'{n:02d}' for n in t_list)}\n"
 
     await query.answer(text, show_alert=True)
