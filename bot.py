@@ -7,7 +7,7 @@ from collections import defaultdict
 from db import execute_query
 import asyncio
 import os
-from datetime import datetime, timedelta,time
+from datetime import datetime
 
 # 初始化游戏状态（群组为单位）
 games = {}
@@ -21,30 +21,18 @@ def generate_round_id():
     now = datetime.now()
     return f"{now.strftime('%y%m%d')}{str(now.microsecond)[0:3]}"
 
-games = {}
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
 
-async def auto_start_game(context: ContextTypes.DEFAULT_TYPE):
-    chat_id = context.job.chat_id
-
-    if chat_id in games and games[chat_id].is_betting:
-        return  # 若已有一局进行中，则不重复开局
-
-    # 创建新局
-    games[chat_id] = GameState(...)
-    games[chat_id].is_betting = True
-
-    await context.bot.send_message(chat_id, "🎯 自动开始新一局！请开始下注！")
-
-    # 设置 45 分钟后自动锁注
-    context.job_queue.run_once(auto_lock_bet, when=2700, chat_id=chat_id)
-
-async def auto_lock_bet(context: ContextTypes.DEFAULT_TYPE):
-    chat_id = context.job.chat_id
     if chat_id not in games:
-        return
+        games[chat_id] = GameState(round_counter_per_day)
 
-    games[chat_id].is_betting = False
-    await context.bot.send_message(chat_id, "🔒 已锁注！本局下注结束。")
+    games[chat_id].start_new_round(chat_id)
+    round_id = games[chat_id].round_id
+    await update.message.reply_photo(
+    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting 📌{round_id}")
+
+    context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
                                     
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -214,7 +202,6 @@ async def handle_in(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ 当前没有任何群组正在游戏")
         return
 
-
     # 获取最新群组与局号
     latest_group_id = list(games.keys())[-1]
     round_id = games[latest_group_id].round_id
@@ -226,6 +213,46 @@ async def handle_in(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton(f"输入开奖号码（局号: {round_id}）", callback_data=f"in:{round_id}")
     ]]
     await update.message.reply_text("👇 请选择要输入开奖号码的局号", reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def lock_bets_job(context: ContextTypes.DEFAULT_TYPE):
+    job = context.job
+    chat_id = job.data
+
+    if chat_id not in games:
+        return
+
+    game = games[chat_id]
+    game.is_betting_open = False
+
+    # 整理下注信息
+    bets = game.get_total_bets()  # { number: [(user_id, name, amount), ...] }
+    user_bets = {}
+
+    for number, entries in bets.items():
+        for user_id, name, amount in entries:
+            if name not in user_bets:
+                user_bets[name] = {}
+            if amount not in user_bets[name]:
+                user_bets[name][amount] = []
+            user_bets[name][amount].append(number)
+
+    # 构建参与者下注文字
+    lines = ["📋 Participants:"]
+    for name, bet_dict in user_bets.items():
+        parts = []
+        for amount, nums in bet_dict.items():
+            nums_str = "+".join(f"{n:02d}" for n in sorted(nums))
+            parts.append(f"{nums_str}/{amount}")
+        lines.append(f"{name} → {', '.join(parts)}")
+
+    summary_text = "\n".join(lines)
+
+    # 发送锁注图片和下注名单
+    await context.bot.send_photo(
+        chat_id=chat_id,
+        photo="https://i.imgur.com/sTG7AiW.jpeg",  # 你当前使用的锁注图
+        caption=f"🚫 Betting has ended for this round!\n\n{summary_text}"
+    )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -242,23 +269,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         games[group_id].is_waiting_result = True
         await query.edit_message_text("请输入开奖号码（01–99）：")
 
-async def handle_autotest(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    await context.bot.send_message(chat_id, "⏳ 测试自动开局中...")
-    context.job_queue.run_once(auto_start_game, when=3, chat_id=chat_id)  # 3秒后开局
-
 if __name__ == '__main__':
     app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
 
-    
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_bet))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(CommandHandler("in", handle_in))
-    app.add_handler(CommandHandler("autotest", handle_autotest))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_open_number))
     app.add_handler(CallbackQueryHandler(handle_history_button, pattern=r'^view_history:'))
-
-    # 添加每日 9:00 自动开局任务
-    app.job_queue.run_daily(auto_start_game,time=time(hour=9, minute=0),chat_id=-4881730236)
 
     app.run_polling()
