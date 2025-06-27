@@ -174,7 +174,7 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     execute_query(
         """
-        INSERT INTO win_numbers (group_id, round_id, number, types, created_at)
+        INSERT INTO win_numbers (group_id, round_id, winning_w, winning_t, created_at)
         VALUES (%s, %s, %s, %s, %s)
         """,
         (group_id, round_id, game.winning_w, json.dumps(game.winning_t), datetime.now())
