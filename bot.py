@@ -21,18 +21,22 @@ def generate_round_id():
     now = datetime.now()
     return f"{now.strftime('%y%m%d')}{str(now.microsecond)[0:3]}"
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
+async def daily_start_job(context: ContextTypes.DEFAULT_TYPE):
+    group_id = int(os.getenv("YOUR_GROUP_ID"))  # 替换成你的群组 ID
+    if group_id not in games:
+        games[group_id] = GameState(round_counter_per_day)
 
-    if chat_id not in games:
-        games[chat_id] = GameState(round_counter_per_day)
+    games[group_id].start_new_round(group_id)
+    round_id = games[group_id].round_id
 
-    games[chat_id].start_new_round(chat_id)
-    round_id = games[chat_id].round_id
-    await update.message.reply_photo(
-    photo="https://i.imgur.com/iXzN6Bm.jpeg",caption=f"🎯 Start Betting 📌{round_id}")
+    await context.bot.send_photo(
+        chat_id=group_id,
+        photo="https://i.imgur.com/iXzN6Bm.jpeg",
+        caption=f"🎯 Start Betting 📌{round_id}"
+    )
 
-    context.job_queue.run_once(lock_bets_job, when=20, data=chat_id, name=str(chat_id))
+    # 设置锁注倒计时
+    context.job_queue.run_once(lock_bets_job, when=45 * 60, data=group_id, name=str(group_id))  # 45分钟后锁注
                                     
 async def handle_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -272,11 +276,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == '__main__':
     app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
 
-    app.add_handler(CommandHandler("start", start))
+    
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_bet))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(CommandHandler("in", handle_in))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_open_number))
     app.add_handler(CallbackQueryHandler(handle_history_button, pattern=r'^view_history:'))
+
+    from datetime import time
+    app.job_queue.run_daily(daily_start_job, time=time(hour=9, minute=0))
 
     app.run_polling()
