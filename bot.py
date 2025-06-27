@@ -258,4 +258,7 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_open_number))
     app.add_handler(CallbackQueryHandler(handle_history_button, pattern=r'^view_history:'))
 
+    # 添加每日 9:00 自动开局任务
+    application.job_queue.run_daily(auto_start_game,time=time(hour=9, minute=0),chat_id=-4881730236
+
     app.run_polling()
