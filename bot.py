@@ -172,13 +172,13 @@ async def handle_open_number(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup=keyboard
     )
 
-        execute_query(
-            """
-            INSERT INTO win_numbers (group_id, round_id, number, types, created_at)
-            VALUES (%s, %s, %s, %s, %s)
-            """,
-            (group_id, round_id, game.winning_w, json.dumps(game.winning_t), datetime.now())
-        )
+    execute_query(
+        """
+        INSERT INTO win_numbers (group_id, round_id, number, types, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (group_id, round_id, game.winning_w, json.dumps(game.winning_t), datetime.now())
+    )
 
 async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
