@@ -201,16 +201,13 @@ async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TY
 
     text = "📜 最近10局开奖记录：\n"
     for row in rows:
-        rid, w, t_json = row
+        print(f"[DEBUG] row: {row}")
 
-        print(f"[DEBUG] 解析前内容: {t_json}")
+        rid = row["round_id"]
+        w = int(row["winning_w"])
+        t_list = json.loads(row["winning_t"])
 
-        try:
-            t_list = json.loads(t_json) if t_json else []
-        except json.JSONDecodeError:
-            t_list = []
-
-        text += f"• {rid}: 🎯{int(w):02d} ✨{' ~ '.join(f'{int(n):02d}' for n in t_list)}\n"
+        text += f"• {rid}: 🎯{w:02d} ✨{' ~ '.join(f'{int(n):02d}' for n in t_list)}\n"
 
     await query.answer(text, show_alert=True)
 
