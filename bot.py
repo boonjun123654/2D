@@ -210,7 +210,7 @@ async def handle_history_button(update: Update, context: ContextTypes.DEFAULT_TY
         except json.JSONDecodeError:
             t_list = []
 
-        text += f"• {rid}: 🎯{w:02d} ✨{' ~ '.join(f'{n:02d}' for n in t_list)}\n"
+        text += f"• {rid}: 🎯{int(w):02d} ✨{' ~ '.join(f'{int(n):02d}' for n in t_list)}\n"
 
     await query.answer(text, show_alert=True)
 
