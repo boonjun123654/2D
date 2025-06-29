@@ -1,55 +1,97 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <title>下注页面</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>2D下注页面</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background: white;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    input[type="text"], input[type="number"] {
+      width: 80px;
+      padding: 5px;
+      text-align: center;
+    }
+    button {
+      background: #006aff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    label {
+      display: inline-block;
+      margin: 5px;
+    }
+  </style>
 </head>
-<body class="bg-light">
-<div class="container mt-5">
-    <h2 class="mb-4">2D下注表格</h2>
-    <form method="POST">
-        <input type="hidden" name="rows" value="1">
-        <div class="mb-3">
-            <label>号码（两位数）：</label>
-            <input type="text" class="form-control" name="number_0" maxlength="2" required>
-        </div>
-        <div class="mb-3">
-            <label>下注金额：</label>
-            <div class="input-group mb-1">
-                <span class="input-group-text">2D</span>
-                <input type="number" name="2d_0" class="form-control" placeholder="金额">
-            </div>
-            <div class="input-group mb-1">
-                <span class="input-group-text">单</span>
-                <input type="number" name="single_0" class="form-control" placeholder="金额">
-            </div>
-            <div class="input-group mb-1">
-                <span class="input-group-text">双</span>
-                <input type="number" name="double_0" class="form-control" placeholder="金额">
-            </div>
-            <div class="input-group mb-1">
-                <span class="input-group-text">大</span>
-                <input type="number" name="big_0" class="form-control" placeholder="金额">
-            </div>
-            <div class="input-group mb-1">
-                <span class="input-group-text">小</span>
-                <input type="number" name="small_0" class="form-control" placeholder="金额">
-            </div>
-        </div>
-        <div class="mb-3">
-            <label>选择时段：</label><br>
+<body>
+  <h2>2D下注表格</h2>
+  <form method="POST" action="/bet">
+    <table>
+      <thead>
+        <tr>
+          <th>幸运号码</th>
+          <th>2D</th>
+          <th>单</th>
+          <th>双</th>
+          <th>大</th>
+          <th>小</th>
+          <th>选择时段</th>
+          <th>总额 (MYR)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="text" name="number" maxlength="2" required></td>
+          <td><input type="number" name="bet_2d" min="0" step="0.01"></td>
+          <td><input type="number" name="bet_single" min="0" step="0.01"></td>
+          <td><input type="number" name="bet_double" min="0" step="0.01"></td>
+          <td><input type="number" name="bet_big" min="0" step="0.01"></td>
+          <td><input type="number" name="bet_small" min="0" step="0.01"></td>
+          <td>
             {% for game in games %}
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="games_0" value="{{ game.id }}" id="game{{ game.id }}">
-                    <label class="form-check-label" for="game{{ game.id }}">
-                        {{ game.hour }} 点
-                    </label>
-                </div>
+              <label>
+                <input type="checkbox" name="game_ids" value="{{ game.id }}"> {{ game.hour }}点
+              </label><br>
             {% endfor %}
-        </div>
-        <button type="submit" class="btn btn-primary w-100">确认下注</button>
-    </form>
-</div>
+          </td>
+          <td id="total_amount">0.00</td>
+        </tr>
+      </tbody>
+    </table>
+    <button type="submit">确认下注</button>
+  </form>
+
+  <script>
+    function updateTotal() {
+      const fields = ['bet_2d', 'bet_single', 'bet_double', 'bet_big', 'bet_small'];
+      let total = 0;
+      fields.forEach(name => {
+        const val = parseFloat(document.querySelector(`input[name="${name}"]`).value) || 0;
+        total += val;
+      });
+      document.getElementById('total_amount').innerText = total.toFixed(2);
+    }
+
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+      input.addEventListener('input', updateTotal);
+    });
+  </script>
 </body>
 </html>
