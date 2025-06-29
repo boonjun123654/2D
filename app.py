@@ -50,3 +50,21 @@ def bet():
         return redirect('/bet')
 
     return render_template('bet.html', games=games)
+
+@app.route('/', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == 'admin' and password == '1234':  # ✅ 自定义用户名密码
+            session['logged_in'] = True
+            return redirect('/bet')
+        else:
+            error = '账号或密码错误'
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect('/')
