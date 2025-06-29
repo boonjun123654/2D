@@ -20,14 +20,15 @@
       text-align: center;
       font-size: 14px;
     }
-    input[type="text"], input[type="number"] {
+    input[type="text"] {
       width: 60px;
       font-size: 13px;
       padding: 2px 4px;
     }
-    .time-checkbox {
+    input[type="checkbox"] {
       width: 16px;
       height: 16px;
+      cursor: pointer;
     }
     button {
       margin-top: 20px;
@@ -57,8 +58,8 @@
           <th>双</th>
           <th>大</th>
           <th>小</th>
-          {% for g in games %}
-          <th>{{ g.hour }}点</th>
+          {% for h in range(9, 24) %}
+          <th>{{ h }}点</th>
           {% endfor %}
           <th>总额 (MYR)</th>
         </tr>
@@ -67,14 +68,14 @@
         {% for i in range(6) %}
         <tr>
           <td>{{ i + 1 }}</td>
-          <td><input type="text" name="number_{{ i }}" maxlength="2"></td>
-          <td><input type="number" name="2d_{{ i }}" step="0.01" min="0"></td>
-          <td><input type="number" name="single_{{ i }}" step="0.01" min="0"></td>
-          <td><input type="number" name="double_{{ i }}" step="0.01" min="0"></td>
-          <td><input type="number" name="big_{{ i }}" step="0.01" min="0"></td>
-          <td><input type="number" name="small_{{ i }}" step="0.01" min="0"></td>
-          {% for g in games %}
-          <td><input type="checkbox" class="time-checkbox" name="games_{{ i }}" value="{{ g.id }}"></td>
+          <td><input type="text" name="number_{{ i }}" maxlength="2" autocomplete="off"></td>
+          <td><input type="text" name="2d_{{ i }}" autocomplete="off"></td>
+          <td><input type="text" name="single_{{ i }}" autocomplete="off"></td>
+          <td><input type="text" name="double_{{ i }}" autocomplete="off"></td>
+          <td><input type="text" name="big_{{ i }}" autocomplete="off"></td>
+          <td><input type="text" name="small_{{ i }}" autocomplete="off"></td>
+          {% for h in range(9, 24) %}
+          <td><input type="checkbox" name="games_{{ i }}" value="{{ h }}"></td>
           {% endfor %}
           <td></td>
         </tr>
@@ -84,5 +85,19 @@
     <input type="hidden" name="rows" value="6">
     <button type="submit">确认下注</button>
   </form>
+
+  <script>
+    // 空格键跳格支持（按空格自动跳到右边输入框）
+    document.addEventListener('keydown', function(e) {
+      if (e.key === ' ' && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text') {
+        e.preventDefault();
+        const inputs = Array.from(document.querySelectorAll('input[type="text"]'));
+        const index = inputs.indexOf(document.activeElement);
+        if (index !== -1 && index < inputs.length - 1) {
+          inputs[index + 1].focus();
+        }
+      }
+    });
+  </script>
 </body>
 </html>
