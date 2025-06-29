@@ -1,50 +1,88 @@
-<form method="POST">
-  <table border="1" style="width:100%; text-align:center;">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>下注号码</th>
-        <th>2D</th>
-        <th>单</th>
-        <th>双</th>
-        <th>大</th>
-        <th>小</th>
-        {% for g in games %}
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>2D下注表格</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f7f7f7;
+      padding: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 4px;
+      text-align: center;
+      font-size: 14px;
+    }
+    input[type="text"], input[type="number"] {
+      width: 60px;
+      font-size: 13px;
+      padding: 2px 4px;
+    }
+    .time-checkbox {
+      width: 16px;
+      height: 16px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>2D下注表格</h2>
+  <form method="POST">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>下注号码</th>
+          <th>2D</th>
+          <th>单</th>
+          <th>双</th>
+          <th>大</th>
+          <th>小</th>
+          {% for g in games %}
           <th>{{ g.hour }}点</th>
+          {% endfor %}
+          <th>总额 (MYR)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in range(6) %}
+        <tr>
+          <td>{{ i + 1 }}</td>
+          <td><input type="text" name="number_{{ i }}" maxlength="2"></td>
+          <td><input type="number" name="2d_{{ i }}" step="0.01" min="0"></td>
+          <td><input type="number" name="single_{{ i }}" step="0.01" min="0"></td>
+          <td><input type="number" name="double_{{ i }}" step="0.01" min="0"></td>
+          <td><input type="number" name="big_{{ i }}" step="0.01" min="0"></td>
+          <td><input type="number" name="small_{{ i }}" step="0.01" min="0"></td>
+          {% for g in games %}
+          <td><input type="checkbox" class="time-checkbox" name="games_{{ i }}" value="{{ g.id }}"></td>
+          {% endfor %}
+          <td></td>
+        </tr>
         {% endfor %}
-        <th>总额 (MYR)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1</td>
-        <td><input type="text" name="number_0" maxlength="2" style="width: 60px;"></td>
-        <td><input type="number" step="0.01" name="2d_0" class="amt"></td>
-        <td><input type="number" step="0.01" name="single_0" class="amt"></td>
-        <td><input type="number" step="0.01" name="double_0" class="amt"></td>
-        <td><input type="number" step="0.01" name="big_0" class="amt"></td>
-        <td><input type="number" step="0.01" name="small_0" class="amt"></td>
-        {% for g in games %}
-          <td><input type="checkbox" name="games_0" value="{{ g.id }}"></td>
-        {% endfor %}
-        <td><span id="total_0">0.00</span></td>
-      </tr>
-    </tbody>
-  </table>
-  <input type="hidden" name="rows" value="1">
-  <br>
-  <button type="submit">确认下注</button>
-</form>
-
-<script>
-  // 自动合计金额
-  document.querySelectorAll('.amt').forEach(input => {
-    input.addEventListener('input', () => {
-      let total = 0;
-      document.querySelectorAll('.amt').forEach(a => {
-        total += parseFloat(a.value || 0);
-      });
-      document.getElementById('total_0').textContent = total.toFixed(2);
-    });
-  });
-</script>
+      </tbody>
+    </table>
+    <input type="hidden" name="rows" value="6">
+    <button type="submit">确认下注</button>
+  </form>
+</body>
+</html>
