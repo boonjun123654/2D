@@ -1,97 +1,50 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8">
-  <title>2D下注页面</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #f9f9f9;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      background: white;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
-    }
-    input[type="text"], input[type="number"] {
-      width: 80px;
-      padding: 5px;
-      text-align: center;
-    }
-    button {
-      background: #006aff;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      font-size: 16px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    label {
-      display: inline-block;
-      margin: 5px;
-    }
-  </style>
-</head>
-<body>
-  <h2>2D下注表格</h2>
-  <form method="POST" action="/bet">
-    <table>
-      <thead>
-        <tr>
-          <th>幸运号码</th>
-          <th>2D</th>
-          <th>单</th>
-          <th>双</th>
-          <th>大</th>
-          <th>小</th>
-          <th>选择时段</th>
-          <th>总额 (MYR)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="text" name="number" maxlength="2" required></td>
-          <td><input type="number" name="bet_2d" min="0" step="0.01"></td>
-          <td><input type="number" name="bet_single" min="0" step="0.01"></td>
-          <td><input type="number" name="bet_double" min="0" step="0.01"></td>
-          <td><input type="number" name="bet_big" min="0" step="0.01"></td>
-          <td><input type="number" name="bet_small" min="0" step="0.01"></td>
-          <td>
-            {% for game in games %}
-              <label>
-                <input type="checkbox" name="game_ids" value="{{ game.id }}"> {{ game.hour }}点
-              </label><br>
-            {% endfor %}
-          </td>
-          <td id="total_amount">0.00</td>
-        </tr>
-      </tbody>
-    </table>
-    <button type="submit">确认下注</button>
-  </form>
+<form method="POST">
+  <table border="1" style="width:100%; text-align:center;">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>下注号码</th>
+        <th>2D</th>
+        <th>单</th>
+        <th>双</th>
+        <th>大</th>
+        <th>小</th>
+        {% for g in games %}
+          <th>{{ g.hour }}点</th>
+        {% endfor %}
+        <th>总额 (MYR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><input type="text" name="number_0" maxlength="2" style="width: 60px;"></td>
+        <td><input type="number" step="0.01" name="2d_0" class="amt"></td>
+        <td><input type="number" step="0.01" name="single_0" class="amt"></td>
+        <td><input type="number" step="0.01" name="double_0" class="amt"></td>
+        <td><input type="number" step="0.01" name="big_0" class="amt"></td>
+        <td><input type="number" step="0.01" name="small_0" class="amt"></td>
+        {% for g in games %}
+          <td><input type="checkbox" name="games_0" value="{{ g.id }}"></td>
+        {% endfor %}
+        <td><span id="total_0">0.00</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <input type="hidden" name="rows" value="1">
+  <br>
+  <button type="submit">确认下注</button>
+</form>
 
-  <script>
-    function updateTotal() {
-      const fields = ['bet_2d', 'bet_single', 'bet_double', 'bet_big', 'bet_small'];
+<script>
+  // 自动合计金额
+  document.querySelectorAll('.amt').forEach(input => {
+    input.addEventListener('input', () => {
       let total = 0;
-      fields.forEach(name => {
-        const val = parseFloat(document.querySelector(`input[name="${name}"]`).value) || 0;
-        total += val;
+      document.querySelectorAll('.amt').forEach(a => {
+        total += parseFloat(a.value || 0);
       });
-      document.getElementById('total_amount').innerText = total.toFixed(2);
-    }
-
-    document.querySelectorAll('input[type="number"]').forEach(input => {
-      input.addEventListener('input', updateTotal);
+      document.getElementById('total_0').textContent = total.toFixed(2);
     });
-  </script>
-</body>
-</html>
+  });
+</script>
