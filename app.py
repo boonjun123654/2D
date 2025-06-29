@@ -32,20 +32,25 @@ def bet():
     games = Game.query.filter_by(date=today).order_by(Game.hour).all()
 
     if request.method == 'POST':
-        rows = int(request.form.get('rows'))
-        for i in range(rows):
-            number = request.form.get(f'number_{i}') or None
-            for bet_type in ['2d', 'single', 'double', 'big', 'small']:
-                amount = request.form.get(f'{bet_type}_{i}')
+        number = request.form.get('number')
+        bets = {
+            '2D': request.form.get('bet_2d'),
+            '单': request.form.get('bet_single'),
+            '双': request.form.get('bet_double'),
+            '大': request.form.get('bet_big'),
+            '小': request.form.get('bet_small')
+        }
+        game_ids = request.form.getlist('game_ids')
+
+        for game_id in game_ids:
+            for type_name, amount in bets.items():
                 if amount:
-                    for game_id in request.form.getlist(f'games_{i}'):
-                        bet = Bet(
-                            game_id=int(game_id),
-                            number=number if bet_type == '2d' else None,
-                            type='2D' if bet_type == '2d' else bet_type,
-                            amount=float(amount)
-                        )
-                        db.session.add(bet)
+                    db.session.add(Bet(
+                        game_id=int(game_id),
+                        number=number if type_name == '2D' else None,
+                        type=type_name,
+                        amount=float(amount)
+                    ))
         db.session.commit()
         return redirect('/bet')
 
