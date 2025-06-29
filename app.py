@@ -4,7 +4,7 @@ from datetime import date
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://用户名:密码@主机地址:5432/db_4m'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://db_4m_user:xiOe63X4iaczwTAcNfUYwS8oWrDExkHX@dpg-d11rb03uibrs73eh87vg-a/db_4m'
 db = SQLAlchemy(app)
 
 # 定义模型
