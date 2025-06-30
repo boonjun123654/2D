@@ -85,7 +85,7 @@
           <td><input type="text" name="big_{{ i }}" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateTotal({{ i }});" autocomplete="off"></td>
           <td><input type="text" name="small_{{ i }}" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateTotal({{ i }});" autocomplete="off"></td>
           {% for h in range(9, 24) %}
-          <td><input type="checkbox" class="col-{{ h }}" name="games_{{ i }}" value="{{ h }}"></td>
+          <td><input type="checkbox" class="col-{{ h }}" name="games_{{ i }}" value="{{ h }}" onclick="updateTotal({{ i }})"></td>
           {% endfor %}
           <td class="total-cell" id="total_{{ i }}">0.00</td>
         </tr>
@@ -111,7 +111,12 @@
         const val = parseFloat(document.querySelector(`[name="${type}_${i}"]`).value) || 0;
         total += val;
       });
-      document.getElementById(`total_${i}`).innerText = total.toFixed(2);
+
+      const checkboxes = document.querySelectorAll(`[name="games_${i}"]`);
+      const slotCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+
+      const finalTotal = total * slotCount;
+      document.getElementById(`total_${i}`).innerText = finalTotal.toFixed(2);
     }
 
     function validateForm() {
