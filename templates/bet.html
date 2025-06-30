@@ -98,9 +98,9 @@
 
   {% with messages = get_flashed_messages() %}
     {% if messages %}
-      <script>
-        alert("{{ messages[0] }}");
-      </script>
+    <script>
+      alert(`{{ messages[0].replace('\n', '\\n') }}`);
+    </script>
     {% endif %}
   {% endwith %}
 
