@@ -27,7 +27,7 @@ class Bet(db.Model):
     amount_small = db.Column(db.Numeric, default=0)
     time_slots = db.Column(db.ARRAY(db.Integer), default=[])
     total = db.Column(db.Numeric, default=0)
-    **date = db.Column(db.Date)**
+    bet_date = db.Column(db.Date, nullable=False, default=date.today)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
 @app.route('/bet', methods=['GET', 'POST'])
