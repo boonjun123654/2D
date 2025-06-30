@@ -39,35 +39,29 @@ def bet():
 
     if request.method == 'POST':
         rows = int(request.form.get('rows'))
+        summary_lines = []
+        total_amount = 0
+
         for i in range(rows):
             number = request.form.get(f'number_{i}')
             if not number:
-                continue  # 没有填号码就跳过
+                continue
 
-            # 获取每个类型金额
-            amount_2d = request.form.get(f'2d_{i}') or 0
-            amount_single = request.form.get(f'single_{i}') or 0
-            amount_double = request.form.get(f'double_{i}') or 0
-            amount_big = request.form.get(f'big_{i}') or 0
-            amount_small = request.form.get(f'small_{i}') or 0
-
-            # 所有转为数字
-            a2d = float(amount_2d or 0)
-            asg = float(amount_single or 0)
-            adb = float(amount_double or 0)
-            abg = float(amount_big or 0)
-            asm = float(amount_small or 0)
-
+            # 获取每项金额
+            a2d = float(request.form.get(f'2d_{i}') or 0)
+            asg = float(request.form.get(f'single_{i}') or 0)
+            adb = float(request.form.get(f'double_{i}') or 0)
+            abg = float(request.form.get(f'big_{i}') or 0)
+            asm = float(request.form.get(f'small_{i}') or 0)
             total = a2d + asg + adb + abg + asm
 
-            # 获取所有勾选的时段
             time_slots = request.form.getlist(f'games_{i}')
             if not time_slots:
-                continue  # 没有时段跳过（可选）
+                continue
 
             time_slots_int = [int(t) for t in time_slots]
 
-            # 保存到数据库
+            # 存入数据库
             bet = Bet(
                 number=number,
                 amount_2d=a2d,
@@ -79,8 +73,18 @@ def bet():
                 time_slots=time_slots_int
             )
             db.session.add(bet)
+
+            # 准备 flash 文本
+            if a2d: summary_lines.append(f'{number}={int(a2d)}')
+            if asg: summary_lines.append(f'D={int(asg)}')
+            if adb: summary_lines.append(f'T={int(adb)}')
+            if abg: summary_lines.append(f'B={int(abg)}')
+            if asm: summary_lines.append(f'S={int(asm)}')
+            total_amount += total
+
         db.session.commit()
-        flash("✅ 下注成功！")
+        summary_text = "\n".join(summary_lines)
+        flash(f"✅ 下注成功\n\n{summary_text}\nTotal {int(total_amount)}")
         return redirect('/bet')
 
     return render_template('bet.html', games=games)
