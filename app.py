@@ -53,13 +53,15 @@ def bet():
             adb = float(request.form.get(f'double_{i}') or 0)
             abg = float(request.form.get(f'big_{i}') or 0)
             asm = float(request.form.get(f'small_{i}') or 0)
-            total = a2d + asg + adb + abg + asm
 
             time_slots = request.form.getlist(f'games_{i}')
             if not time_slots:
                 continue
-
             time_slots_int = [int(t) for t in time_slots]
+            slot_count = len(time_slots_int)
+
+            # 修正下注总额：金额 × 时段数量
+            total = (a2d + asg + adb + abg + asm) * slot_count
 
             # 存入数据库
             bet = Bet(
@@ -75,11 +77,11 @@ def bet():
             db.session.add(bet)
 
             # 准备 flash 文本
-            if a2d: summary_lines.append(f'{number}={int(a2d)}')
-            if asg: summary_lines.append(f'D={int(asg)}')
-            if adb: summary_lines.append(f'T={int(adb)}')
-            if abg: summary_lines.append(f'B={int(abg)}')
-            if asm: summary_lines.append(f'S={int(asm)}')
+            if a2d: summary_lines.append(f'{number}={int(a2d * slot_count)}')
+            if asg: summary_lines.append(f'D={int(asg * slot_count)}')
+            if adb: summary_lines.append(f'T={int(adb * slot_count)}')
+            if abg: summary_lines.append(f'B={int(abg * slot_count)}')
+            if asm: summary_lines.append(f'S={int(asm * slot_count)}')
             total_amount += total
 
         db.session.commit()
