@@ -80,6 +80,7 @@ def bet():
             )
             db.session.add(bet)
         db.session.commit()
+        flash("✅ 下注成功！")
         return redirect('/bet')
 
     return render_template('bet.html', games=games)
