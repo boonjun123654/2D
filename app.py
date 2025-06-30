@@ -38,25 +38,47 @@ def bet():
     games = Game.query.filter_by(date=today).order_by(Game.hour).all()
 
     if request.method == 'POST':
-        number = request.form.get('number')
-        bets = {
-            '2D': request.form.get('bet_2d'),
-            '单': request.form.get('bet_single'),
-            '双': request.form.get('bet_double'),
-            '大': request.form.get('bet_big'),
-            '小': request.form.get('bet_small')
-        }
-        game_ids = request.form.getlist('game_ids')
+        rows = int(request.form.get('rows'))
+        for i in range(rows):
+            number = request.form.get(f'number_{i}')
+            if not number:
+                continue  # 没有填号码就跳过
 
-        for game_id in game_ids:
-            for type_name, amount in bets.items():
-                if amount:
-                    db.session.add(Bet(
-                        game_id=int(game_id),
-                        number=number if type_name == '2D' else None,
-                        type=type_name,
-                        amount=float(amount)
-                    ))
+            # 获取每个类型金额
+            amount_2d = request.form.get(f'2d_{i}') or 0
+            amount_single = request.form.get(f'single_{i}') or 0
+            amount_double = request.form.get(f'double_{i}') or 0
+            amount_big = request.form.get(f'big_{i}') or 0
+            amount_small = request.form.get(f'small_{i}') or 0
+
+            # 所有转为数字
+            a2d = float(amount_2d or 0)
+            asg = float(amount_single or 0)
+            adb = float(amount_double or 0)
+            abg = float(amount_big or 0)
+            asm = float(amount_small or 0)
+
+            total = a2d + asg + adb + abg + asm
+
+            # 获取所有勾选的时段
+            time_slots = request.form.getlist(f'games_{i}')
+            if not time_slots:
+                continue  # 没有时段跳过（可选）
+
+            time_slots_int = [int(t) for t in time_slots]
+
+            # 保存到数据库
+            bet = Bet(
+                number=number,
+                amount_2d=a2d,
+                amount_single=asg,
+                amount_double=adb,
+                amount_big=abg,
+                amount_small=asm,
+                total=total,
+                time_slots=time_slots_int
+            )
+            db.session.add(bet)
         db.session.commit()
         return redirect('/bet')
 
