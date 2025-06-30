@@ -43,11 +43,14 @@
     button:hover {
       background-color: #0056b3;
     }
+    .total-cell {
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h2>2D下注表格</h2>
-  <form method="POST">
+  <form method="POST" onsubmit="return validateForm()">
     <table>
       <thead>
         <tr>
@@ -69,15 +72,15 @@
         <tr>
           <td>{{ i + 1 }}</td>
           <td><input type="text" name="number_{{ i }}" maxlength="2" autocomplete="off"></td>
-          <td><input type="text" name="2d_{{ i }}" autocomplete="off"></td>
-          <td><input type="text" name="single_{{ i }}" autocomplete="off"></td>
-          <td><input type="text" name="double_{{ i }}" autocomplete="off"></td>
-          <td><input type="text" name="big_{{ i }}" autocomplete="off"></td>
-          <td><input type="text" name="small_{{ i }}" autocomplete="off"></td>
+          <td><input type="text" name="2d_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
+          <td><input type="text" name="single_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
+          <td><input type="text" name="double_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
+          <td><input type="text" name="big_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
+          <td><input type="text" name="small_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
           {% for h in range(9, 24) %}
           <td><input type="checkbox" name="games_{{ i }}" value="{{ h }}"></td>
           {% endfor %}
-          <td></td>
+          <td class="total-cell" id="total_{{ i }}">0.00</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -87,7 +90,32 @@
   </form>
 
   <script>
-    // 空格键跳格支持（按空格自动跳到右边输入框）
+    function updateTotal(i) {
+      let total = 0;
+      ['2d', 'single', 'double', 'big', 'small'].forEach(type => {
+        const val = parseFloat(document.querySelector(`[name="${type}_${i}"]`).value) || 0;
+        total += val;
+      });
+      document.getElementById(`total_${i}`).innerText = total.toFixed(2);
+    }
+
+    function validateForm() {
+      for (let i = 0; i < 6; i++) {
+        const hasInput = ['2d', 'single', 'double', 'big', 'small'].some(type => {
+          return document.querySelector(`[name="${type}_${i}"]`).value.trim() !== '';
+        });
+        if (hasInput) {
+          const checked = Array.from(document.querySelectorAll(`[name="games_${i}"]`)).some(c => c.checked);
+          if (!checked) {
+            alert(`第 ${i + 1} 行未选择下注时段！`);
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // 空格键跳格支持
     document.addEventListener('keydown', function(e) {
       if (e.key === ' ' && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text') {
         e.preventDefault();
