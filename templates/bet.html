@@ -96,6 +96,14 @@
     <button type="submit">确认下注</button>
   </form>
 
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <script>
+        alert("{{ messages[0] }}");
+      </script>
+    {% endif %}
+  {% endwith %}
+
   <script>
     function updateTotal(i) {
       let total = 0;
