@@ -69,19 +69,6 @@
           <th rowspan="2">总额 (MYR)</th>
         </tr>
         <tr>
-          <th></th> <!-- # -->
-          <th></th> <!-- 下注号码 -->
-          <th><input type="text" oninput="fillColumn('2d', this.value)"></th>
-          <th><input type="text" oninput="fillColumn('single', this.value)"></th>
-          <th><input type="text" oninput="fillColumn('double', this.value)"></th>
-          <th><input type="text" oninput="fillColumn('big', this.value)"></th>
-          <th><input type="text" oninput="fillColumn('small', this.value)"></th>
-          {% for h in range(9, 24) %}
-          <th><input type="checkbox" onclick="toggleColumn({{ h }})"></th>
-          {% endfor %}
-          <th></th> <!-- 总额 -->
-        </tr>
-        <tr>
           {% for h in range(9, 24) %}
           <th>{{ h }}点</th>
           {% endfor %}
@@ -138,15 +125,6 @@
       const checkboxes = document.querySelectorAll('.col-' + hour);
       const isChecked = event.target.checked;
       checkboxes.forEach(cb => cb.checked = isChecked);
-    }
-
-    function fillColumn(type, value) {
-      value = value.replace(/[^0-9]/g, ''); // 仅允许数字
-      for (let i = 0; i < 6; i++) {
-        const input = document.querySelector(`[name="${type}_${i}"]`);
-        input.value = value;
-        updateTotal(i);
-      }
     }
 
     // 空格键跳格支持
