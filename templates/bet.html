@@ -50,7 +50,7 @@
 </head>
 <body>
   <h2>2D下注表格</h2>
-  <form method="POST" onsubmit="return validateForm()">
+  <form method="POST" onsubmit="return confirmBeforeSubmit()">
     <table>
       <thead>
         <tr>
@@ -133,6 +133,43 @@
       const checkboxes = document.querySelectorAll('.col-' + hour);
       const isChecked = event.target.checked;
       checkboxes.forEach(cb => cb.checked = isChecked);
+    }
+
+    function confirmBeforeSubmit() {
+      let summary = '';
+      let total = 0;
+
+      for (let i = 0; i < 6; i++) {
+        const number = document.querySelector(`[name="number_${i}"]`).value.trim();
+        const map = {
+          [`2d_${i}`]: '',
+          [`single_${i}`]: 'D',
+          [`double_${i}`]: 'T',
+          [`big_${i}`]: 'B',
+          [`small_${i}`]: 'S'
+        };
+
+        for (let field in map) {
+          const val = document.querySelector(`[name="${field}"]`).value.trim();
+          if (val !== '') {
+            const type = map[field];
+            if (type === '') {
+              summary += `${number}=${val}\n`;
+            } else {
+              summary += `${type}=${val}\n`;
+            }
+            total += parseFloat(val);
+          }
+        }
+      }
+
+      if (total === 0) {
+        alert('请至少输入一个下注金额');
+        return false;
+      }
+
+      const message = `以下是您的下注内容：\n\n${summary}Total ${total}`;
+      return confirm(message);
     }
 
     // 空格键跳格支持
