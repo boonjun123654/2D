@@ -71,12 +71,12 @@
         {% for i in range(6) %}
         <tr>
           <td>{{ i + 1 }}</td>
-          <td><input type="text" name="number_{{ i }}" maxlength="2" autocomplete="off"></td>
-          <td><input type="text" name="2d_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
-          <td><input type="text" name="single_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
-          <td><input type="text" name="double_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
-          <td><input type="text" name="big_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
-          <td><input type="text" name="small_{{ i }}" autocomplete="off" oninput="updateTotal({{ i }})"></td>
+          <td><input type="text" name="number_{{ i }}" maxlength="2" inputmode="numeric" pattern="\d*"oninput="this.value=this.value.replace(/[^0-9]/g,'');" autocomplete="off"></td>
+          <td><input type="text" name="2d_{{ i }}" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateTotal({{ i }});" autocomplete="off"></td>
+          <td><input type="text" name="single_{{ i }}" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateTotal({{ i }});" autocomplete="off"></td>
+          <td><input type="text" name="double_{{ i }}" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateTotal({{ i }});" autocomplete="off"></td>
+          <td><input type="text" name="big_{{ i }}" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateTotal({{ i }});" autocomplete="off"></td>
+          <td><input type="text" name="small_{{ i }}" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,''); updateTotal({{ i }});" autocomplete="off"></td>
           {% for h in range(9, 24) %}
           <td><input type="checkbox" name="games_{{ i }}" value="{{ h }}"></td>
           {% endfor %}
