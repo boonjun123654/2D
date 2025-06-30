@@ -140,6 +140,15 @@
       checkboxes.forEach(cb => cb.checked = isChecked);
     }
 
+    function fillColumn(type, value) {
+      value = value.replace(/[^0-9]/g, ''); // 仅允许数字
+      for (let i = 0; i < 6; i++) {
+        const input = document.querySelector(`[name="${type}_${i}"]`);
+        input.value = value;
+        updateTotal(i);
+      }
+    }
+
     // 空格键跳格支持
     document.addEventListener('keydown', function(e) {
       if (e.key === ' ' && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text') {
