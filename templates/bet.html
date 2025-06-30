@@ -134,10 +134,16 @@
       }
       return true;
     }
+
     function toggleColumn(hour) {
       const checkboxes = document.querySelectorAll('.col-' + hour);
       const isChecked = event.target.checked;
       checkboxes.forEach(cb => cb.checked = isChecked);
+
+      // ✅ 重新更新所有行的总额
+      for (let i = 0; i < 6; i++) {
+        updateTotal(i);
+      }
     }
 
     function confirmBeforeSubmit() {
