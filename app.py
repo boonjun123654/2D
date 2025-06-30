@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, get_flashed_messages
 from flask_sqlalchemy import SQLAlchemy
-from datetime import date
+from datetime import date,datetime
+import pytz
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -29,6 +30,10 @@ class Bet(db.Model):
     total = db.Column(db.Numeric, default=0)
     bet_date = db.Column(db.Date, nullable=False, default=date.today)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+def get_malaysia_time():
+    tz = pytz.timezone("Asia/Kuala_Lumpur")
+    return datetime.now(tz)
 
 @app.route('/bet', methods=['GET', 'POST'])
 def bet():
@@ -65,6 +70,7 @@ def bet():
             total = (a2d + asg + adb + abg + asm) * slot_count
 
             # 存入数据库
+            now = get_malaysia_time()
             bet = Bet(
                 number=number,
                 amount_2d=a2d,
@@ -74,7 +80,8 @@ def bet():
                 amount_small=asm,
                 total=total,
                 time_slots=time_slots_int,
-                bet_date=date.today()
+                bet_date=now.date(),
+                created_at=now
             )
             db.session.add(bet)
 
