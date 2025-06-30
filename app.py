@@ -74,6 +74,7 @@ def bet():
                 amount_small=asm,
                 total=total,
                 time_slots=time_slots_int
+                **date=today**
             )
             db.session.add(bet)
 
