@@ -18,10 +18,16 @@ class Game(db.Model):
 class Bet(db.Model):
     __tablename__ = 'bets_2d'
     id = db.Column(db.Integer, primary_key=True)
-    game_id = db.Column(db.Integer)
-    number = db.Column(db.String)
-    type = db.Column(db.String)
-    amount = db.Column(db.Numeric)
+    round = db.Column(db.String)  # 可留空
+    number = db.Column(db.String(2), nullable=False)
+    amount_2d = db.Column(db.Numeric, default=0)
+    amount_single = db.Column(db.Numeric, default=0)
+    amount_double = db.Column(db.Numeric, default=0)
+    amount_big = db.Column(db.Numeric, default=0)
+    amount_small = db.Column(db.Numeric, default=0)
+    time_slots = db.Column(db.ARRAY(db.Integer), default=[])
+    total = db.Column(db.Numeric, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
 @app.route('/bet', methods=['GET', 'POST'])
 def bet():
