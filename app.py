@@ -73,8 +73,8 @@ def bet():
                 amount_big=abg,
                 amount_small=asm,
                 total=total,
-                time_slots=time_slots_int
-                **date=today**
+                time_slots=time_slots_int,
+                bet_date=date.today()
             )
             db.session.add(bet)
 
