@@ -1,39 +1,39 @@
 {% extends "base.html" %}
-{% block title %}代理账号管理{% endblock %}
+
+{% block title %}代理管理{% endblock %}
 
 {% block content %}
-<h2>代理账号管理</h2>
+<h2>👥 代理管理</h2>
 
-<form method="POST">
-    <label>代理用户名：</label>
-    <input type="text" name="username" required>
-    <label>密码：</label>
-    <input type="password" name="password" required>
-    <button type="submit">创建代理</button>
+<form method="post">
+  <label>代理账号：</label>
+  <input type="text" name="username" required>
+  <label>密码：</label>
+  <input type="password" name="password" required>
+  <button type="submit">➕ 创建代理</button>
 </form>
-
-<hr>
-<h3>现有代理账号</h3>
-<table border="1" cellpadding="5">
-    <tr>
-        <th>ID</th>
-        <th>用户名</th>
-    </tr>
-    {% for agent in agents %}
-    <tr>
-        <td>{{ agent.id }}</td>
-        <td>{{ agent.username }}</td>
-    </tr>
-    {% endfor %}
-</table>
 
 {% with messages = get_flashed_messages() %}
   {% if messages %}
-    <ul style="color:green">
-      {% for msg in messages %}
-        <li>{{ msg }}</li>
-      {% endfor %}
+    <ul>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
     </ul>
   {% endif %}
 {% endwith %}
+
+<h3>📋 已有代理列表</h3>
+<table border="1" cellpadding="5">
+  <tr>
+    <th>ID</th>
+    <th>用户名</th>
+  </tr>
+  {% for agent in agents %}
+  <tr>
+    <td>{{ agent.id }}</td>
+    <td>{{ agent.username }}</td>
+  </tr>
+  {% endfor %}
+</table>
 {% endblock %}
