@@ -43,7 +43,13 @@
                     <td>{{ b.time_slots }}</td>
                     <td>{{ b.bet_date.strftime('%Y-%m-%d') }}</td>
                 </tr>
+                {% set total_all = total_all + b.total %}
                 {% endfor %}
+                </tr>
+                     <td colspan="6" align="right"><strong>总合计：</strong></td>
+                     <td><strong>{{ "{:.2f}".format(total_all).rstrip('0').rstrip('.') }}</strong></td>
+                     <td colspan="2"></td>
+                </tr>
             </table>
         {% else %}
             <p>⚠️ 该日无下注记录</p>
