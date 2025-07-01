@@ -125,14 +125,16 @@ def view_bets():
 
     bets = []
     selected_date = None
+    total_all = 0
 
     if request.method == 'POST':
         date_str = request.form.get('date')  # 格式 yyyy-mm-dd
         if date_str:
             selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             bets = Bet.query.filter_by(bet_date=selected_date).all()
+            total_all = sum(float(b.total) for b in bets)
 
-    return render_template('view_bets.html', bets=bets, selected_date=selected_date)
+    return render_template('view_bets.html', bets=bets, selected_date=selected_date, total_all=total_all)
 
 @app.route('/menu')
 def menu():
