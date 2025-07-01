@@ -159,7 +159,7 @@ def trim_zeros(value):
 
 @app.route('/admin/agents', methods=['GET', 'POST'])
 def manage_agents():
-    if session.get('role') != 'admin':
+    if not session.get('logged_in'):
         return redirect('/')
 
     if request.method == 'POST':
