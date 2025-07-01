@@ -117,3 +117,19 @@ def login():
 def logout():
     session.pop('logged_in', None)
     return redirect('/')
+
+@app.route('/bets', methods=['GET', 'POST'])
+def view_bets():
+    if not session.get('logged_in'):
+        return redirect('/')
+
+    bets = []
+    selected_date = None
+
+    if request.method == 'POST':
+        date_str = request.form.get('date')  # 格式 yyyy-mm-dd
+        if date_str:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            bets = Bet.query.filter_by(bet_date=selected_date).all()
+
+    return render_template('view_bets.html', bets=bets, selected_date=selected_date)
