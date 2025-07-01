@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>下注记录查询</title>
+</head>
+<body>
+    <h2>查询下注记录</h2>
+
+    <form method="post">
+        <label>选择日期：</label>
+        <input type="date" name="date" required>
+        <button type="submit">查询</button>
+    </form>
+
+    {% if selected_date %}
+        <h3>下注记录：{{ selected_date }}</h3>
+        {% if bets %}
+            <table border="1" cellpadding="5">
+                <tr>
+                    <th>号码</th>
+                    <th>2D</th>
+                    <th>单</th>
+                    <th>双</th>
+                    <th>大</th>
+                    <th>小</th>
+                    <th>总额</th>
+                    <th>时段</th>
+                    <th>下注时间</th>
+                </tr>
+                {% for b in bets %}
+                <tr>
+                    <td>{{ b.number }}</td>
+                    <td>{{ b.amount_2d }}</td>
+                    <td>{{ b.amount_single }}</td>
+                    <td>{{ b.amount_double }}</td>
+                    <td>{{ b.amount_big }}</td>
+                    <td>{{ b.amount_small }}</td>
+                    <td>{{ b.total }}</td>
+                    <td>{{ b.time_slots }}</td>
+                    <td>{{ b.created_at }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>⚠️ 该日无下注记录</p>
+        {% endif %}
+    {% endif %}
+</body>
+</html>
