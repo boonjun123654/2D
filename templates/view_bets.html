@@ -41,7 +41,7 @@
                     <td>{{ '%.2f' | format(b.amount_small) | trim_zeros }}</td>
                     <td>{{ '%.2f' | format(b.total) | trim_zeros }}</td>
                     <td>{{ b.time_slots }}</td>
-                    <td>{{ b.created_at }}</td>
+                    <td>{{ b.bet_date.strftime('%Y-%m-%d') }}</td>
                 </tr>
                 {% endfor %}
             </table>
