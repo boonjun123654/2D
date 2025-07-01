@@ -148,10 +148,3 @@ def trim_zeros(value):
         s = '%.2f' % value
         return s.rstrip('0').rstrip('.') if '.' in s else s
     return value
-
-def trim_zeros(value):
-    if isinstance(value, float):
-        value = ('%.2f' % value).rstrip('0').rstrip('.')
-    return value
-
-app.jinja_env.filters['trim_zeros'] = trim_zeros
