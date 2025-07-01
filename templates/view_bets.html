@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block title %}查看下注记录{% endblock %}
 
 {% block content %}
@@ -26,24 +25,22 @@
                 <th>时段</th>
                 <th>下注日期</th>
             </tr>
-            {% set total_all = 0 %}
             {% for b in bets %}
             <tr>
                 <td>{{ b.number }}</td>
-                <td>{{ '%.2f' | format(b.amount_2d) | trim_zeros }}</td>
-                <td>{{ '%.2f' | format(b.amount_single) | trim_zeros }}</td>
-                <td>{{ '%.2f' | format(b.amount_double) | trim_zeros }}</td>
-                <td>{{ '%.2f' | format(b.amount_big) | trim_zeros }}</td>
-                <td>{{ '%.2f' | format(b.amount_small) | trim_zeros }}</td>
-                <td>{{ '%.2f' | format(b.total) | trim_zeros }}</td>
+                <td>{{ b.amount_2d | float | trim_zeros }}</td>
+                <td>{{ b.amount_single | float | trim_zeros }}</td>
+                <td>{{ b.amount_double | float | trim_zeros }}</td>
+                <td>{{ b.amount_big | float | trim_zeros }}</td>
+                <td>{{ b.amount_small | float | trim_zeros }}</td>
+                <td>{{ b.total | float | trim_zeros }}</td>
                 <td>{{ b.time_slots }}</td>
-                <td>{{ b.bet_date }}</td>
+                <td>{{ b.bet_date.strftime('%Y-%m-%d') }}</td>
             </tr>
-            {% set total_all = total_all + b.total %}
             {% endfor %}
             <tr>
                 <td colspan="6" align="right"><strong>总合计：</strong></td>
-                <td><strong>{{ '%.2f' | format(total_all) | trim_zeros }}</strong></td>
+                <td><strong>{{ total_all | float | trim_zeros }}</strong></td>
                 <td colspan="2"></td>
             </tr>
         </table>
