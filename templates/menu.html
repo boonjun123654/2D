@@ -1,50 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>主菜单</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-    }
-    .sidebar {
-      width: 200px;
-      background-color: #333;
-      color: #fff;
-      height: 100vh;
-      padding: 20px;
-    }
-    .sidebar a {
-      color: #fff;
-      text-decoration: none;
-      display: block;
-      padding: 10px 0;
-    }
-    .sidebar a:hover {
-      background-color: #444;
-    }
-    .content {
-      padding: 20px;
-      flex-grow: 1;
-    }
-  </style>
-</head>
-<body>
-  <div class="sidebar">
-    <h3>📋 导航菜单</h3>
-    <a href="{{ url_for('menu') }}">🏠 主菜单</a>
-    <a href="{{ url_for('bet') }}">💰 下注</a>
-    <a href="{{ url_for('view_bets') }}">🕵️ 查看下注记录</a>
-  </div>
-  <div class="content">
-    <h2>🎯 欢迎来到主菜单</h2>
-    <p>📌 此处可放「查看赔率」、「公告」、「说明」等内容</p>
-    <ul>
-      <li>头奖：1 赔 66</li>
-      <li>特别奖：1 赔 6.6</li>
-      <li>单双/大小：1 赔 1</li>
-    </ul>
-  </div>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}主菜单{% endblock %}
+
+{% block content %}
+  <h2>🎯 欢迎来到主菜单</h2>
+  <p>📌 此处可放「查看赔率」、「公告」、「说明」等内容</p>
+  <ul>
+    <li>头奖：1 赔 66</li>
+    <li>特别奖：1 赔 6.6</li>
+    <li>单双/大小：1 赔 1</li>
+  </ul>
+{% endblock %}
