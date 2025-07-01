@@ -9,6 +9,12 @@ app.secret_key = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://db_4m_user:xiOe63X4iaczwTAcNfUYwS8oWrDExkHX@dpg-d11rb03uibrs73eh87vg-a/db_4m'
 db = SQLAlchemy(app)
 
+class Agent(db.Model):
+    __tablename__ = 'agents'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+
 # 定义模型
 class Game(db.Model):
     __tablename__ = 'games'
