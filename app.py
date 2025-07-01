@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, get_flashed_messages
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date,datetime
 import pytz
@@ -150,3 +151,31 @@ def trim_zeros(value):
         s = '%.2f' % value
         return s.rstrip('0').rstrip('.') if '.' in s else s
     return value
+
+@app.route('/admin/agents', methods=['GET', 'POST'])
+def manage_agents():
+    if session.get('role') != 'admin':
+        return redirect('/')
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if not username or not password:
+            flash('请输入完整的账号密码')
+        else:
+            existing = Agent.query.filter_by(username=username).first()
+            if existing:
+                flash('❌ 用户名已存在')
+            else:
+                agent = Agent(
+                    username=username,
+                    password=password  # 可加密：generate_password_hash(password)
+                )
+                db.session.add(agent)
+                db.session.commit()
+                flash(f'✅ 成功创建代理：{username}')
+
+    agents = Agent.query.all()
+    return render_template('manage_agents.html', agents=agents)
+
