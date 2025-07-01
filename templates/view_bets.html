@@ -1,60 +1,54 @@
-<!DOCTYPE html>
-<html>
-<head>
-    {% extends "base.html" %}
-    {% block title %}查看下注记录{% endblock %}
+{% extends "base.html" %}
 
-    {% block content %}
-    <title>下注记录查询</title>
-</head>
-<body>
-    <h2>查询下注记录</h2>
+{% block title %}查看下注记录{% endblock %}
 
-    <form method="post">
-        <label>选择日期：</label>
-        <input type="date" name="date" required>
-        <button type="submit">查询</button>
-    </form>
+{% block content %}
+<h2>查询下注记录</h2>
 
-    {% if selected_date %}
-        <h3>下注记录：{{ selected_date }}</h3>
-        {% if bets %}
-            <table border="1" cellpadding="5">
-                <tr>
-                    <th>号码</th>
-                    <th>2D</th>
-                    <th>单</th>
-                    <th>双</th>
-                    <th>大</th>
-                    <th>小</th>
-                    <th>总额</th>
-                    <th>时段</th>
-                    <th>下注时间</th>
-                </tr>
-                {% for b in bets %}
-                <tr>
-                    <td>{{ b.number }}</td>
-                    <td>{{ '%.2f' | format(b.amount_2d) | trim_zeros }}</td>
-                    <td>{{ '%.2f' | format(b.amount_single) | trim_zeros }}</td>
-                    <td>{{ '%.2f' | format(b.amount_double) | trim_zeros }}</td>
-                    <td>{{ '%.2f' | format(b.amount_big) | trim_zeros }}</td>
-                    <td>{{ '%.2f' | format(b.amount_small) | trim_zeros }}</td>
-                    <td>{{ '%.2f' | format(b.total) | trim_zeros }}</td>
-                    <td>{{ b.time_slots }}</td>
-                    <td>{{ b.bet_date }}</td>
-                </tr>
-                {% set ns.total_all = ns.total_all + b.total %}
-                {% endfor %}
-                </tr>
-                     <td colspan="6" align="right"><strong>总合计：</strong></td>
-                     <td><strong>{{ "{:.2f}".format(total_all).rstrip('0').rstrip('.') }}</strong></td>
-                     <td colspan="2"></td>
-                </tr>
-            </table>
-        {% else %}
-            <p>⚠️ 该日无下注记录</p>
-        {% endif %}
+<form method="post">
+    <label>选择日期：</label>
+    <input type="date" name="date" required>
+    <button type="submit">查询</button>
+</form>
+
+{% if selected_date %}
+    <h3>下注记录：{{ selected_date }}</h3>
+    {% if bets %}
+        <table border="1" cellpadding="5">
+            <tr>
+                <th>号码</th>
+                <th>2D</th>
+                <th>单</th>
+                <th>双</th>
+                <th>大</th>
+                <th>小</th>
+                <th>总额</th>
+                <th>时段</th>
+                <th>下注日期</th>
+            </tr>
+            {% set total_all = 0 %}
+            {% for b in bets %}
+            <tr>
+                <td>{{ b.number }}</td>
+                <td>{{ '%.2f' | format(b.amount_2d) | trim_zeros }}</td>
+                <td>{{ '%.2f' | format(b.amount_single) | trim_zeros }}</td>
+                <td>{{ '%.2f' | format(b.amount_double) | trim_zeros }}</td>
+                <td>{{ '%.2f' | format(b.amount_big) | trim_zeros }}</td>
+                <td>{{ '%.2f' | format(b.amount_small) | trim_zeros }}</td>
+                <td>{{ '%.2f' | format(b.total) | trim_zeros }}</td>
+                <td>{{ b.time_slots }}</td>
+                <td>{{ b.bet_date }}</td>
+            </tr>
+            {% set total_all = total_all + b.total %}
+            {% endfor %}
+            <tr>
+                <td colspan="6" align="right"><strong>总合计：</strong></td>
+                <td><strong>{{ '%.2f' | format(total_all) | trim_zeros }}</strong></td>
+                <td colspan="2"></td>
+            </tr>
+        </table>
+    {% else %}
+        <p>⚠️ 该日无下注记录</p>
     {% endif %}
-    {% endblock %}
-</body>
-</html>
+{% endif %}
+{% endblock %}
