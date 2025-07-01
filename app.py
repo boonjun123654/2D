@@ -133,3 +133,7 @@ def view_bets():
             bets = Bet.query.filter_by(bet_date=selected_date).all()
 
     return render_template('view_bets.html', bets=bets, selected_date=selected_date)
+
+@app.route('/menu')
+def menu():
+    return render_template('menu.html')
