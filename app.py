@@ -9,7 +9,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://db_4m_user:xiOe63X4iaczwTA
 db = SQLAlchemy(app)
 
 class Agent(db.Model):
-    __tablename__ = 'agents'
+    __tablename__ = 'agent_2d'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
