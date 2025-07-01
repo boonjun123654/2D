@@ -137,3 +137,14 @@ def view_bets():
 @app.route('/menu')
 def menu():
     return render_template('menu.html')
+
+@app.template_filter('trim_zeros')
+def trim_zeros(value):
+    if isinstance(value, str):
+        if '.' in value:
+            value = value.rstrip('0').rstrip('.')
+        return value
+    elif isinstance(value, float):
+        s = '%.2f' % value
+        return s.rstrip('0').rstrip('.') if '.' in s else s
+    return value
