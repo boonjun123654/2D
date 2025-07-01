@@ -29,7 +29,7 @@ class Bet(db.Model):
     time_slots = db.Column(db.ARRAY(db.Integer), default=[])
     total = db.Column(db.Numeric, default=0)
     bet_date = db.Column(db.Date, nullable=False, default=date.today)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    created_at = db.Column(db.DateTime, nullable=False)
 
 def get_malaysia_time():
     tz = pytz.timezone("Asia/Kuala_Lumpur")
