@@ -49,6 +49,10 @@
   </style>
 </head>
 <body>
+{% extends "base.html" %}
+{% block title %}下注页面{% endblock %}
+
+{% block content %}
   <h2>2D下注表格</h2>
   <form method="POST" onsubmit="return confirmBeforeSubmit()">
     <table>
