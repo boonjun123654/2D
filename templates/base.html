@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}系统页面{% endblock %}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      margin: 0;
+    }
+    .sidebar {
+      width: 200px;
+      background-color: #333;
+      color: #fff;
+      height: 100vh;
+      padding: 20px;
+    }
+    .sidebar h3 {
+      margin-top: 0;
+    }
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      display: block;
+      padding: 10px 0;
+    }
+    .sidebar a:hover {
+      background-color: #444;
+    }
+    .content {
+      padding: 20px;
+      flex-grow: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h3>📋 导航菜单</h3>
+    <a href="{{ url_for('menu') }}">🏠 主菜单</a>
+    <a href="{{ url_for('bet') }}">💰 下注</a>
+    <a href="{{ url_for('view_bets') }}">🕵️ 查看下注记录</a>
+  </div>
+  <div class="content">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
