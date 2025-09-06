@@ -35,11 +35,35 @@
     /* 时间段：行内只显示空方块，可横向滑动；表头才有 09~23 数字 */
     .slots-head{display:grid;grid-template-columns:repeat(15, 32px);gap:6px;justify-content:center}
     .slots-row{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;padding:2px 0;scroll-snap-type:x proximity}
+    /* 时间段 */
     .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
     .slot.locked{opacity:.35}
-    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-    .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff}
+    /* 关键：checkbox 盖在最上面 */
+    .slot input{
+      position:absolute;inset:0;width:100%;height:100%;
+      opacity:0;cursor:pointer;z-index:3;  /* 提升层级 */
+      -webkit-appearance:none;appearance:none;background:transparent;
+    }
+    /* 关键：装饰方块不拦截点击 */
+    .slot .box{
+      width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;
+      pointer-events:none;z-index:1;
+    }
     .slot input:checked + .box{outline:2px solid #111;outline-offset:-2px;background:#e8f0ff}
+
+    /* 市场 */
+    .mtick{position:relative;width:28px;height:24px}
+    .mtick input{
+      position:absolute;inset:0;width:100%;height:100%;
+      opacity:0;cursor:pointer;z-index:3;  /* 提升层级 */
+      -webkit-appearance:none;appearance:none;background:transparent;
+    }
+    /* 彩色方块只做视觉，禁用点击 */
+    .mbox{position:absolute;inset:0;margin:auto;width:24px;height:20px;border-radius:6px;z-index:1;pointer-events:none}
+    .mtick input:checked + .mbox{outline:2px solid #111;outline-offset:0}
+
+    /* 方便触控 */
+    .slot input, .mtick input{touch-action:manipulation}
 
     /* 市场：更小的彩色方块，可横向滑动 */
     .m-legend{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center}
@@ -261,6 +285,18 @@
     }
   }
 })();
+
+  // —— 点击兜底：点到 .slot 或 .mtick 的任意位置都切换它里面的 checkbox
+  document.addEventListener('click', function(e){
+    const block = e.target.closest('.slot, .mtick');
+    if(!block) return;
+    const cb = block.querySelector('input[type="checkbox"]');
+    if(cb && !cb.disabled){
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+  }, {passive:true});
+
 </script>
 </body>
 </html>
