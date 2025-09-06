@@ -27,12 +27,17 @@ def is_locked_for_code(code: str, now: datetime | None = None) -> bool:
     return now >= lock_time
 
 def list_slots_for_day(day: date) -> list[dict]:
-    """返回当日 09:50~23:50 的期号列表：[{code,label,locked}]"""
+    """返回当日 09:50~23:50 的期号列表：[{code,hour,label,locked}]"""
     slots = []
     for h in range(9, 24):  # 9..23
         code = day.strftime("%Y%m%d") + f"/{h:02d}50"
         locked = is_locked_for_code(code)
-        slots.append({"code": code, "label": f"{h:02d}:50", "locked": locked})
+        slots.append({
+            "code": code,
+            "hour": h,                # 新增：小时，用于表头显示 9/10/.../23
+            "label": f"{h:02d}:50",
+            "locked": locked
+        })
     return slots
 
 def next_slot_code(now: datetime | None = None) -> str:
