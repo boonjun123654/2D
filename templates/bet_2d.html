@@ -24,55 +24,43 @@
     th{background:var(--c-head)}
     .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:1}
 
-    /* 输入更紧凑 + 数字键盘 */
+    /* 输入更紧凑（号码/金额） */
     input[type="text"]{width:56px;text-align:center}
     input[type="number"]{width:72px;text-align:right}
-    input[name="number[]"]{width:56px}
-    input[name="number[]"], input[type="number"]{font-size:14px}
-    input[name="number[]"]{inputmode:numeric; pattern:"[0-9]*"}
-    input[type="number"]{inputmode:decimal}
 
-    /* 时间段：行内只显示空方块，可横向滑动；表头才有 09~23 数字 */
-    .slots-head{display:grid;grid-template-columns:repeat(15, 32px);gap:6px;justify-content:center}
+    /* 时间段表头：09~23 */
+    .slots-head{display:grid;grid-template-columns:repeat(15,32px);gap:6px;justify-content:center}
+    /* 时间段行：只显示小方块，可横向滑动 */
     .slots-row{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;padding:2px 0;scroll-snap-type:x proximity}
-    /* 时间段 */
     .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
     .slot.locked{opacity:.35}
-    /* 关键：checkbox 盖在最上面 */
+    /* checkbox 盖在最上层，装饰方块不拦截点击 */
     .slot input{
       position:absolute;inset:0;width:100%;height:100%;
-      opacity:0;cursor:pointer;z-index:3;  /* 提升层级 */
+      opacity:0;cursor:pointer;z-index:3;
       -webkit-appearance:none;appearance:none;background:transparent;
+      touch-action:manipulation;
     }
-    /* 关键：装饰方块不拦截点击 */
     .slot .box{
       width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;
       pointer-events:none;z-index:1;
     }
     .slot input:checked + .box{outline:2px solid #111;outline-offset:-2px;background:#e8f0ff}
 
-    /* 市场 */
-    .mtick{position:relative;width:28px;height:24px}
-    .mtick input{
-      position:absolute;inset:0;width:100%;height:100%;
-      opacity:0;cursor:pointer;z-index:3;  /* 提升层级 */
-      -webkit-appearance:none;appearance:none;background:transparent;
-    }
-    /* 彩色方块只做视觉，禁用点击 */
-    .mbox{position:absolute;inset:0;margin:auto;width:24px;height:20px;border-radius:6px;z-index:1;pointer-events:none}
-    .mtick input:checked + .mbox{outline:2px solid #111;outline-offset:0}
-
-    /* 方便触控 */
-    .slot input, .mtick input{touch-action:manipulation}
-
-    /* 市场：更小的彩色方块，可横向滑动 */
+    /* 市场表头图例 + 行内彩色方块（可横向滑动） */
     .m-legend{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center}
     .mgrid{display:grid;grid-auto-flow:column;grid-auto-columns:28px;gap:6px;overflow-x:auto;justify-content:flex-start;padding:2px 0}
     .mtick{position:relative;width:28px;height:24px}
-    .mtick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2}
-    .mbox{position:absolute;inset:0;margin:auto;width:24px;height:20px;border-radius:6px;z-index:1}
+    .mtick input{
+      position:absolute;inset:0;width:100%;height:100%;
+      opacity:0;cursor:pointer;z-index:3;
+      -webkit-appearance:none;appearance:none;background:transparent;
+      touch-action:manipulation;
+    }
+    .mbox{position:absolute;inset:0;margin:auto;width:24px;height:20px;border-radius:6px;z-index:1;pointer-events:none}
     .mtick input:checked + .mbox{outline:2px solid #111;outline-offset:0}
 
+    /* 市场颜色 */
     .M{background:var(--c-yellow)}
     .P{background:var(--c-blue)}
     .T{background:var(--c-red)}
@@ -84,14 +72,15 @@
     .E{background:var(--c-orange)}
 
     .sumcell{min-width:74px;text-align:right;padding-right:8px}
+    label{user-select:none;-webkit-user-select:none}
 
     /* —— 手机（≤768px） —— */
     @media (max-width: 768px){
-      body{padding-bottom:70px} /* 给底部工具条留空间 */
+      body{padding-bottom:70px}
       th,td{padding:4px 6px}
       input[type="text"]{width:48px}
       input[type="number"]{width:64px}
-      .slots-head{grid-template-columns:repeat(15, 28px);gap:4px}
+      .slots-head{grid-template-columns:repeat(15,28px);gap:4px}
       .slots-row{grid-auto-columns:28px;gap:4px}
       .slot{width:28px;height:24px}
       .slot .box{width:20px;height:18px}
@@ -102,9 +91,7 @@
       .sumcell{min-width:64px}
       .toolbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--c-border);padding:8px;display:flex;gap:8px;justify-content:space-between;z-index:5}
       .toolbar .btn{padding:8px 10px;border-radius:10px}
-      .legend-wrap{margin:6px 0 0 0}
     }
-    /* —— 桌面（>768px）保持你现在的表格布局 —— */
   </style>
 </head>
 <body>
@@ -135,7 +122,7 @@
           <th>ODD</th>
           <th>EVEN</th>
 
-          <!-- 时间段表头：只显示 9–23 + “套用首行” -->
+          <!-- 时间段表头：09~23 + 套用首行 -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>下注时间段（当日 9–23）</div>
@@ -146,7 +133,7 @@
             </div>
           </th>
 
-          <!-- 市场表头：图例（带字母） + “套用首行” -->
+          <!-- 市场表头：图例 + 套用首行 -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>市场</div>
@@ -169,7 +156,9 @@
         {% for i in range(10) %}
           <tr>
             <td>{{ i+1 }}</td>
-            <td><input name="number[]" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder=""></td>
+            <td>
+              <input name="number[]" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="">
+            </td>
             <td><input name="amount_n1[]"    type="number" step="0.01" min="0" inputmode="decimal"></td>
             <td><input name="amount_n[]"     type="number" step="0.01" min="0" inputmode="decimal"></td>
             <td><input name="amount_big[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
@@ -177,7 +166,7 @@
             <td><input name="amount_odd[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
             <td><input name="amount_even[]"  type="number" step="0.01" min="0" inputmode="decimal"></td>
 
-            <!-- 时间段：左右滑条（行内不重复数字） -->
+            <!-- 时间段：滑动小方块 -->
             <td>
               <div class="slots-row">
                 {% for s in slots %}
@@ -189,7 +178,7 @@
               </div>
             </td>
 
-            <!-- 市场：更小的彩色方块，可横向滑动 -->
+            <!-- 市场：彩色可点方块 -->
             <td>
               <div class="mgrid">
                 {% for m in markets %}
@@ -284,9 +273,8 @@
       if(copyMarkets.checked) applyMarketsFromFirst();
     }
   }
-})();
 
-  // —— 点击兜底：点到 .slot 或 .mtick 的任意位置都切换它里面的 checkbox
+  // 兜底：点到 .slot 或 .mtick 任意位置都切换里面的 checkbox
   document.addEventListener('click', function(e){
     const block = e.target.closest('.slot, .mtick');
     if(!block) return;
@@ -296,7 +284,7 @@
       cb.dispatchEvent(new Event('change', {bubbles:true}));
     }
   }, {passive:true});
-
+})();
 </script>
 </body>
 </html>
