@@ -53,7 +53,7 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        return redirect(url_for('bet_2d_view'))
+        return render_template("home.html")
 
     @app.get("/healthz")
     def healthz():
