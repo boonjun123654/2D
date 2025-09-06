@@ -7,8 +7,18 @@
   <style>
     :root{
       --c-border:#d0d7de; --c-head:#f6f8fa; --c-muted:#666;
-      --c-blue:#1f6feb; --c-red:#b91c1c; --c-green:#0f5132; --c-yellow:#ffd400; --c-orange:#f0ad4e;
+      /* 市场配色（按你左边截图） */
+      --M:#ffe766; /* 黄 */
+      --P:#2d6bff; /* 亮蓝 */
+      --T:#d62828; /* 正红 */
+      --S:#5b9bd5; /* 灰蓝 */
+      --B:#ef4444; /* 略深红 */
+      --K:#1f7a4d; /* 绿 */
+      --W:#14532d; /* 深绿 */
+      --H:#ffcf5a; /* 浅黄 */
+      --E:#f0ad4e; /* 橙 */
     }
+
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px;}
     h1{margin:0 0 10px}
     .muted{color:var(--c-muted)}
@@ -22,13 +32,13 @@
     table{border-collapse:collapse;width:100%}
     th,td{border:1px solid var(--c-border);padding:6px 8px;font-size:14px;text-align:center}
     th{background:var(--c-head)}
-    .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:2}
+    .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:3}
 
-    /* 输入更紧凑（号码/金额） */
+    /* 输入更紧凑 */
     input[type="text"]{width:56px;text-align:center}
     input[type="number"]{width:72px;text-align:right}
 
-    /* 顶部“列控制”的小方块（时间段、市场） */
+    /* 顶部“列控制”条（时间段、市场） */
     .headbar{display:grid;gap:6px;justify-content:center;margin-top:6px}
     .headbar.slots{grid-template-columns:repeat(15,32px)}
     .headbar.markets{grid-template-columns:repeat(9,32px)}
@@ -36,8 +46,8 @@
     .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
     .headbox span{
       width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;
+      box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;
     }
-    /* 勾选直接显示打勾 */
     .headbox input:checked + span{
       box-shadow:0 0 0 2px #111 inset;background:#e8f0ff;
     }
@@ -50,69 +60,68 @@
     .slots-row{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;padding:2px 0;scroll-snap-type:x proximity}
     .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
     .slot.locked{opacity:.35}
-    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:3;-webkit-appearance:none;appearance:none;background:transparent;touch-action:manipulation;}
-    .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;pointer-events:none;z-index:1}
+    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;-webkit-appearance:none;appearance:none;background:transparent;touch-action:manipulation;}
+    .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;pointer-events:none;z-index:1;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset}
     .slot input:checked + .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
     .slot input:checked + .box::after{content:"✓";font-weight:700;font-size:16px;line-height:22px;color:#111;display:block;text-align:center}
-    .slot.on .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
-    .slot.on .box::after{content:"✓";font-weight:700;font-size:16px;line-height:22px;color:#111;display:block;text-align:center}
 
     /* ===== 4D 风格“市场”列（实心彩色砖 + 内部白色小方块） ===== */
 
-    /* 顶部彩色字母条（与图一致） */
+    /* 顶部彩色字母条（与左图一致） */
     .m-legend{
       display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center
     }
-    .legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px}
-    .legend-chip.M{background:#ffe766}
-    .legend-chip.P{background:#2d6bff;color:#fff}
-    .legend-chip.T{background:#d62828;color:#fff}
-    .legend-chip.S{background:#5b9bd5}
-    .legend-chip.B{background:#ef4444;color:#fff}
-    .legend-chip.K{background:#1f7a4d;color:#fff}
-    .legend-chip.W{background:#14532d;color:#fff} /* 深绿，和截图一致 */
-    .legend-chip.H{background:#ffcf5a}
-    .legend-chip.E{background:#f0ad4e}
+    .legend-chip{
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px;
+      box-shadow:0 0 0 1px rgba(0,0,0,.18) inset;
+    }
+    .legend-chip.M{background:var(--M)}
+    .legend-chip.P{background:var(--P);color:#fff}
+    .legend-chip.T{background:var(--T);color:#fff}
+    .legend-chip.S{background:var(--S)}
+    .legend-chip.B{background:var(--B);color:#fff}
+    .legend-chip.K{background:var(--K);color:#fff}
+    .legend-chip.W{background:var(--W);color:#fff}
+    .legend-chip.H{background:var(--H)}
+    .legend-chip.E{background:var(--E)}
 
-    /* 行内网格：彩色砖 + 白色分隔线 */
+    /* 行内网格：彩色砖，白色分隔线（看起来是整列彩色） */
     .mgrid{
       display:grid;
       grid-auto-flow:column;
-      grid-auto-columns:34px;   /* 宽度接近截图比例 */
+      grid-auto-columns:36px;   /* 接近左图比例 */
       gap:2px;                  /* 白色分隔线 */
       overflow-x:auto;
       justify-content:flex-start;
       padding:2px 0;
       position:relative;
     }
-
     .mtick{
       position:relative;
-      width:34px;height:30px;   /* 砖高 */
+      width:36px;height:30px;
       border-radius:4px;
-      border:2px solid #fff;    /* 白色网格线 */
+      border:2px solid #fff;           /* 白色网格线（列与列之间） */
       display:flex;align-items:center;justify-content:center;
       box-sizing:border-box;
-      box-shadow:0 0 0 1px rgba(0,0,0,.28) inset; /* 立体 */
+      box-shadow:0 0 0 1px rgba(0,0,0,.28) inset; /* 立体一点 */
     }
+    /* 彩色底 */
+    .mtick.M{background:var(--M)}
+    .mtick.P{background:var(--P)}
+    .mtick.T{background:var(--T)}
+    .mtick.S{background:var(--S)}
+    .mtick.B{background:var(--B)}
+    .mtick.K{background:var(--K)}
+    .mtick.W{background:var(--W)}
+    .mtick.H{background:var(--H)}
+    .mtick.E{background:var(--E)}
 
-    /* 彩色底（与图配色） */
-    .mtick.M{background:#ffe766}
-    .mtick.P{background:#2d6bff}
-    .mtick.T{background:#d62828}
-    .mtick.S{background:#5b9bd5}
-    .mtick.B{background:#ef4444}
-    .mtick.K{background:#1f7a4d}
-    .mtick.W{background:#14532d} /* 深绿 */
-    .mtick.H{background:#ffcf5a}
-    .mtick.E{background:#f0ad4e}
-
-    /* 可点击区域 */
+    /* 点击区域 */
     .mtick input{
-      position:absolute;inset:0;opacity:0;cursor:pointer;z-index:3;
+      position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;
     }
 
-    /* 内部白色小方块 */
+    /* 内部白色小方块（和左图相同） */
     .mbox{
       width:22px;height:20px;
       background:#fff;
@@ -122,26 +131,22 @@
       pointer-events:none;z-index:1;
     }
 
-    /* 选中打勾（只作用在白方块上） */
+    /* 选中：小白块内直接显示 ✓（不改变彩色底） */
     .mtick input:checked + .mbox{background:#fff;box-shadow:0 0 0 2px #111 inset;}
     .mtick input:checked + .mbox::after{
       content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center;
     }
-    .mtick.on .mbox{background:#fff;box-shadow:0 0 0 2px #111 inset;}
-    .mtick.on .mbox::after{
-      content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center;
-    }
 
-    /* 顶部列控制小格也上色（可选） */
-    .headbar.markets .headbox.market.M{background:#ffe766}
-    .headbar.markets .headbox.market.P{background:#2d6bff}
-    .headbar.markets .headbox.market.T{background:#d62828}
-    .headbar.markets .headbox.market.S{background:#5b9bd5}
-    .headbar.markets .headbox.market.B{background:#ef4444}
-    .headbar.markets .headbox.market.K{background:#1f7a4d}
-    .headbar.markets .headbox.market.W{background:#14532d}
-    .headbar.markets .headbox.market.H{background:#ffcf5a}
-    .headbar.markets .headbox.market.E{background:#f0ad4e}
+    /* 顶部列控制小格也上色（更像左图） */
+    .headbar.markets .headbox.market.M{background:var(--M)}
+    .headbar.markets .headbox.market.P{background:var(--P)}
+    .headbar.markets .headbox.market.T{background:var(--T)}
+    .headbar.markets .headbox.market.S{background:var(--S)}
+    .headbar.markets .headbox.market.B{background:var(--B)}
+    .headbar.markets .headbox.market.K{background:var(--K)}
+    .headbar.markets .headbox.market.W{background:var(--W)}
+    .headbar.markets .headbox.market.H{background:var(--H)}
+    .headbar.markets .headbox.market.E{background:var(--E)}
 
     /* —— 手机优化 —— */
     @media (max-width: 768px){
@@ -154,8 +159,8 @@
       .slot{width:28px;height:24px}
       .slot .box{width:20px;height:18px}
       .m-legend{grid-template-columns:repeat(9,28px);gap:4px}
-      .mgrid{grid-auto-columns:28px;gap:4px}
-      .mtick{width:28px;height:24px}
+      .mgrid{grid-auto-columns:30px;gap:2px}
+      .mtick{width:30px;height:26px}
       .mbox{width:16px;height:16px}
       .headbar.slots{grid-template-columns:repeat(15,28px)}
       .headbar.markets{grid-template-columns:repeat(9,28px)}
@@ -192,7 +197,7 @@
           <th>ODD</th>
           <th>EVEN</th>
 
-          <!-- 下注日期（= 2D 时间段） -->
+          <!-- 下注时间段（当日 9–23） -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>下注时间段（当日 9–23）</div>
@@ -201,6 +206,7 @@
             <div class="slots-head" style="margin-top:6px">
               {% for s in slots %}<div>{{ "%02d"|format(s.hour) }}</div>{% endfor %}
             </div>
+            <!-- 顶部每列一个控制小格子 -->
             <div class="headbar slots" id="headSlots">
               {% for s in slots %}
                 <label class="headbox"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
@@ -208,15 +214,17 @@
             </div>
           </th>
 
-          <!-- 市场（彩色列 + 顶部控制小格子） -->
+          <!-- 市场 -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>市场</div>
               <label class="muted" style="font-size:12px"><input type="checkbox" id="copyMarkets"> 套用首行</label>
             </div>
+            <!-- 顶部彩色字母条 -->
             <div class="m-legend" style="margin-top:6px">
               {% for m in markets %}<div class="legend-chip {{m}}" title="{{m}}">{{ m }}</div>{% endfor %}
             </div>
+            <!-- 顶部每列一个控制小格子（也上色） -->
             <div class="headbar markets" id="headMarkets">
               {% for m in markets %}
                 <label class="headbox market {{m}}"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
@@ -240,7 +248,7 @@
             <td><input name="amount_odd[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
             <td><input name="amount_even[]"  type="number" step="0.01" min="0" inputmode="decimal"></td>
 
-            <!-- 时间段 -->
+            <!-- 时间段：滑动小方块 -->
             <td>
               <div class="slots-row">
                 {% for s in slots %}
@@ -281,22 +289,26 @@
 
 <script>
 (function(){
-  const table = document.getElementById('betTable');
-  const tbody = table.querySelector('tbody');
+  const tbody = document.querySelector('#betTable tbody');
   const copySlots = document.getElementById('copySlots');
   const copyMarkets = document.getElementById('copyMarkets');
 
-  function syncRowVisual(tr){
-    tr.querySelectorAll('label.slot').forEach(lbl=>{
-      const cb = lbl.querySelector('input[type="checkbox"]');
-      lbl.classList.toggle('on', !!(cb && cb.checked));
+  /* 计算行总额 */
+  function recalcRow(tr){
+    const names = ['amount_n1[]','amount_n[]','amount_big[]','amount_small[]','amount_odd[]','amount_even[]'];
+    let sum = 0;
+    names.forEach(n=>{
+      const el = tr.querySelector(`input[name="${n}"]`);
+      if(!el) return;
+      const v = parseFloat(el.value);
+      if(!isNaN(v)) sum += v;
     });
-    tr.querySelectorAll('label.mtick').forEach(lbl=>{
-      const cb = lbl.querySelector('input[type="checkbox"]');
-      lbl.classList.toggle('on', !!(cb && cb.checked));
-    });
+    tr.querySelector('.sumcell').textContent = sum.toFixed(2);
   }
-  function syncAll(){ tbody.querySelectorAll('tr').forEach(syncRowVisual); }
+  tbody.querySelectorAll('tr').forEach(recalcRow);
+  tbody.addEventListener('input', e=>{
+    const tr = e.target.closest('tr'); if(tr) recalcRow(tr);
+  });
 
   /* 顶部列控制：时间段 */
   document.getElementById('headSlots').addEventListener('change', (e)=>{
@@ -324,49 +336,34 @@
     });
   });
 
-  function recalcRow(tr){
-    const names = ['amount_n1[]','amount_n[]','amount_big[]','amount_small[]','amount_odd[]','amount_even[]'];
-    let sum = 0;
-    names.forEach(n=>{
-      const el = tr.querySelector(`input[name="${n}"]`);
-      if(!el) return;
-      const v = parseFloat(el.value);
-      if(!isNaN(v)) sum += v;
-    });
-    tr.querySelector('.sumcell').textContent = sum.toFixed(2);
-  }
-  function getRow(idx){ return tbody.children[idx]; }
+  /* 套用首行（时间段/市场） */
+  function getRow(i){ return tbody.children[i]; }
 
   function applySlotsFromFirst(){
     const first = getRow(0); if(!first) return;
-    const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="slot_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
+    const sel = Array.from(first.querySelectorAll('input[type="checkbox"][name^="slot_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
     for(let i=1;i<tbody.children.length;i++){
       const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="slot_"]');
-      boxes.forEach(cb=>{ if(!cb.disabled) cb.checked = selected.includes(cb.value); });
-      syncRowVisual(getRow(i));
+      boxes.forEach(cb=>{ if(!cb.disabled) cb.checked = sel.includes(cb.value); });
     }
   }
   function applyMarketsFromFirst(){
     const first = getRow(0); if(!first) return;
-    const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="market_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
+    const sel = Array.from(first.querySelectorAll('input[type="checkbox"][name^="market_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
     for(let i=1;i<tbody.children.length;i++){
       const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="market_"]');
-      boxes.forEach(cb=>{ cb.checked = selected.includes(cb.value); });
-      syncRowVisual(getRow(i));
+      boxes.forEach(cb=>{ cb.checked = sel.includes(cb.value); });
     }
   }
 
   tbody.addEventListener('change', e=>{
     const tr = e.target.closest('tr'); if(!tr) return;
-    syncRowVisual(tr);
     const isFirst = tr === getRow(0);
     if(isFirst && copySlots.checked && e.target.name.startsWith('slot_')) applySlotsFromFirst();
     if(isFirst && copyMarkets.checked && e.target.name.startsWith('market_')) applyMarketsFromFirst();
   });
 
-  tbody.addEventListener('input', e=>{ const tr = e.target.closest('tr'); if(tr) recalcRow(tr); });
-  tbody.querySelectorAll('tr').forEach(recalcRow);
-
+  /* 新增行 */
   window.addRows = function(n){
     for(let k=0;k<n;k++){
       const clone = tbody.lastElementChild.cloneNode(true);
@@ -379,24 +376,20 @@
       clone.querySelectorAll('input[type="checkbox"][name^="market_"]').forEach(cb=>cb.name = `market_${idx}[]`);
       clone.querySelector('.sumcell').textContent = '0.00';
       tbody.appendChild(clone);
-      syncRowVisual(clone);
     }
-  }
+  };
 
-  // 兜底点击：点 .slot/.mtick 任意位置也能切换
-  document.addEventListener('click', function(e){
+  /* 兜底：点击 .slot / .mtick 的任意空白也能切换 */
+  document.addEventListener('click', (e)=>{
     if (e.target.matches('.slot input, .mtick input, .headbox input')) return;
-    const block = e.target.closest('.slot, .mtick');
-    if(!block) return;
-    const cb = block.querySelector('input[type="checkbox"]');
+    const label = e.target.closest('.slot, .mtick');
+    if(!label) return;
+    const cb = label.querySelector('input[type="checkbox"]');
     if(cb && !cb.disabled){
       cb.checked = !cb.checked;
       cb.dispatchEvent(new Event('change', {bubbles:true}));
-      const tr = block.closest('tr'); if(tr) syncRowVisual(tr);
     }
   }, {passive:true});
-
-  syncAll();
 })();
 </script>
 </body>
