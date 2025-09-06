@@ -69,113 +69,91 @@ def create_app() -> Flask:
         except Exception as e:
             return {"ok": False, "error": str(e)}, 500
 
-    # =================== 下注页（新版：时间段 + 多市场 + 总额） ===================
-    @app.route("/2d/bet", methods=["GET","POST"])
-    def bet_2d_view():
-        # DEMO：没有登录体系，agent_id 暂定 1；你以后接 session 再替换
-        agent_id = 1
+@app.route("/2d/bet", methods=["GET","POST"])
+def bet_2d_view():
+    agent_id = 1  # DEMO
 
-        # GET 的日期用于渲染“时间段”
-        date_str = request.args.get("date")
-        if not date_str:
-            date_str = datetime.now(MY_TZ).strftime("%Y-%m-%d")
+    # 日期：默认今天；仍可用 ?date=YYYY-MM-DD 传入，但页面不展示选择器
+    date_str = request.args.get("date")
+    if not date_str:
+        date_str = datetime.now(MY_TZ).strftime("%Y-%m-%d")
+    try:
+        day = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        day = datetime.now(MY_TZ).date()
+        date_str = day.strftime("%Y-%m-%d")
+
+    slots = list_slots_for_day(day)  # [{code,hour,label,locked}]
+
+    if request.method == "POST":
+        # 隐藏域传回日期
+        form_date = request.form.get("date", date_str)
         try:
-            day = datetime.strptime(date_str, "%Y-%m-%d").date()
-        except ValueError:
-            day = datetime.now(MY_TZ).date()
-            date_str = day.strftime("%Y-%m-%d")
+            submit_day = datetime.strptime(form_date, "%Y-%m-%d").date()
+        except:
+            submit_day = day
 
-        slots = list_slots_for_day(day)  # [{code,label,locked}...]
+        numbers = request.form.getlist("number[]")
+        a_n1    = request.form.getlist("amount_n1[]")
+        a_n     = request.form.getlist("amount_n[]")
+        a_b     = request.form.getlist("amount_big[]")
+        a_s     = request.form.getlist("amount_small[]")
+        a_o     = request.form.getlist("amount_odd[]")
+        a_e     = request.form.getlist("amount_even[]")
 
-        if request.method == "POST":
-            # 提交时从表单取日期（隐藏域）
-            form_date = request.form.get("date", date_str)
+        created = 0
+        nowts = datetime.now(MY_TZ)
+
+        from decimal import Decimal, InvalidOperation
+        def to_amt(arr, idx):
             try:
-                submit_day = datetime.strptime(form_date, "%Y-%m-%d").date()
-            except:
-                submit_day = day
+                v = Decimal((arr[idx] or "0").strip() or "0")
+                return Decimal("0.00") if v <= 0 else v
+            except (InvalidOperation, IndexError):
+                return Decimal("0.00")
 
-            # 行数据
-            numbers = request.form.getlist("number[]")
-            a_n1    = request.form.getlist("amount_n1[]")
-            a_n     = request.form.getlist("amount_n[]")
-            a_b     = request.form.getlist("amount_big[]")
-            a_s     = request.form.getlist("amount_small[]")
-            a_o     = request.form.getlist("amount_odd[]")
-            a_e     = request.form.getlist("amount_even[]")
+        for i in range(len(numbers)):
+            num_raw = (numbers[i] or "").strip()
+            if not num_raw or not num_raw.isdigit(): continue
+            vi = int(num_raw)
+            if vi < 0 or vi > 99: continue
+            number = f"{vi:02d}"
 
-            created = 0
-            nowts = datetime.now(MY_TZ)
-            # 遍历行
-            for i in range(len(numbers)):
-                num_raw = (numbers[i] or "").strip()
-                if not num_raw:
+            n1 = to_amt(a_n1, i); n = to_amt(a_n, i)
+            big= to_amt(a_b,  i); sml= to_amt(a_s, i)
+            odd= to_amt(a_o,  i); evn= to_amt(a_e, i)
+            if (n1+n+big+sml+odd+evn) == 0: continue
+
+            # 该行勾选的时段/市场；若都未勾，则默认“下一期/M”
+            slots_sel   = request.form.getlist(f"slot_{i}[]") or [next_slot_code()]
+            markets_sel = request.form.getlist(f"market_{i}[]") or ["M"]
+
+            for code in slots_sel:
+                if is_locked_for_code(code):  # 过锁点跳过
                     continue
-                if not num_raw.isdigit():
-                    flash(f"第 {i+1} 行号码非法：{num_raw}", "error"); continue
-                vi = int(num_raw)
-                if vi < 0 or vi > 99:
-                    flash(f"第 {i+1} 行号码越界：{num_raw}", "error"); continue
-                number = f"{vi:02d}"
+                for m in markets_sel:
+                    order_code = nowts.strftime("%y%m%d") + "/" + f"{int(nowts.timestamp())%10000:04d}"
+                    db.session.add(Bet2D(
+                        order_code=order_code,
+                        agent_id=agent_id, market=m, code=code, number=number,
+                        amount_n1=n1, amount_n=n, amount_b=big, amount_s=sml,
+                        amount_ds=odd, amount_ss=evn, status="active"
+                    ))
+                    created += 1
 
-                def to_amt(arr, idx):
-                    try:
-                        v = Decimal((arr[idx] or "0").strip() or "0")
-                        return Decimal("0.00") if v <= 0 else v
-                    except (InvalidOperation, IndexError):
-                        return Decimal("0.00")
+        if created > 0:
+            db.session.commit()
+            flash(f"已提交 {created} 条注单。", "ok")
+            return redirect(url_for("history_2d_view"))
+        else:
+            flash("没有有效行（或所选时间段已过锁注）。", "error")
+            return redirect(url_for("bet_2d_view", date=date_str))
 
-                n1 = to_amt(a_n1, i)
-                n  = to_amt(a_n,  i)
-                big= to_amt(a_b,  i)
-                sml= to_amt(a_s,  i)
-                odd= to_amt(a_o,  i)
-                evn= to_amt(a_e,  i)
-
-                if (n1+n+big+sml+odd+evn) == 0:
-                    continue
-
-                # 取该行勾选的时间段与市场
-                slots_sel   = request.form.getlist(f"slot_{i}[]")     # 期号 code
-                markets_sel = request.form.getlist(f"market_{i}[]")   # M/P/...
-
-                # 默认：没勾时间段，就用“下一期”；没勾市场，就用 M
-                if not slots_sel:
-                    slots_sel = [next_slot_code()]
-                if not markets_sel:
-                    markets_sel = ["M"]
-
-                # 为每个 期号×市场 生成一条下注
-                for code in slots_sel:
-                    # 过滤已过锁点的期
-                    if is_locked_for_code(code):
-                        continue
-                    for m in markets_sel:
-                        order_code = nowts.strftime("%y%m%d") + "/" + f"{int(nowts.timestamp())%10000:04d}"
-                        db.session.add(Bet2D(
-                            order_code=order_code,
-                            agent_id=agent_id, market=m, code=code, number=number,
-                            amount_n1=n1, amount_n=n,
-                            amount_b=big, amount_s=sml,
-                            amount_ds=odd, amount_ss=evn,
-                            status="active"
-                        ))
-                        created += 1
-
-            if created > 0:
-                db.session.commit()
-                flash(f"已提交 {created} 条注单。", "ok")
-                return redirect(url_for("history_2d_view"))
-            else:
-                flash("没有有效行（或所选时间段已过锁注）。", "error")
-                return redirect(url_for("bet_2d_view", date=date_str))
-
-        # GET：渲染页面
-        return render_template("bet_2d.html",
-                               date=date_str,
-                               slots=slots,
-                               markets=MARKETS,
-                               now=datetime.now(MY_TZ))
+    # GET：渲染（不展示“当前时间/日期选择器”）
+    return render_template("bet_2d.html",
+                           date=date_str,
+                           slots=slots,
+                           markets=MARKETS)
 
     # =================== 当日注单（原样） ===================
     @app.get("/2d/history")
