@@ -20,35 +20,44 @@
     .flash.error{background:#ffe6e6;border:1px solid #ff9999}
 
     table{border-collapse:collapse;width:100%;margin-top:12px}
-    th,td{border:1px solid var(--c-border);padding:6px 8px;font-size:14px;text-align:center}
+    th,td{border:1px solid var(--c-border);padding:4px 6px;font-size:14px;text-align:center}
     th{background:var(--c-head)}
     .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:1}
 
-    input[type="text"]{width:64px;text-align:center}
-    input[type="number"]{width:84px;text-align:right}
+    /* 更紧凑的输入格子 */
+    input[type="text"]{width:56px;text-align:center}
+    input[type="number"]{width:72px;text-align:right}
 
-    /* 时间段横向 9~23（每小时） */
-    .slots-row{display:grid;grid-template-columns:repeat(15, minmax(42px, 1fr));gap:6px}
-    .slot{display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 0;border-radius:8px}
+    /* 时间段横向 9~23（每小时）——行内只显示空方块，不重复数字 */
+    .slots-row{display:grid;grid-template-columns:repeat(15, 32px);gap:6px;justify-content:center}
+    .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center}
     .slot.locked{opacity:.35}
+    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+    .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff}
+    .slot input:checked + .box{outline:2px solid #111;outline-offset:-2px;background:#e8f0ff}
 
     /* 市场 */
-    .m-legend{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
-    .mgrid{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;min-width:260px}
-    .mbox{display:flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:8px}
-    .M{background:var(--c-yellow)} .P{background:var(--c-blue)}
-    .T{background:var(--c-red)}    .S{background:#5b9bd5}
-    .B{background:var(--c-red)}    .K{background:var(--c-green)}
-    .W{background:var(--c-blue)}   .H{background:#ffce54}
-    .E{background:var(--c-orange)}
-    /* 行内的小方块只显示颜色，不重复字母；checkbox 覆盖在上面 */
-    .tick{position:relative}
-    .tick input{position:absolute; inset:0; opacity:0; cursor:pointer}
-    .tick input:checked + .mbox{outline:2px solid #111; outline-offset:0}
+    .m-legend{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center}
+    .mgrid{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center;min-width:260px}
+    .mtick{position:relative;width:32px;height:28px}
+    .mtick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2}
+    .mbox{position:absolute;inset:0;margin:auto;width:28px;height:24px;border-radius:8px;z-index:1}
+    .mtick input:checked + .mbox{outline:2px solid #111;outline-offset:0}
 
-    .sumcell{min-width:90px;text-align:right;padding-right:10px}
+    /* 市场颜色 */
+    .M{background:var(--c-yellow)}
+    .P{background:var(--c-blue)}
+    .T{background:var(--c-red)}
+    .S{background:#5b9bd5}
+    .B{background:var(--c-red)}
+    .K{background:var(--c-green)}
+    .W{background:var(--c-blue)}
+    .H{background:#ffce54}
+    .E{background:var(--c-orange)}
+
+    .sumcell{min-width:80px;text-align:right;padding-right:8px}
     .tiny{font-size:12px}
-    .hdr-copy{display:flex;align-items:center;justify-content:center;gap:6px}
+    .hdr-copy{display:flex;align-items:center;justify-content:center;gap:8px}
   </style>
 </head>
 <body>
@@ -64,14 +73,14 @@
   {% endwith %}
 
   <form method="post" id="betForm">
-    <!-- 日期作为隐藏域（默认当天；仍可用 ?date=YYYY-MM-DD 传入） -->
+    <!-- 日期隐藏域（默认当天；仍可用 ?date=YYYY-MM-DD 传入） -->
     <input type="hidden" name="date" value="{{ date }}">
 
     <table id="betTable">
       <thead class="sticky-head">
       <tr>
-        <th style="width:44px">#</th>
-        <th style="width:90px">下注号码</th>
+        <th style="width:40px">#</th>
+        <th style="width:86px">下注号码</th>
         <th>N1</th>
         <th>N</th>
         <th>BIG</th>
@@ -79,19 +88,19 @@
         <th>ODD</th>
         <th>EVEN</th>
 
-        <!-- 时间段表头：横向 9–23 + “套用首行” -->
+        <!-- 时间段表头：只显示 9–23 一排数字 + “套用首行” -->
         <th>
           <div class="hdr-copy">
             <span>下注时间段（当日 9–23）</span>
             <label class="tiny"><input type="checkbox" id="copySlots"> 套用首行</label>
           </div>
-          <div class="tiny muted">每格代表该小时 <b>:50</b>；已过锁点会置灰</div>
+          <div class="tiny muted">每格=该小时 <b>:50</b>；过锁点置灰</div>
           <div class="slots-row tiny" style="margin-top:6px">
             {% for s in slots %}<div>{{ "%02d"|format(s.hour) }}</div>{% endfor %}
           </div>
         </th>
 
-        <!-- 市场表头：只显示图例（有字母），行内不再重复字母 -->
+        <!-- 市场表头：图例（有字母），行内只显示彩色方块 -->
         <th>
           <div class="hdr-copy">
             <span>市场</span>
@@ -99,12 +108,14 @@
           </div>
           <div class="m-legend tiny" style="margin-top:6px">
             {% for m in markets %}
-              <div class="mbox {{m}}" title="{{m}}" style="color:#111;display:flex;align-items:center;justify-content:center;font-weight:700">{{ m }}</div>
+              <div title="{{m}}" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;">
+                <div class="mbox {{m}}" style="position:static;width:28px;height:24px;border-radius:8px;margin-right:4px"></div>{{ m }}
+              </div>
             {% endfor %}
           </div>
         </th>
 
-        <th style="width:110px">总额</th>
+        <th style="width:96px">总额</th>
       </tr>
       </thead>
 
@@ -120,25 +131,25 @@
           <td><input name="amount_odd[]"   type="number" step="0.01" min="0"></td>
           <td><input name="amount_even[]"  type="number" step="0.01" min="0"></td>
 
-          <!-- 时间段：9–23 横排 -->
+          <!-- 时间段：行内只显示空方块（不重复数字） -->
           <td>
             <div class="slots-row">
               {% for s in slots %}
                 <label class="slot {{ 'locked' if s.locked else '' }}">
                   <input type="checkbox" name="slot_{{ i }}[]" value="{{ s.code }}" {% if s.locked %}disabled{% endif %} aria-label="{{ '%02d'|format(s.hour) }}:50">
-                  {{ "%02d"|format(s.hour) }}
+                  <span class="box"></span>
                 </label>
               {% endfor %}
             </div>
           </td>
 
-          <!-- 市场：行内只显示彩色方块，不重复字母 -->
+          <!-- 市场：彩色方块可点（不显示字母） -->
           <td>
             <div class="mgrid">
               {% for m in markets %}
-                <label class="tick" title="{{m}}">
+                <label class="mtick" title="{{m}}">
                   <input type="checkbox" name="market_{{ i }}[]" value="{{ m }}" aria-label="{{ m }}">
-                  <div class="mbox {{m}}"></div>
+                  <span class="mbox {{m}}"></span>
                 </label>
               {% endfor %}
             </div>
@@ -176,31 +187,24 @@
     });
     tr.querySelector('.sumcell').textContent = sum.toFixed(2);
   }
-
   function getRow(idx){ return tbody.children[idx]; }
 
   function applySlotsFromFirst(){
     const first = getRow(0); if(!first) return;
-    const selectedCodes = Array.from(first.querySelectorAll('input[type="checkbox"][name^="slot_"]'))
+    const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="slot_"]'))
       .filter(cb=>cb.checked).map(cb=>cb.value);
-    for (let i=1;i<tbody.children.length;i++){
-      const row = getRow(i);
-      row.querySelectorAll('input[type="checkbox"][name^="slot_"]').forEach(cb=>{
-        if(cb.disabled) return;
-        cb.checked = selectedCodes.includes(cb.value);
-      });
+    for(let i=1;i<tbody.children.length;i++){
+      const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="slot_"]');
+      boxes.forEach(cb=>{ if(!cb.disabled) cb.checked = selected.includes(cb.value); });
     }
   }
-
   function applyMarketsFromFirst(){
     const first = getRow(0); if(!first) return;
     const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="market_"]'))
       .filter(cb=>cb.checked).map(cb=>cb.value);
-    for (let i=1;i<tbody.children.length;i++){
-      const row = getRow(i);
-      row.querySelectorAll('input[type="checkbox"][name^="market_"]').forEach(cb=>{
-        cb.checked = selected.includes(cb.value);
-      });
+    for(let i=1;i<tbody.children.length;i++){
+      const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="market_"]');
+      boxes.forEach(cb=>{ cb.checked = selected.includes(cb.value); });
     }
   }
 
@@ -210,28 +214,27 @@
     if(isFirst && copySlots.checked && e.target.name.startsWith('slot_')) applySlotsFromFirst();
     if(isFirst && copyMarkets.checked && e.target.name.startsWith('market_')) applyMarketsFromFirst();
   });
-
   copySlots.addEventListener('change', e=>{ if(e.target.checked) applySlotsFromFirst(); });
   copyMarkets.addEventListener('change', e=>{ if(e.target.checked) applyMarketsFromFirst(); });
 
-  tbody.addEventListener('input', e=>{
-    const tr = e.target.closest('tr'); if(tr) recalcRow(tr);
-  });
+  tbody.addEventListener('input', e=>{ const tr = e.target.closest('tr'); if(tr) recalcRow(tr); });
   tbody.querySelectorAll('tr').forEach(recalcRow);
 
   window.addRows = function(n){
     for(let k=0;k<n;k++){
-      const last = tbody.lastElementChild;
-      const clone = last.cloneNode(true);
+      const clone = tbody.lastElementChild.cloneNode(true);
+      // 清空
       clone.querySelectorAll('input').forEach(inp=>{
         if(inp.type === 'checkbox') inp.checked = false; else inp.value = '';
       });
+      // 重排 name & 序号
       const idx = tbody.children.length;
       clone.children[0].textContent = idx+1;
-      clone.querySelectorAll('input[type="checkbox"][name^="slot_"]').forEach(cb=>{ cb.name = `slot_${idx}[]`; });
-      clone.querySelectorAll('input[type="checkbox"][name^="market_"]').forEach(cb=>{ cb.name = `market_${idx}[]`; });
+      clone.querySelectorAll('input[type="checkbox"][name^="slot_"]').forEach(cb=>cb.name = `slot_${idx}[]`);
+      clone.querySelectorAll('input[type="checkbox"][name^="market_"]').forEach(cb=>cb.name = `market_${idx}[]`);
       clone.querySelector('.sumcell').textContent = '0.00';
       tbody.appendChild(clone);
+      // 如果勾了“套用首行”，同步新行
       if(copySlots.checked) applySlotsFromFirst();
       if(copyMarkets.checked) applyMarketsFromFirst();
     }
