@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>2D 下注</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:20px;}
+    h1{margin:0 0 12px}
+    .muted{color:#666}
+    table{border-collapse:collapse;width:100%;margin-top:12px}
+    th,td{border:1px solid #ddd;padding:6px 8px;font-size:14px}
+    th{background:#f6f6f6;text-align:left}
+    .controls{display:flex;gap:12px;align-items:center;margin:10px 0}
+    .btn{padding:6px 12px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer}
+    .btn.primary{background:#0969da;color:#fff;border-color:#0969da}
+    .flash{padding:10px;border-radius:8px;margin:10px 0}
+    .flash.ok{background:#e6ffed;border:1px solid #79d27d}
+    .flash.error{background:#ffe6e6;border:1px solid #ff9999}
+    input[type="number"]{width:100px}
+    input[type="text"]{width:80px}
+    .tip{font-size:13px}
+  </style>
+</head>
+<body>
+  <h1>2D 下注</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat,msg in messages %}
+        <div class="flash {{cat}}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="tip">
+    期号：<b>{{ code }}</b>（自动为“下一期”；到 <b>:49</b> 锁注后会切到下一小时）<br>
+    当前时间：{{ now }}
+  </div>
+
+  <form method="post">
+    <div class="controls">
+      <label>市场：</label>
+      <select name="market">
+        {% for m in markets %}<option value="{{m}}">{{m}}</option>{% endfor %}
+      </select>
+      <button type="button" class="btn" onclick="addRow()">+ 添加一行</button>
+      <button type="submit" class="btn primary">提交</button>
+      <a class="btn" href="/2d/history">查看当日注单</a>
+      <a class="btn" href="/2d/winning">查看中奖</a>
+    </div>
+
+    <table id="betTable">
+      <thead>
+      <tr>
+        <th>#</th>
+        <th>号码(00-99)</th>
+        <th>N1</th>
+        <th>N</th>
+        <th>B</th>
+        <th>S</th>
+        <th>DS</th>
+        <th>SS</th>
+      </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </form>
+
+  <script>
+    const tbody = document.querySelector('#betTable tbody');
+    let rowNo = 0;
+    function addRow() {
+      rowNo++;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${rowNo}</td>
+        <td><input name="number[]" type="text" maxlength="2" placeholder="07"></td>
+        <td><input name="amount_n1[]" type="number" step="0.01" min="0" value=""></td>
+        <td><input name="amount_n[]"  type="number" step="0.01" min="0" value=""></td>
+        <td><input name="amount_b[]"  type="number" step="0.01" min="0" value=""></td>
+        <td><input name="amount_s[]"  type="number" step="0.01" min="0" value=""></td>
+        <td><input name="amount_ds[]" type="number" step="0.01" min="0" value=""></td>
+        <td><input name="amount_ss[]" type="number" step="0.01" min="0" value=""></td>
+      `;
+      tbody.appendChild(tr);
+    }
+    // 默认加三行
+    addRow(); addRow(); addRow();
+  </script>
+</body>
+</html>
