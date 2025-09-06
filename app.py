@@ -1,44 +1,44 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
-from flask import Flask, render_template, request, redirect, session, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash
 from sqlalchemy import text
-from models import db, Bet2D, WinningRecord2D, DrawResult
+from models import db, Bet2D, WinningRecord2D
 
 MY_TZ = ZoneInfo("Asia/Kuala_Lumpur")
-
-MARKETS = ["M","P","T","S","H","E","B","K","W"]  # 你用哪些就保留哪些
+MARKETS = ["M","P","T","S","B","K","W","H","E"]  # 按你8~9个市场，需要几个留几个
 
 def _fix_db_url(url: str) -> str:
-    # Render 会给 postgres:// 前缀，这里转换成 SQLAlchemy 驱动前缀
     if not url:
         return url
     if url.startswith("postgres://"):
         return url.replace("postgres://", "postgresql+psycopg2://", 1)
     return url
 
-def next_slot_code(now: datetime | None = None) -> str:
-    """返回'下一期'的期号 YYYYMMDD/HH50。
-       规则：若当前分钟 >=49，则用下一小时；否则用当小时。
-    """
-    now = now or datetime.now(MY_TZ)
-    base = now
-    if now.minute >= 49:
-        base = (now + timedelta(hours=1)).replace(minute=now.minute, second=now.second)
-    return base.strftime("%Y%m%d") + f"/{base.hour:02d}50"
+def parse_code_to_hour(code: str) -> datetime:
+    # 20250906/1950 -> 2025-09-06 19:00 +08:00
+    y=int(code[0:4]); m=int(code[4:6]); d=int(code[6:8]); h=int(code[9:11])
+    return datetime(y,m,d,h,0,tzinfo=MY_TZ)
 
-def is_locked_for_code(target_code: str, now: datetime | None = None) -> bool:
-    """判断某个 code 是否已过锁注时间（:49）。"""
+def is_locked_for_code(code: str, now: datetime | None = None) -> bool:
     now = now or datetime.now(MY_TZ)
-    # 把 code 解析回该小时
-    # code 形如 20250901/1950
-    dt_hour = datetime(
-        int(target_code[0:4]), int(target_code[4:6]), int(target_code[6:8]),
-        int(target_code[9:11]), 0, tzinfo=MY_TZ
-    )
-    lock_time = dt_hour.replace(minute=49, second=0, microsecond=0)
+    lock_time = parse_code_to_hour(code).replace(minute=49, second=0, microsecond=0)
     return now >= lock_time
+
+def list_slots_for_day(day: date) -> list[dict]:
+    """返回当日 09:50~23:50 的期号列表：[{code,label,locked}]"""
+    slots = []
+    for h in range(9, 24):  # 9..23
+        code = day.strftime("%Y%m%d") + f"/{h:02d}50"
+        locked = is_locked_for_code(code)
+        slots.append({"code": code, "label": f"{h:02d}:50", "locked": locked})
+    return slots
+
+def next_slot_code(now: datetime | None = None) -> str:
+    now = now or datetime.now(MY_TZ)
+    base = now if now.minute < 49 else now + timedelta(hours=1)
+    return base.strftime("%Y%m%d") + f"/{base.hour:02d}50"
 
 def create_app() -> Flask:
     app = Flask(__name__)
@@ -53,7 +53,8 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        return render_template("home.html")
+        # 有需要可换成 render_template("home.html")
+        return redirect(url_for('bet_2d_view'))
 
     @app.get("/healthz")
     def healthz():
@@ -63,49 +64,54 @@ def create_app() -> Flask:
         except Exception as e:
             return {"ok": False, "error": str(e)}, 500
 
-    # ===== 下注页 =====
-    @app.route("/2d/bet", methods=["GET", "POST"])
+    # =================== 下注页（新版：时间段 + 多市场 + 总额） ===================
+    @app.route("/2d/bet", methods=["GET","POST"])
     def bet_2d_view():
-        # DEMO：没有登录系统，agent_id 固定为 1；若你有登录，可从 session 拿。
+        # DEMO：没有登录体系，agent_id 暂定 1；你以后接 session 再替换
         agent_id = 1
 
-        code = next_slot_code()
+        # GET 的日期用于渲染“时间段”
+        date_str = request.args.get("date")
+        if not date_str:
+            date_str = datetime.now(MY_TZ).strftime("%Y-%m-%d")
+        try:
+            day = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            day = datetime.now(MY_TZ).date()
+            date_str = day.strftime("%Y-%m-%d")
+
+        slots = list_slots_for_day(day)  # [{code,label,locked}...]
+
         if request.method == "POST":
-            market = request.form.get("market", "M").strip()[:1]
-            if market not in MARKETS:
-                flash("无效的市场", "error")
-                return redirect(url_for("bet_2d_view"))
+            # 提交时从表单取日期（隐藏域）
+            form_date = request.form.get("date", date_str)
+            try:
+                submit_day = datetime.strptime(form_date, "%Y-%m-%d").date()
+            except:
+                submit_day = day
 
-            # 强制使用服务器计算的下一期 code，避免用户绕过锁注
-            target_code = code
-
-            if is_locked_for_code(target_code):
-                flash("已过锁注时间，自动切换到下一期再试。", "error")
-                return redirect(url_for("bet_2d_view"))
-
-            # 多行字段（以 [] 结尾）
+            # 行数据
             numbers = request.form.getlist("number[]")
-            n1s    = request.form.getlist("amount_n1[]")
-            ns     = request.form.getlist("amount_n[]")
-            bs     = request.form.getlist("amount_b[]")
-            ss     = request.form.getlist("amount_s[]")
-            dss    = request.form.getlist("amount_ds[]")
-            sss    = request.form.getlist("amount_ss[]")
+            a_n1    = request.form.getlist("amount_n1[]")
+            a_n     = request.form.getlist("amount_n[]")
+            a_b     = request.form.getlist("amount_big[]")
+            a_s     = request.form.getlist("amount_small[]")
+            a_o     = request.form.getlist("amount_odd[]")
+            a_e     = request.form.getlist("amount_even[]")
 
             created = 0
+            nowts = datetime.now(MY_TZ)
+            # 遍历行
             for i in range(len(numbers)):
                 num_raw = (numbers[i] or "").strip()
-                if num_raw == "":
+                if not num_raw:
                     continue
-                # 标准化两位
                 if not num_raw.isdigit():
-                    flash(f"第 {i+1} 行号码非法：{num_raw}", "error")
-                    continue
-                num_int = int(num_raw)
-                if num_int < 0 or num_int > 99:
-                    flash(f"第 {i+1} 行号码越界：{num_raw}", "error")
-                    continue
-                num = f"{num_int:02d}"
+                    flash(f"第 {i+1} 行号码非法：{num_raw}", "error"); continue
+                vi = int(num_raw)
+                if vi < 0 or vi > 99:
+                    flash(f"第 {i+1} 行号码越界：{num_raw}", "error"); continue
+                number = f"{vi:02d}"
 
                 def to_amt(arr, idx):
                     try:
@@ -114,59 +120,69 @@ def create_app() -> Flask:
                     except (InvalidOperation, IndexError):
                         return Decimal("0.00")
 
-                a_n1 = to_amt(n1s, i)
-                a_n  = to_amt(ns, i)
-                a_b  = to_amt(bs, i)
-                a_s  = to_amt(ss, i)
-                a_ds = to_amt(dss, i)
-                a_ss = to_amt(sss, i)
+                n1 = to_amt(a_n1, i)
+                n  = to_amt(a_n,  i)
+                big= to_amt(a_b,  i)
+                sml= to_amt(a_s,  i)
+                odd= to_amt(a_o,  i)
+                evn= to_amt(a_e,  i)
 
-                if (a_n1 + a_n + a_b + a_s + a_ds + a_ss) == 0:
-                    # 全为 0 的行不入库
+                if (n1+n+big+sml+odd+evn) == 0:
                     continue
 
-                order_code = datetime.now(MY_TZ).strftime("%y%m%d") + "/" + f"{int(datetime.now(MY_TZ).timestamp())%10000:04d}"
+                # 取该行勾选的时间段与市场
+                slots_sel   = request.form.getlist(f"slot_{i}[]")     # 期号 code
+                markets_sel = request.form.getlist(f"market_{i}[]")   # M/P/...
 
-                b = Bet2D(
-                    order_code=order_code,
-                    agent_id=agent_id,
-                    market=market,
-                    code=target_code,
-                    number=num,
-                    amount_n1=a_n1, amount_n=a_n,
-                    amount_b=a_b, amount_s=a_s,
-                    amount_ds=a_ds, amount_ss=a_ss,
-                    status="active"
-                )
-                db.session.add(b)
-                created += 1
+                # 默认：没勾时间段，就用“下一期”；没勾市场，就用 M
+                if not slots_sel:
+                    slots_sel = [next_slot_code()]
+                if not markets_sel:
+                    markets_sel = ["M"]
+
+                # 为每个 期号×市场 生成一条下注
+                for code in slots_sel:
+                    # 过滤已过锁点的期
+                    if is_locked_for_code(code):
+                        continue
+                    for m in markets_sel:
+                        order_code = nowts.strftime("%y%m%d") + "/" + f"{int(nowts.timestamp())%10000:04d}"
+                        db.session.add(Bet2D(
+                            order_code=order_code,
+                            agent_id=agent_id, market=m, code=code, number=number,
+                            amount_n1=n1, amount_n=n,
+                            amount_b=big, amount_s=sml,
+                            amount_ds=odd, amount_ss=evn,
+                            status="active"
+                        ))
+                        created += 1
 
             if created > 0:
                 db.session.commit()
-                flash(f"已提交 {created} 条注单，期号 {target_code}（{market}）。", "ok")
+                flash(f"已提交 {created} 条注单。", "ok")
                 return redirect(url_for("history_2d_view"))
             else:
-                flash("没有有效的行被提交。", "error")
-                return redirect(url_for("bet_2d_view"))
+                flash("没有有效行（或所选时间段已过锁注）。", "error")
+                return redirect(url_for("bet_2d_view", date=date_str))
 
-        # GET
+        # GET：渲染页面
         return render_template("bet_2d.html",
-                               code=code,
+                               date=date_str,
+                               slots=slots,
                                markets=MARKETS,
                                now=datetime.now(MY_TZ))
 
-    # ===== 查单页（当天） =====
+    # =================== 当日注单（原样） ===================
     @app.get("/2d/history")
     def history_2d_view():
-        # DEMO：没有登录，展示当天所有
         today = datetime.now(MY_TZ).strftime("%Y%m%d")
-        q = (Bet2D.query
-             .filter(Bet2D.code.like(f"{today}/%"))
-             .order_by(Bet2D.created_at.desc()))
-        rows = q.all()
+        rows = (Bet2D.query
+                .filter(Bet2D.code.like(f"{today}/%"))
+                .order_by(Bet2D.created_at.desc())
+                .all())
         return render_template("history_2d.html", rows=rows, today=today)
 
-    # ===== 查看中奖（原有） =====
+    # =================== 查看中奖（原样） ===================
     @app.get("/2d/winning")
     def winning_2d_view():
         date_str = request.args.get('date')
@@ -174,10 +190,10 @@ def create_app() -> Flask:
             date_str = datetime.now(MY_TZ).strftime("%Y-%m-%d")
         y, m, d = map(int, date_str.split('-'))
         prefix = f"{y:04d}{m:02d}{d:02d}"
-        q = (WinningRecord2D.query
-             .filter(WinningRecord2D.code.like(f"{prefix}/%"))
-             .order_by(WinningRecord2D.code.desc(), WinningRecord2D.market.asc()))
-        records = q.all()
+        records = (WinningRecord2D.query
+                   .filter(WinningRecord2D.code.like(f"{prefix}/%"))
+                   .order_by(WinningRecord2D.code.desc(), WinningRecord2D.market.asc())
+                   .all())
         return render_template("winning_2d.html", records=records, date=date_str)
 
     return app
