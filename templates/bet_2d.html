@@ -57,42 +57,93 @@
     .slot.on .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
     .slot.on .box::after{content:"✓";font-weight:700;font-size:16px;line-height:22px;color:#111;display:block;text-align:center}
 
-    /* 市场：每格彩色底（跟 4D 一样），白色小方块可点 && 选中打勾 */
-    .m-legend{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center}
-    .legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px}
-    .legend-chip.M{background:#ffe766}.legend-chip.P{background:#2d6bff;color:#fff}
-    .legend-chip.T{background:#d62828;color:#fff}.legend-chip.S{background:#5b9bd5}
-    .legend-chip.B{background:#ef4444;color:#fff}.legend-chip.K{background:#1f7a4d;color:#fff}
-    .legend-chip.W{background:#3b82f6;color:#fff}.legend-chip.H{background:#ffcf5a}.legend-chip.E{background:#f0ad4e}
+/* 顶部彩色字母条（保持不变） */
+.m-legend{
+display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center
+}
+.legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px}
+.legend-chip.M{background:#ffe766}.legend-chip.P{background:#2d6bff;color:#fff}
+.legend-chip.T{background:#d62828;color:#fff}.legend-chip.S{background:#5b9bd5}
+.legend-chip.B{background:#ef4444;color:#fff}.legend-chip.K{background:#1f7a4d;color:#fff}
+.legend-chip.W{background:#3b82f6;color:#fff}.legend-chip.H{background:#ffcf5a}.legend-chip.E{background:#f0ad4e}
 
-    .mgrid{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;justify-content:flex-start;padding:2px 0}
-    .mtick{position:relative;width:32px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center}
-    .mtick input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:3}
-    .mbox{width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;z-index:1}
-    .mtick input:checked + .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
-    .mtick input:checked + .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
-    .mtick.on .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
-    .mtick.on .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
+/* 行内网格：间距收紧，看起来像整列彩色砖 */
+.mgrid{
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:34px;   /* 宽一点，接近左图比例 */
+  gap:2px;                  /* 缝隙很窄，像白色分割线 */
+  overflow-x:auto;
+  justify-content:flex-start;
+  padding:2px 0;
+  position:relative;
+}
 
-    /* 每格彩色底（与 4D 一致） */
-    .mtick.M{background:#ffe766}
-    .mtick.P{background:#2d6bff}
-    .mtick.T{background:#d62828}
-    .mtick.S{background:#5b9bd5}
-    .mtick.B{background:#ef4444}
-    .mtick.K{background:#1f7a4d}
-    .mtick.W{background:#3b82f6}
-    .mtick.H{background:#ffcf5a}
-    .mtick.E{background:#f0ad4e}
+/* 单个彩色格（底色为各自市场的颜色） */
+.mtick{
+  position:relative;
+  width:34px;height:30px;
+  border-radius:4px;
+  border:2px solid #fff;    /* 白色网格线的感觉 */
+  display:flex;align-items:center;justify-content:center;
+  box-sizing:border-box;
+}
 
-    /* 顶部市场“列控制”小格子也跟着上色，跟 4D 头部一样有彩条感觉 */
-    .headbox.market.M{background:#ffe766}.headbox.market.P{background:#2d6bff}
-    .headbox.market.T{background:#d62828}.headbox.market.S{background:#5b9bd5}
-    .headbox.market.B{background:#ef4444}.headbox.market.K{background:#1f7a4d}
-    .headbox.market.W{background:#3b82f6}.headbox.market.H{background:#ffcf5a}.headbox.market.E{background:#f0ad4e}
+/* 实心彩色底（与 4D 一致） */
+.mtick.M{background:#ffe766}
+.mtick.P{background:#2d6bff}
+.mtick.T{background:#d62828}
+.mtick.S{background:#5b9bd5}
+.mtick.B{background:#ef4444}
+.mtick.K{background:#1f7a4d}
+.mtick.W{background:#3b82f6}
+.mtick.H{background:#ffcf5a}
+.mtick.E{background:#f0ad4e}
 
-    .sumcell{min-width:74px;text-align:right;padding-right:8px}
-    label{user-select:none;-webkit-user-select:none}
+/* 让 checkbox 铺满整个格，点击更容易 */
+.mtick input{
+  position:absolute;inset:0;opacity:0;cursor:pointer;z-index:3;
+}
+
+/* 内部白色小方块（和左图一样的“白框”视觉） */
+.mbox{
+  width:22px;height:20px;
+  background:#fff;
+  border-radius:6px;
+  border:2px solid #fff;              /* 提升白色立体感 */
+  box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;
+  pointer-events:none;z-index:1;
+}
+
+/* 选中：直接显示 ✓（不改变彩色底，只在小白框里打勾） */
+.mtick input:checked + .mbox{
+  background:#fff;                     /* 仍保持白色 */
+  box-shadow:0 0 0 2px #111 inset;     /* 边更实一点 */
+}
+.mtick input:checked + .mbox::after{
+  content:"✓";
+  font-weight:700;font-size:14px;line-height:18px;
+  color:#111;display:block;text-align:center;
+}
+
+/* 兜底：如果你的 JS 会给 label 加 .on，这里也同步显示 ✓ */
+.mtick.on .mbox{
+  background:#fff; box-shadow:0 0 0 2px #111 inset;
+}
+.mtick.on .mbox::after{
+  content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center;
+}
+
+/* 顶部“列控制”小格可以保持现状；如果想跟 4D 头部一样也上色，保留这段 */
+.headbar.markets .headbox.market.M{background:#ffe766}
+.headbar.markets .headbox.market.P{background:#2d6bff}
+.headbar.markets .headbox.market.T{background:#d62828}
+.headbar.markets .headbox.market.S{background:#5b9bd5}
+.headbar.markets .headbox.market.B{background:#ef4444}
+.headbar.markets .headbox.market.K{background:#1f7a4d}
+.headbar.markets .headbox.market.W{background:#3b82f6}
+.headbar.markets .headbox.market.H{background:#ffcf5a}
+.headbar.markets .headbox.market.E{background:#f0ad4e}
 
     @media (max-width: 768px){
       body{padding-bottom:70px}
