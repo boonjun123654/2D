@@ -28,43 +28,53 @@
     input[type="text"]{width:56px;text-align:center}
     input[type="number"]{width:72px;text-align:right}
 
-    /* 顶部“列控制”的小方块 */
+    /* 顶部“列控制”的小方块（时间段、市场） */
     .headbar{display:grid;gap:6px;justify-content:center;margin-top:6px}
     .headbar.slots{grid-template-columns:repeat(15,32px)}
     .headbar.markets{grid-template-columns:repeat(9,32px)}
-    .headbox{position:relative;width:32px;height:26px;display:flex;align-items:center;justify-content:center}
+    .headbox{position:relative;width:32px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px}
     .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
     .headbox span{
       width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;
     }
-    .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
+    /* 勾选直接显示打勾 */
+    .headbox input:checked + span{
+      box-shadow:0 0 0 2px #111 inset;background:#e8f0ff;
+    }
+    .headbox input:checked + span::after{
+      content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center;
+    }
 
-    /* 时间段：行内小方块，可横向滑动 */
+    /* 时间段：上面一行显示 09~23，下面每行可横向滑动的小方块 */
     .slots-head{display:grid;grid-template-columns:repeat(15,32px);gap:6px;justify-content:center}
     .slots-row{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;padding:2px 0;scroll-snap-type:x proximity}
     .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
     .slot.locked{opacity:.35}
-    .slot input{
-      position:absolute;inset:0;width:100%;height:100%;
-      opacity:0;cursor:pointer;z-index:3;-webkit-appearance:none;appearance:none;background:transparent;
-      touch-action:manipulation;
-    }
-    .slot .box{
-      width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;pointer-events:none;z-index:1;
-    }
+    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:3;-webkit-appearance:none;appearance:none;background:transparent;touch-action:manipulation;}
+    .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;pointer-events:none;z-index:1}
     .slot input:checked + .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
+    .slot input:checked + .box::after{content:"✓";font-weight:700;font-size:16px;line-height:22px;color:#111;display:block;text-align:center}
     .slot.on .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
+    .slot.on .box::after{content:"✓";font-weight:700;font-size:16px;line-height:22px;color:#111;display:block;text-align:center}
 
-    /* 市场：整列彩色背景 + 白色小方块（像截图那样） */
+    /* 市场：每格彩色底（跟 4D 一样），白色小方块可点 && 选中打勾 */
     .m-legend{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center}
+    .legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px}
+    .legend-chip.M{background:#ffe766}.legend-chip.P{background:#2d6bff;color:#fff}
+    .legend-chip.T{background:#d62828;color:#fff}.legend-chip.S{background:#5b9bd5}
+    .legend-chip.B{background:#ef4444;color:#fff}.legend-chip.K{background:#1f7a4d;color:#fff}
+    .legend-chip.W{background:#3b82f6;color:#fff}.legend-chip.H{background:#ffcf5a}.legend-chip.E{background:#f0ad4e}
+
     .mgrid{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;justify-content:flex-start;padding:2px 0}
     .mtick{position:relative;width:32px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center}
     .mtick input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:3}
     .mbox{width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;z-index:1}
-    .mtick input:checked + .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset}
-    .mtick.on .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset}
+    .mtick input:checked + .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
+    .mtick input:checked + .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
+    .mtick.on .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
+    .mtick.on .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
 
-    /* 市场列背景色：给承载容器着色（不是小方块） */
+    /* 每格彩色底（与 4D 一致） */
     .mtick.M{background:#ffe766}
     .mtick.P{background:#2d6bff}
     .mtick.T{background:#d62828}
@@ -75,17 +85,15 @@
     .mtick.H{background:#ffcf5a}
     .mtick.E{background:#f0ad4e}
 
-    /* 顶部市场图例（彩底+字母） */
-    .legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px}
-    .legend-chip.M{background:#ffe766}.legend-chip.P{background:#2d6bff;color:#fff}
-    .legend-chip.T{background:#d62828;color:#fff}.legend-chip.S{background:#5b9bd5}
-    .legend-chip.B{background:#ef4444;color:#fff}.legend-chip.K{background:#1f7a4d;color:#fff}
-    .legend-chip.W{background:#3b82f6;color:#fff}.legend-chip.H{background:#ffcf5a}.legend-chip.E{background:#f0ad4e}
+    /* 顶部市场“列控制”小格子也跟着上色，跟 4D 头部一样有彩条感觉 */
+    .headbox.market.M{background:#ffe766}.headbox.market.P{background:#2d6bff}
+    .headbox.market.T{background:#d62828}.headbox.market.S{background:#5b9bd5}
+    .headbox.market.B{background:#ef4444}.headbox.market.K{background:#1f7a4d}
+    .headbox.market.W{background:#3b82f6}.headbox.market.H{background:#ffcf5a}.headbox.market.E{background:#f0ad4e}
 
     .sumcell{min-width:74px;text-align:right;padding-right:8px}
     label{user-select:none;-webkit-user-select:none}
 
-    /* —— 手机（≤768px） —— */
     @media (max-width: 768px){
       body{padding-bottom:70px}
       th,td{padding:4px 6px}
@@ -132,7 +140,7 @@
           <th>ODD</th>
           <th>EVEN</th>
 
-          <!-- 时间段表头：09~23 + 顶部列控制（小格子） + 套用首行 -->
+          <!-- 下注日期（= 2D 时间段） -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>下注时间段（当日 9–23）</div>
@@ -141,7 +149,7 @@
             <div class="slots-head" style="margin-top:6px">
               {% for s in slots %}<div>{{ "%02d"|format(s.hour) }}</div>{% endfor %}
             </div>
-            <!-- 顶部每列一个控制小格子：点它 = 整列全选/全不选 -->
+            <!-- 顶部每列一个控制小格子 -->
             <div class="headbar slots" id="headSlots">
               {% for s in slots %}
                 <label class="headbox"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
@@ -149,20 +157,20 @@
             </div>
           </th>
 
-          <!-- 市场表头：图例（彩底+字母） + 顶部列控制 + 套用首行 -->
+          <!-- 市场（彩色列 + 顶部控制小格子） -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>市场</div>
               <label class="muted" style="font-size:12px"><input type="checkbox" id="copyMarkets"> 套用首行</label>
             </div>
+            <!-- 顶部彩色字母条（跟 4D 一样） -->
             <div class="m-legend" style="margin-top:6px">
-              {% for m in markets %}
-                <div class="legend-chip {{m}}" title="{{m}}">{{ m }}</div>
-              {% endfor %}
+              {% for m in markets %}<div class="legend-chip {{m}}" title="{{m}}">{{ m }}</div>{% endfor %}
             </div>
+            <!-- 顶部每列一个控制小格子，并把底色也上色 -->
             <div class="headbar markets" id="headMarkets">
               {% for m in markets %}
-                <label class="headbox"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
+                <label class="headbox market {{m}}"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
               {% endfor %}
             </div>
           </th>
@@ -175,9 +183,7 @@
         {% for i in range(10) %}
           <tr>
             <td>{{ i+1 }}</td>
-            <td>
-              <input name="number[]" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="">
-            </td>
+            <td><input name="number[]" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*"></td>
             <td><input name="amount_n1[]"    type="number" step="0.01" min="0" inputmode="decimal"></td>
             <td><input name="amount_n[]"     type="number" step="0.01" min="0" inputmode="decimal"></td>
             <td><input name="amount_big[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
@@ -197,7 +203,7 @@
               </div>
             </td>
 
-            <!-- 市场：彩列背景 + 白格 -->
+            <!-- 市场：每格彩色底 + 白格可点 -->
             <td>
               <div class="mgrid">
                 {% for m in markets %}
@@ -216,7 +222,6 @@
       </table>
     </div>
 
-    <!-- 手机底部固定工具条 -->
     <div class="toolbar">
       <button type="button" class="btn" onclick="addRows(5)">+ 再加 5 行</button>
       <button type="submit" class="btn primary">提交</button>
@@ -231,9 +236,8 @@
   const tbody = table.querySelector('tbody');
   const copySlots = document.getElementById('copySlots');
   const copyMarkets = document.getElementById('copyMarkets');
-  const form = document.getElementById('betForm');
 
-  // —— 视觉兜底：把 :checked 同步成 .on 类 —— //
+  /* 视觉兜底：把 :checked 同步成 .on 类（即使某些浏览器不触发 CSS 也看得见） */
   function syncRowVisual(tr){
     tr.querySelectorAll('label.slot').forEach(lbl=>{
       const cb = lbl.querySelector('input[type="checkbox"]');
@@ -246,7 +250,7 @@
   }
   function syncAll(){ tbody.querySelectorAll('tr').forEach(syncRowVisual); }
 
-  // —— 顶部“列控制”：时间段 —— //
+  /* 顶部“列控制”：时间段 */
   document.getElementById('headSlots').addEventListener('change', (e)=>{
     if (e.target.tagName !== 'INPUT') return;
     const col = +e.target.dataset.col;
@@ -259,7 +263,7 @@
     });
   });
 
-  // —— 顶部“列控制”：市场 —— //
+  /* 顶部“列控制”：市场 */
   document.getElementById('headMarkets').addEventListener('change', (e)=>{
     if (e.target.tagName !== 'INPUT') return;
     const col = +e.target.dataset.col;
@@ -304,7 +308,6 @@
     }
   }
 
-  // 行内变化
   tbody.addEventListener('change', e=>{
     const tr = e.target.closest('tr'); if(!tr) return;
     syncRowVisual(tr);
@@ -313,11 +316,9 @@
     if(isFirst && copyMarkets.checked && e.target.name.startsWith('market_')) applyMarketsFromFirst();
   });
 
-  // 合计
   tbody.addEventListener('input', e=>{ const tr = e.target.closest('tr'); if(tr) recalcRow(tr); });
   tbody.querySelectorAll('tr').forEach(recalcRow);
 
-  // 加行
   window.addRows = function(n){
     for(let k=0;k<n;k++){
       const clone = tbody.lastElementChild.cloneNode(true);
@@ -334,7 +335,7 @@
     }
   }
 
-  // 兜底点击：点到 .slot/.mtick 任意位置切换；若直接点到 input 则不重复切换
+  // 兜底点击：点击 .slot/.mtick 外层也能切换
   document.addEventListener('click', function(e){
     if (e.target.matches('.slot input, .mtick input, .headbox input')) return;
     const block = e.target.closest('.slot, .mtick');
@@ -347,26 +348,6 @@
     }
   }, {passive:true});
 
-  // 提交前简单校验（可保留/可删）
-  document.getElementById('betForm').addEventListener('submit', function(e){
-    const rows = Array.from(document.querySelectorAll('#betTable tbody tr'));
-    let validLine = 0;
-    for (const tr of rows){
-      const num = (tr.querySelector('input[name="number[]"]')?.value || '').trim();
-      const amounts = ['amount_n1[]','amount_n[]','amount_big[]','amount_small[]','amount_odd[]','amount_even[]']
-        .map(n => parseFloat(tr.querySelector(`input[name="${n}"]`)?.value || '0') || 0)
-        .reduce((a,b)=>a+b,0);
-      if (!num && amounts===0) continue; // 空行允许
-      if (!/^\d{1,2}$/.test(num)) { alert('号码必须是 0-99 的两位数（可填 0 或 00）。'); e.preventDefault(); return; }
-      const slots = tr.querySelectorAll('input[name^="slot_"]:checked').length;
-      const mkts  = tr.querySelectorAll('input[name^="market_"]:checked').length;
-      if (slots===0 || mkts===0) { alert('请选择至少一个时间段和一个市场。'); e.preventDefault(); return; }
-      validLine++;
-    }
-    if (validLine===0) { alert('没有可提交的有效行。'); e.preventDefault(); }
-  });
-
-  // 初始化一次视觉
   syncAll();
 })();
 </script>
