@@ -19,7 +19,7 @@ def _fix_db_url(url: str) -> str:
         return url.replace("postgres://", "postgresql+psycopg2://", 1)
     return url
 
-# ---------- 下面这些工具函数在工厂外定义，路由里会用 ----------
+# ---------- 工具函数 ----------
 def parse_code_to_hour(code: str) -> datetime:
     # 20250906/1950 -> 2025-09-06 19:00 +08:00
     y=int(code[0:4]); m=int(code[4:6]); d=int(code[6:8]); h=int(code[9:11])
@@ -45,9 +45,17 @@ def list_slots_for_day(day: date) -> list[dict]:
     return slots
 
 def next_slot_code(now: datetime | None = None) -> str:
+    """根据当前时间给出下一期号：
+       <09:00 -> 当天 09:50；>=23:49 -> 次日 09:50；否则下一小时 :50。"""
     now = now or datetime.now(MY_TZ)
-    base = now if now.minute < 49 else now + timedelta(hours=1)
-    return base.strftime("%Y%m%d") + f"/{base.hour:02d}50"
+    day = now.date()
+    hour = now.hour + (1 if now.minute >= 49 else 0)
+    if hour < 9:
+        hour = 9
+    elif hour > 23:
+        day = day + timedelta(days=1)
+        hour = 9
+    return f"{day.strftime('%Y%m%d')}/{hour:02d}50"
 
 # ========================= 应用工厂 =========================
 def create_app() -> Flask:
@@ -58,12 +66,16 @@ def create_app() -> Flask:
     app.config.update(
         SQLALCHEMY_DATABASE_URI=db_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        # 连接更稳
+        SQLALCHEMY_ENGINE_OPTIONS={
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+        },
     )
     db.init_app(app)
 
     @app.get("/")
     def index():
-        # 也可以换成 render_template("home.html")（如果你做了首页）
         return redirect(url_for('bet_2d_view'))
 
     @app.get("/healthz")
@@ -74,12 +86,11 @@ def create_app() -> Flask:
         except Exception as e:
             return {"ok": False, "error": str(e)}, 500
 
-    # -------------- 下注页（与当前模板匹配） --------------
+    # -------------- 下注页 --------------
     @app.route("/2d/bet", methods=["GET","POST"])
     def bet_2d_view():
         agent_id = 1  # DEMO：没有登录体系，先写死 1
 
-        # 默认今天；也支持 ?date=YYYY-MM-DD 传入（页面里用隐藏域传回）
         date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
         try:
             day = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -129,14 +140,17 @@ def create_app() -> Flask:
                 if (n1+n+big+sml+odd+evn) == 0:
                     continue
 
-                slots_sel   = request.form.getlist(f"slot_{i}[]") or [next_slot_code()]
-                markets_sel = request.form.getlist(f"market_{i}[]") or ["M"]
+                slots_sel = request.form.getlist(f"slot_{i}[]") or [next_slot_code()]
+                # 市场白名单
+                markets_sel = [m for m in (request.form.getlist(f"market_{i}[]") or ["M"]) if m in MARKETS] or ["M"]
 
                 for code in slots_sel:
                     if is_locked_for_code(code):
                         continue
+                    # 更稳的订单号（到毫秒）
+                    ts = datetime.now(MY_TZ)
+                    order_code = ts.strftime("%y%m%d/%H%M%S") + f"{int(ts.microsecond/1000):03d}"
                     for m in markets_sel:
-                        order_code = nowts.strftime("%y%m%d") + "/" + f"{int(nowts.timestamp())%10000:04d}"
                         db.session.add(Bet2D(
                             order_code=order_code,
                             agent_id=agent_id, market=m, code=code, number=number,
@@ -147,12 +161,17 @@ def create_app() -> Flask:
                         ))
                         created += 1
 
-            if created > 0:
-                db.session.commit()
-                flash(f"已提交 {created} 条注单。", "ok")
-                return redirect(url_for("history_2d_view"))
-            else:
-                flash("没有有效行（或所选时间段已过锁注）。", "error")
+            try:
+                if created > 0:
+                    db.session.commit()
+                    flash(f"已提交 {created} 条注单。", "ok")
+                    return redirect(url_for("history_2d_view"))
+                else:
+                    flash("没有有效行（或所选时间段已过锁注）。", "error")
+                    return redirect(url_for("bet_2d_view", date=date_str))
+            except Exception as e:
+                db.session.rollback()
+                flash(f"提交失败：{e}", "error")
                 return redirect(url_for("bet_2d_view", date=date_str))
 
         # GET 渲染
