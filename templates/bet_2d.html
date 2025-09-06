@@ -2,49 +2,53 @@
 <html lang="zh">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>2D 下注</title>
   <style>
     :root{
       --c-border:#d0d7de; --c-head:#f6f8fa; --c-muted:#666;
       --c-blue:#1f6feb; --c-red:#b91c1c; --c-green:#0f5132; --c-yellow:#ffd400; --c-orange:#f0ad4e;
     }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:20px;}
-    h1{margin:0 0 12px}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px;}
+    h1{margin:0 0 10px}
     .muted{color:var(--c-muted)}
-    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}
-    .btn{padding:6px 12px;border:1px solid var(--c-border);background:#fff;border-radius:6px;cursor:pointer}
+    .btn{padding:6px 12px;border:1px solid var(--c-border);background:#fff;border-radius:8px;cursor:pointer}
     .btn.primary{background:#0969da;color:#fff;border-color:#0969da}
     .flash{padding:10px;border-radius:8px;margin:10px 0}
     .flash.ok{background:#e6ffed;border:1px solid #79d27d}
     .flash.error{background:#ffe6e6;border:1px solid #ff9999}
 
-    table{border-collapse:collapse;width:100%;margin-top:12px}
-    th,td{border:1px solid var(--c-border);padding:4px 6px;font-size:14px;text-align:center}
+    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid var(--c-border);border-radius:10px}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid var(--c-border);padding:6px 8px;font-size:14px;text-align:center}
     th{background:var(--c-head)}
     .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:1}
 
-    /* 更紧凑的输入格子 */
+    /* 输入更紧凑 + 数字键盘 */
     input[type="text"]{width:56px;text-align:center}
     input[type="number"]{width:72px;text-align:right}
+    input[name="number[]"]{width:56px}
+    input[name="number[]"], input[type="number"]{font-size:14px}
+    input[name="number[]"]{inputmode:numeric; pattern:"[0-9]*"}
+    input[type="number"]{inputmode:decimal}
 
-    /* 时间段横向 9~23（每小时）——行内只显示空方块，不重复数字 */
-    .slots-row{display:grid;grid-template-columns:repeat(15, 32px);gap:6px;justify-content:center}
-    .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+    /* 时间段：行内只显示空方块，可横向滑动；表头才有 09~23 数字 */
+    .slots-head{display:grid;grid-template-columns:repeat(15, 32px);gap:6px;justify-content:center}
+    .slots-row{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;padding:2px 0;scroll-snap-type:x proximity}
+    .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
     .slot.locked{opacity:.35}
     .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
     .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff}
     .slot input:checked + .box{outline:2px solid #111;outline-offset:-2px;background:#e8f0ff}
 
-    /* 市场 */
+    /* 市场：更小的彩色方块，可横向滑动 */
     .m-legend{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center}
-    .mgrid{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center;min-width:260px}
-    .mtick{position:relative;width:32px;height:28px}
+    .mgrid{display:grid;grid-auto-flow:column;grid-auto-columns:28px;gap:6px;overflow-x:auto;justify-content:flex-start;padding:2px 0}
+    .mtick{position:relative;width:28px;height:24px}
     .mtick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2}
-    .mbox{position:absolute;inset:0;margin:auto;width:28px;height:24px;border-radius:8px;z-index:1}
+    .mbox{position:absolute;inset:0;margin:auto;width:24px;height:20px;border-radius:6px;z-index:1}
     .mtick input:checked + .mbox{outline:2px solid #111;outline-offset:0}
 
-    /* 市场颜色 */
     .M{background:var(--c-yellow)}
     .P{background:var(--c-blue)}
     .T{background:var(--c-red)}
@@ -55,9 +59,28 @@
     .H{background:#ffce54}
     .E{background:var(--c-orange)}
 
-    .sumcell{min-width:80px;text-align:right;padding-right:8px}
-    .tiny{font-size:12px}
-    .hdr-copy{display:flex;align-items:center;justify-content:center;gap:8px}
+    .sumcell{min-width:74px;text-align:right;padding-right:8px}
+
+    /* —— 手机（≤768px） —— */
+    @media (max-width: 768px){
+      body{padding-bottom:70px} /* 给底部工具条留空间 */
+      th,td{padding:4px 6px}
+      input[type="text"]{width:48px}
+      input[type="number"]{width:64px}
+      .slots-head{grid-template-columns:repeat(15, 28px);gap:4px}
+      .slots-row{grid-auto-columns:28px;gap:4px}
+      .slot{width:28px;height:24px}
+      .slot .box{width:20px;height:18px}
+      .m-legend{grid-template-columns:repeat(9,28px);gap:4px}
+      .mgrid{grid-auto-columns:24px;gap:4px}
+      .mtick{width:24px;height:22px}
+      .mbox{width:22px;height:18px;border-radius:5px}
+      .sumcell{min-width:64px}
+      .toolbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--c-border);padding:8px;display:flex;gap:8px;justify-content:space-between;z-index:5}
+      .toolbar .btn{padding:8px 10px;border-radius:10px}
+      .legend-wrap{margin:6px 0 0 0}
+    }
+    /* —— 桌面（>768px）保持你现在的表格布局 —— */
   </style>
 </head>
 <body>
@@ -73,98 +96,99 @@
   {% endwith %}
 
   <form method="post" id="betForm">
-    <!-- 日期隐藏域（默认当天；仍可用 ?date=YYYY-MM-DD 传入） -->
     <input type="hidden" name="date" value="{{ date }}">
 
-    <table id="betTable">
-      <thead class="sticky-head">
-      <tr>
-        <th style="width:40px">#</th>
-        <th style="width:86px">下注号码</th>
-        <th>N1</th>
-        <th>N</th>
-        <th>BIG</th>
-        <th>SMALL</th>
-        <th>ODD</th>
-        <th>EVEN</th>
-
-        <!-- 时间段表头：只显示 9–23 一排数字 + “套用首行” -->
-        <th>
-          <div class="hdr-copy">
-            <span>下注时间段（当日 9–23）</span>
-            <label class="tiny"><input type="checkbox" id="copySlots"> 套用首行</label>
-          </div>
-          <div class="tiny muted">每格=该小时 <b>:50</b>；过锁点置灰</div>
-          <div class="slots-row tiny" style="margin-top:6px">
-            {% for s in slots %}<div>{{ "%02d"|format(s.hour) }}</div>{% endfor %}
-          </div>
-        </th>
-
-        <!-- 市场表头：图例（有字母），行内只显示彩色方块 -->
-        <th>
-          <div class="hdr-copy">
-            <span>市场</span>
-            <label class="tiny"><input type="checkbox" id="copyMarkets"> 套用首行</label>
-          </div>
-          <div class="m-legend tiny" style="margin-top:6px">
-            {% for m in markets %}
-              <div title="{{m}}" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;">
-                <div class="mbox {{m}}" style="position:static;width:28px;height:24px;border-radius:8px;margin-right:4px"></div>{{ m }}
-              </div>
-            {% endfor %}
-          </div>
-        </th>
-
-        <th style="width:96px">总额</th>
-      </tr>
-      </thead>
-
-      <tbody>
-      {% for i in range(10) %}
+    <div class="table-wrap">
+      <table id="betTable">
+        <thead class="sticky-head">
         <tr>
-          <td>{{ i+1 }}</td>
-          <td><input name="number[]" type="text" maxlength="2" placeholder=""></td>
-          <td><input name="amount_n1[]"    type="number" step="0.01" min="0"></td>
-          <td><input name="amount_n[]"     type="number" step="0.01" min="0"></td>
-          <td><input name="amount_big[]"   type="number" step="0.01" min="0"></td>
-          <td><input name="amount_small[]" type="number" step="0.01" min="0"></td>
-          <td><input name="amount_odd[]"   type="number" step="0.01" min="0"></td>
-          <td><input name="amount_even[]"  type="number" step="0.01" min="0"></td>
+          <th style="width:38px">#</th>
+          <th style="width:82px">下注号码</th>
+          <th>N1</th>
+          <th>N</th>
+          <th>BIG</th>
+          <th>SMALL</th>
+          <th>ODD</th>
+          <th>EVEN</th>
 
-          <!-- 时间段：行内只显示空方块（不重复数字） -->
-          <td>
-            <div class="slots-row">
-              {% for s in slots %}
-                <label class="slot {{ 'locked' if s.locked else '' }}">
-                  <input type="checkbox" name="slot_{{ i }}[]" value="{{ s.code }}" {% if s.locked %}disabled{% endif %} aria-label="{{ '%02d'|format(s.hour) }}:50">
-                  <span class="box"></span>
-                </label>
-              {% endfor %}
+          <!-- 时间段表头：只显示 9–23 + “套用首行” -->
+          <th>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+              <div>下注时间段（当日 9–23）</div>
+              <label class="muted" style="font-size:12px"><input type="checkbox" id="copySlots"> 套用首行</label>
             </div>
-          </td>
+            <div class="slots-head" style="margin-top:6px">
+              {% for s in slots %}<div>{{ "%02d"|format(s.hour) }}</div>{% endfor %}
+            </div>
+          </th>
 
-          <!-- 市场：彩色方块可点（不显示字母） -->
-          <td>
-            <div class="mgrid">
+          <!-- 市场表头：图例（带字母） + “套用首行” -->
+          <th>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+              <div>市场</div>
+              <label class="muted" style="font-size:12px"><input type="checkbox" id="copyMarkets"> 套用首行</label>
+            </div>
+            <div class="m-legend" style="margin-top:6px">
               {% for m in markets %}
-                <label class="mtick" title="{{m}}">
-                  <input type="checkbox" name="market_{{ i }}[]" value="{{ m }}" aria-label="{{ m }}">
-                  <span class="mbox {{m}}"></span>
-                </label>
+                <div title="{{m}}" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;">
+                  <div class="mbox {{m}}" style="position:static;width:24px;height:20px;border-radius:6px;margin-right:4px"></div>{{ m }}
+                </div>
               {% endfor %}
             </div>
-          </td>
+          </th>
 
-          <td class="sumcell">0.00</td>
+          <th style="width:88px">总额</th>
         </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+        </thead>
 
-    <div class="controls">
+        <tbody>
+        {% for i in range(10) %}
+          <tr>
+            <td>{{ i+1 }}</td>
+            <td><input name="number[]" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder=""></td>
+            <td><input name="amount_n1[]"    type="number" step="0.01" min="0" inputmode="decimal"></td>
+            <td><input name="amount_n[]"     type="number" step="0.01" min="0" inputmode="decimal"></td>
+            <td><input name="amount_big[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
+            <td><input name="amount_small[]" type="number" step="0.01" min="0" inputmode="decimal"></td>
+            <td><input name="amount_odd[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
+            <td><input name="amount_even[]"  type="number" step="0.01" min="0" inputmode="decimal"></td>
+
+            <!-- 时间段：左右滑条（行内不重复数字） -->
+            <td>
+              <div class="slots-row">
+                {% for s in slots %}
+                  <label class="slot {{ 'locked' if s.locked else '' }}">
+                    <input type="checkbox" name="slot_{{ i }}[]" value="{{ s.code }}" {% if s.locked %}disabled{% endif %} aria-label="{{ '%02d'|format(s.hour) }}:50">
+                    <span class="box"></span>
+                  </label>
+                {% endfor %}
+              </div>
+            </td>
+
+            <!-- 市场：更小的彩色方块，可横向滑动 -->
+            <td>
+              <div class="mgrid">
+                {% for m in markets %}
+                  <label class="mtick" title="{{m}}">
+                    <input type="checkbox" name="market_{{ i }}[]" value="{{ m }}" aria-label="{{ m }}">
+                    <span class="mbox {{m}}"></span>
+                  </label>
+                {% endfor %}
+              </div>
+            </td>
+
+            <td class="sumcell">0.00</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 手机底部固定工具条 -->
+    <div class="toolbar">
       <button type="button" class="btn" onclick="addRows(5)">+ 再加 5 行</button>
       <button type="submit" class="btn primary">提交</button>
-      <a class="btn" href="/2d/history">查看当日注单</a>
+      <a class="btn" href="/2d/history">当日注单</a>
       <a class="btn" href="/2d/winning">查看中奖</a>
     </div>
   </form>
@@ -223,18 +247,15 @@
   window.addRows = function(n){
     for(let k=0;k<n;k++){
       const clone = tbody.lastElementChild.cloneNode(true);
-      // 清空
       clone.querySelectorAll('input').forEach(inp=>{
         if(inp.type === 'checkbox') inp.checked = false; else inp.value = '';
       });
-      // 重排 name & 序号
       const idx = tbody.children.length;
       clone.children[0].textContent = idx+1;
       clone.querySelectorAll('input[type="checkbox"][name^="slot_"]').forEach(cb=>cb.name = `slot_${idx}[]`);
       clone.querySelectorAll('input[type="checkbox"][name^="market_"]').forEach(cb=>cb.name = `market_${idx}[]`);
       clone.querySelector('.sumcell').textContent = '0.00';
       tbody.appendChild(clone);
-      // 如果勾了“套用首行”，同步新行
       if(copySlots.checked) applySlotsFromFirst();
       if(copyMarkets.checked) applyMarketsFromFirst();
     }
