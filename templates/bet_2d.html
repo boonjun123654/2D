@@ -149,8 +149,8 @@
 
           {# —— 市场列 —— #}
           {% for m in market_order %}
-            <td class="market-cell">
-              <label class="mtick {{ m }}bg">
+            <td class="market-cell {{ m }}bg">
+              <label class="mtick">
                 <input type="checkbox" name="market{{ i }}_{{ m }}" class="market_col_{{ m }}">
                 <span class="mbox"></span>
               </label>
