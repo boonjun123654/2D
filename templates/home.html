@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>2D 首页</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:24px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px}
+    a.card{display:block;padding:18px;border:1px solid #ddd;border-radius:12px;text-decoration:none;color:#111}
+    a.card:hover{border-color:#999}
+    .muted{color:#666}
+  </style>
+</head>
+<body>
+  <h1>2D 系统</h1>
+  <p class="muted">选择一个功能进入：</p>
+  <div class="grid">
+    <a class="card" href="/2d/bet">➕ 下注</a>
+    <a class="card" href="/2d/history">📃 当日注单</a>
+    <a class="card" href="/2d/winning">🏆 查看中奖</a>
+    <a class="card" href="/healthz">🩺 健康检查</a>
+  </div>
+</body>
+</html>
