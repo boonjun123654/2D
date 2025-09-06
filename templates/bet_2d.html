@@ -7,16 +7,15 @@
   <style>
     :root{
       --c-border:#d0d7de; --c-head:#f6f8fa; --c-muted:#666;
-      /* 市场配色（按你左边截图） */
-      --M:#ffe766; /* 黄 */
-      --P:#2d6bff; /* 亮蓝 */
-      --T:#d62828; /* 正红 */
-      --S:#5b9bd5; /* 灰蓝 */
-      --B:#ef4444; /* 略深红 */
-      --K:#1f7a4d; /* 绿 */
-      --W:#14532d; /* 深绿 */
-      --H:#ffcf5a; /* 浅黄 */
-      --E:#f0ad4e; /* 橙 */
+      /* 市场配色 */
+      --M:#ffe766; --P:#2d6bff; --T:#d62828; --S:#5b9bd5; --B:#ef4444; --K:#1f7a4d; --W:#14532d; --H:#ffcf5a; --E:#f0ad4e;
+
+      /* ✅ 固定网格尺寸（桌面） */
+      --slot-cols: 15;
+      --slot-w: 32px;  --slot-h: 28px;  --slot-gap: 6px;
+
+      --market-cols: 9;
+      --market-w: 36px; --market-h: 30px; --market-gap: 2px;
     }
 
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px;}
@@ -39,42 +38,32 @@
     input[type="number"]{width:72px;text-align:right}
 
     /* 顶部“列控制”条（时间段、市场） */
-    .headbar{display:grid;gap:6px;justify-content:center;margin-top:6px}
-    .headbar.slots{grid-template-columns:repeat(15,32px)}
-    .headbar.markets{grid-template-columns:repeat(9,32px)}
-    .headbox{position:relative;width:32px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+    .headbar{display:grid;gap:var(--slot-gap);justify-content:center;margin-top:6px}
+    .headbar.slots{grid-template-columns:repeat(var(--slot-cols), var(--slot-w))}
+    .headbar.markets{grid-template-columns:repeat(var(--market-cols), var(--market-w))}
+    .headbox{position:relative;width:var(--slot-w);height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+    .headbox.market{width:var(--market-w)}
     .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
     .headbox span{
       width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;
       box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;
     }
-    .headbox input:checked + span{
-      box-shadow:0 0 0 2px #111 inset;background:#e8f0ff;
-    }
-    .headbox input:checked + span::after{
-      content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center;
-    }
+    .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
+    .headbox input:checked + span::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
 
-    /* —— 时间段（下注日期） —— */
-    .slots-head{display:grid;grid-template-columns:repeat(15,32px);gap:6px;justify-content:center}
-    .slots-row{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;padding:2px 0;scroll-snap-type:x proximity}
-    .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
+    /* —— 时间段（固定 15 列） —— */
+    .slots-head{display:grid;grid-template-columns:repeat(var(--slot-cols), var(--slot-w));gap:var(--slot-gap);justify-content:center}
+    .slots-row{display:grid;grid-template-columns:repeat(var(--slot-cols), var(--slot-w));gap:var(--slot-gap);padding:2px 0;overflow:visible;scroll-snap-type:none}
+    .slot{position:relative;width:var(--slot-w);height:var(--slot-h);border-radius:8px;display:flex;align-items:center;justify-content:center}
     .slot.locked{opacity:.35}
-    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;-webkit-appearance:none;appearance:none;background:transparent;touch-action:manipulation;}
+    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;-webkit-appearance:none;appearance:none;background:transparent;touch-action:manipulation}
     .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;pointer-events:none;z-index:1;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset}
     .slot input:checked + .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
     .slot input:checked + .box::after{content:"✓";font-weight:700;font-size:16px;line-height:22px;color:#111;display:block;text-align:center}
 
     /* ===== 4D 风格“市场”列（实心彩色砖 + 内部白色小方块） ===== */
-
-    /* 顶部彩色字母条（与左图一致） */
-    .m-legend{
-      display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center
-    }
-    .legend-chip{
-      display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px;
-      box-shadow:0 0 0 1px rgba(0,0,0,.18) inset;
-    }
+    .m-legend{display:grid;grid-template-columns:repeat(var(--market-cols), var(--market-w));gap:var(--slot-gap);justify-content:center}
+    .legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px;box-shadow:0 0 0 1px rgba(0,0,0,.18) inset}
     .legend-chip.M{background:var(--M)}
     .legend-chip.P{background:var(--P);color:#fff}
     .legend-chip.T{background:var(--T);color:#fff}
@@ -85,27 +74,9 @@
     .legend-chip.H{background:var(--H)}
     .legend-chip.E{background:var(--E)}
 
-    /* 行内网格：彩色砖，白色分隔线（看起来是整列彩色） */
-    .mgrid{
-      display:grid;
-      grid-auto-flow:column;
-      grid-auto-columns:36px;   /* 接近左图比例 */
-      gap:2px;                  /* 白色分隔线 */
-      overflow-x:auto;
-      justify-content:flex-start;
-      padding:2px 0;
-      position:relative;
-    }
-    .mtick{
-      position:relative;
-      width:36px;height:30px;
-      border-radius:4px;
-      border:2px solid #fff;           /* 白色网格线（列与列之间） */
-      display:flex;align-items:center;justify-content:center;
-      box-sizing:border-box;
-      box-shadow:0 0 0 1px rgba(0,0,0,.28) inset; /* 立体一点 */
-    }
-    /* 彩色底 */
+    /* 行内网格：固定 9 列 */
+    .mgrid{display:grid;grid-template-columns:repeat(var(--market-cols), var(--market-w));gap:var(--market-gap);padding:2px 0;overflow:visible}
+    .mtick{position:relative;width:var(--market-w);height:var(--market-h);border-radius:4px;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-sizing:border-box;box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
     .mtick.M{background:var(--M)}
     .mtick.P{background:var(--P)}
     .mtick.T{background:var(--T)}
@@ -115,29 +86,12 @@
     .mtick.W{background:var(--W)}
     .mtick.H{background:var(--H)}
     .mtick.E{background:var(--E)}
+    .mtick input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+    .mbox{width:22px;height:20px;background:#fff;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;pointer-events:none;z-index:1}
+    .mtick input:checked + .mbox{background:#fff;box-shadow:0 0 0 2px #111 inset}
+    .mtick input:checked + .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
 
-    /* 点击区域 */
-    .mtick input{
-      position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;
-    }
-
-    /* 内部白色小方块（和左图相同） */
-    .mbox{
-      width:22px;height:20px;
-      background:#fff;
-      border-radius:6px;
-      border:2px solid #fff;
-      box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;
-      pointer-events:none;z-index:1;
-    }
-
-    /* 选中：小白块内直接显示 ✓（不改变彩色底） */
-    .mtick input:checked + .mbox{background:#fff;box-shadow:0 0 0 2px #111 inset;}
-    .mtick input:checked + .mbox::after{
-      content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center;
-    }
-
-    /* 顶部列控制小格也上色（更像左图） */
+    /* 顶部列控制小格也上色 */
     .headbar.markets .headbox.market.M{background:var(--M)}
     .headbar.markets .headbox.market.P{background:var(--P)}
     .headbar.markets .headbox.market.T{background:var(--T)}
@@ -150,20 +104,11 @@
 
     /* —— 手机优化 —— */
     @media (max-width: 768px){
+      :root{--slot-w:28px;--slot-h:24px;--slot-gap:4px;--market-w:30px;--market-h:26px;--market-gap:2px}
       body{padding-bottom:70px}
       th,td{padding:4px 6px}
       input[type="text"]{width:48px}
       input[type="number"]{width:64px}
-      .slots-head{grid-template-columns:repeat(15,28px);gap:4px}
-      .slots-row{grid-auto-columns:28px;gap:4px}
-      .slot{width:28px;height:24px}
-      .slot .box{width:20px;height:18px}
-      .m-legend{grid-template-columns:repeat(9,28px);gap:4px}
-      .mgrid{grid-auto-columns:30px;gap:2px}
-      .mtick{width:30px;height:26px}
-      .mbox{width:16px;height:16px}
-      .headbar.slots{grid-template-columns:repeat(15,28px)}
-      .headbar.markets{grid-template-columns:repeat(9,28px)}
       .toolbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--c-border);padding:8px;display:flex;gap:8px;justify-content:space-between;z-index:5}
       .toolbar .btn{padding:8px 10px;border-radius:10px}
     }
@@ -183,6 +128,9 @@
 
   <form method="post" id="betForm">
     <input type="hidden" name="date" value="{{ date }}">
+
+    {# ✅ 固定市场顺序，避免顺序错乱 #}
+    {% set markets = ["M","P","T","S","B","K","W","H","E"] %}
 
     <div class="table-wrap">
       <table id="betTable">
