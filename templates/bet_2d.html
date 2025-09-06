@@ -22,53 +22,65 @@
     table{border-collapse:collapse;width:100%}
     th,td{border:1px solid var(--c-border);padding:6px 8px;font-size:14px;text-align:center}
     th{background:var(--c-head)}
-    .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:1}
+    .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:2}
 
     /* 输入更紧凑（号码/金额） */
     input[type="text"]{width:56px;text-align:center}
     input[type="number"]{width:72px;text-align:right}
 
-    /* 时间段表头：09~23 */
+    /* 顶部“列控制”的小方块 */
+    .headbar{display:grid;gap:6px;justify-content:center;margin-top:6px}
+    .headbar.slots{grid-template-columns:repeat(15,32px)}
+    .headbar.markets{grid-template-columns:repeat(9,32px)}
+    .headbox{position:relative;width:32px;height:26px;display:flex;align-items:center;justify-content:center}
+    .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .headbox span{
+      width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;
+    }
+    .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
+
+    /* 时间段：行内小方块，可横向滑动 */
     .slots-head{display:grid;grid-template-columns:repeat(15,32px);gap:6px;justify-content:center}
-    /* 时间段行：只显示小方块，可横向滑动 */
     .slots-row{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;padding:2px 0;scroll-snap-type:x proximity}
     .slot{position:relative;width:32px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
     .slot.locked{opacity:.35}
     .slot input{
       position:absolute;inset:0;width:100%;height:100%;
-      opacity:0;cursor:pointer;z-index:3;
-      -webkit-appearance:none;appearance:none;background:transparent;
+      opacity:0;cursor:pointer;z-index:3;-webkit-appearance:none;appearance:none;background:transparent;
       touch-action:manipulation;
     }
     .slot .box{
-      width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;
-      pointer-events:none;z-index:1;
+      width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;pointer-events:none;z-index:1;
     }
-    .slot input:checked + .box{outline:2px solid #111;outline-offset:-2px;background:#e8f0ff}
+    .slot input:checked + .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
+    .slot.on .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
 
-    /* 市场表头图例 + 行内彩色方块（可横向滑动） */
+    /* 市场：整列彩色背景 + 白色小方块（像截图那样） */
     .m-legend{display:grid;grid-template-columns:repeat(9,32px);gap:6px;justify-content:center}
-    .mgrid{display:grid;grid-auto-flow:column;grid-auto-columns:28px;gap:6px;overflow-x:auto;justify-content:flex-start;padding:2px 0}
-    .mtick{position:relative;width:28px;height:24px}
-    .mtick input{
-      position:absolute;inset:0;width:100%;height:100%;
-      opacity:0;cursor:pointer;z-index:3;
-      -webkit-appearance:none;appearance:none;background:transparent;
-      touch-action:manipulation;
-    }
-    .mbox{position:absolute;inset:0;margin:auto;width:24px;height:20px;border-radius:6px;z-index:1;pointer-events:none}
-    .mtick input:checked + .mbox{outline:2px solid #111;outline-offset:0}
+    .mgrid{display:grid;grid-auto-flow:column;grid-auto-columns:32px;gap:6px;overflow-x:auto;justify-content:flex-start;padding:2px 0}
+    .mtick{position:relative;width:32px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .mtick input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:3}
+    .mbox{width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;z-index:1}
+    .mtick input:checked + .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset}
+    .mtick.on .mbox{border-color:#111;box-shadow:0 0 0 2px #111 inset}
 
-    /* 市场颜色 */
-    .M{background:var(--c-yellow)}
-    .P{background:var(--c-blue)}
-    .T{background:var(--c-red)}
-    .S{background:#5b9bd5}
-    .B{background:var(--c-red)}
-    .K{background:var(--c-green)}
-    .W{background:var(--c-blue)}
-    .H{background:#ffce54}
-    .E{background:var(--c-orange)}
+    /* 市场列背景色：给承载容器着色（不是小方块） */
+    .mtick.M{background:#ffe766}
+    .mtick.P{background:#2d6bff}
+    .mtick.T{background:#d62828}
+    .mtick.S{background:#5b9bd5}
+    .mtick.B{background:#ef4444}
+    .mtick.K{background:#1f7a4d}
+    .mtick.W{background:#3b82f6}
+    .mtick.H{background:#ffcf5a}
+    .mtick.E{background:#f0ad4e}
+
+    /* 顶部市场图例（彩底+字母） */
+    .legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px}
+    .legend-chip.M{background:#ffe766}.legend-chip.P{background:#2d6bff;color:#fff}
+    .legend-chip.T{background:#d62828;color:#fff}.legend-chip.S{background:#5b9bd5}
+    .legend-chip.B{background:#ef4444;color:#fff}.legend-chip.K{background:#1f7a4d;color:#fff}
+    .legend-chip.W{background:#3b82f6;color:#fff}.legend-chip.H{background:#ffcf5a}.legend-chip.E{background:#f0ad4e}
 
     .sumcell{min-width:74px;text-align:right;padding-right:8px}
     label{user-select:none;-webkit-user-select:none}
@@ -84,12 +96,11 @@
       .slot{width:28px;height:24px}
       .slot .box{width:20px;height:18px}
       .m-legend{grid-template-columns:repeat(9,28px);gap:4px}
-      .mgrid{grid-auto-columns:24px;gap:4px}
-      .mtick{width:24px;height:22px}
-      .mbox{width:22px;height:18px;border-radius:5px}
-      .sumcell{min-width:64px}
-      .toolbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--c-border);padding:8px;display:flex;gap:8px;justify-content:space-between;z-index:5}
-      .toolbar .btn{padding:8px 10px;border-radius:10px}
+      .mgrid{grid-auto-columns:28px;gap:4px}
+      .mtick{width:28px;height:24px}
+      .mbox{width:16px;height:16px}
+      .headbar.slots{grid-template-columns:repeat(15,28px)}
+      .headbar.markets{grid-template-columns:repeat(9,28px)}
     }
   </style>
 </head>
@@ -121,7 +132,7 @@
           <th>ODD</th>
           <th>EVEN</th>
 
-          <!-- 时间段表头：09~23 + 套用首行 -->
+          <!-- 时间段表头：09~23 + 顶部列控制（小格子） + 套用首行 -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>下注时间段（当日 9–23）</div>
@@ -130,9 +141,15 @@
             <div class="slots-head" style="margin-top:6px">
               {% for s in slots %}<div>{{ "%02d"|format(s.hour) }}</div>{% endfor %}
             </div>
+            <!-- 顶部每列一个控制小格子：点它 = 整列全选/全不选 -->
+            <div class="headbar slots" id="headSlots">
+              {% for s in slots %}
+                <label class="headbox"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
+              {% endfor %}
+            </div>
           </th>
 
-          <!-- 市场表头：图例 + 套用首行 -->
+          <!-- 市场表头：图例（彩底+字母） + 顶部列控制 + 套用首行 -->
           <th>
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
               <div>市场</div>
@@ -140,9 +157,12 @@
             </div>
             <div class="m-legend" style="margin-top:6px">
               {% for m in markets %}
-                <div title="{{m}}" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;">
-                  <div class="mbox {{m}}" style="position:static;width:24px;height:20px;border-radius:6px;margin-right:4px"></div>{{ m }}
-                </div>
+                <div class="legend-chip {{m}}" title="{{m}}">{{ m }}</div>
+              {% endfor %}
+            </div>
+            <div class="headbar markets" id="headMarkets">
+              {% for m in markets %}
+                <label class="headbox"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
               {% endfor %}
             </div>
           </th>
@@ -177,13 +197,13 @@
               </div>
             </td>
 
-            <!-- 市场：彩色可点方块 -->
+            <!-- 市场：彩列背景 + 白格 -->
             <td>
               <div class="mgrid">
                 {% for m in markets %}
-                  <label class="mtick" title="{{m}}">
+                  <label class="mtick {{m}}" title="{{m}}">
                     <input type="checkbox" name="market_{{ i }}[]" value="{{ m }}" aria-label="{{ m }}">
-                    <span class="mbox {{m}}"></span>
+                    <span class="mbox"></span>
                   </label>
                 {% endfor %}
               </div>
@@ -213,6 +233,45 @@
   const copyMarkets = document.getElementById('copyMarkets');
   const form = document.getElementById('betForm');
 
+  // —— 视觉兜底：把 :checked 同步成 .on 类 —— //
+  function syncRowVisual(tr){
+    tr.querySelectorAll('label.slot').forEach(lbl=>{
+      const cb = lbl.querySelector('input[type="checkbox"]');
+      lbl.classList.toggle('on', !!(cb && cb.checked));
+    });
+    tr.querySelectorAll('label.mtick').forEach(lbl=>{
+      const cb = lbl.querySelector('input[type="checkbox"]');
+      lbl.classList.toggle('on', !!(cb && cb.checked));
+    });
+  }
+  function syncAll(){ tbody.querySelectorAll('tr').forEach(syncRowVisual); }
+
+  // —— 顶部“列控制”：时间段 —— //
+  document.getElementById('headSlots').addEventListener('change', (e)=>{
+    if (e.target.tagName !== 'INPUT') return;
+    const col = +e.target.dataset.col;
+    const checked = e.target.checked;
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const slotLbl = tr.querySelectorAll('.slots-row .slot')[col];
+      if(!slotLbl) return;
+      const cb = slotLbl.querySelector('input[type="checkbox"]');
+      if (cb && !cb.disabled){ cb.checked = checked; cb.dispatchEvent(new Event('change',{bubbles:true})); }
+    });
+  });
+
+  // —— 顶部“列控制”：市场 —— //
+  document.getElementById('headMarkets').addEventListener('change', (e)=>{
+    if (e.target.tagName !== 'INPUT') return;
+    const col = +e.target.dataset.col;
+    const checked = e.target.checked;
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const mLbl = tr.querySelectorAll('.mgrid .mtick')[col];
+      if(!mLbl) return;
+      const cb = mLbl.querySelector('input[type="checkbox"]');
+      if (cb){ cb.checked = checked; cb.dispatchEvent(new Event('change',{bubbles:true})); }
+    });
+  });
+
   function recalcRow(tr){
     const names = ['amount_n1[]','amount_n[]','amount_big[]','amount_small[]','amount_odd[]','amount_even[]'];
     let sum = 0;
@@ -228,32 +287,31 @@
 
   function applySlotsFromFirst(){
     const first = getRow(0); if(!first) return;
-    const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="slot_"]'))
-      .filter(cb=>cb.checked).map(cb=>cb.value);
+    const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="slot_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
     for(let i=1;i<tbody.children.length;i++){
       const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="slot_"]');
       boxes.forEach(cb=>{ if(!cb.disabled) cb.checked = selected.includes(cb.value); });
+      syncRowVisual(getRow(i));
     }
   }
   function applyMarketsFromFirst(){
     const first = getRow(0); if(!first) return;
-    const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="market_"]'))
-      .filter(cb=>cb.checked).map(cb=>cb.value);
+    const selected = Array.from(first.querySelectorAll('input[type="checkbox"][name^="market_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
     for(let i=1;i<tbody.children.length;i++){
       const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="market_"]');
       boxes.forEach(cb=>{ cb.checked = selected.includes(cb.value); });
+      syncRowVisual(getRow(i));
     }
   }
 
-  // 变更复制
+  // 行内变化
   tbody.addEventListener('change', e=>{
     const tr = e.target.closest('tr'); if(!tr) return;
+    syncRowVisual(tr);
     const isFirst = tr === getRow(0);
     if(isFirst && copySlots.checked && e.target.name.startsWith('slot_')) applySlotsFromFirst();
     if(isFirst && copyMarkets.checked && e.target.name.startsWith('market_')) applyMarketsFromFirst();
   });
-  copySlots.addEventListener('change', e=>{ if(e.target.checked) applySlotsFromFirst(); saveFirstRowPref(); });
-  copyMarkets.addEventListener('change', e=>{ if(e.target.checked) applyMarketsFromFirst(); saveFirstRowPref(); });
 
   // 合计
   tbody.addEventListener('input', e=>{ const tr = e.target.closest('tr'); if(tr) recalcRow(tr); });
@@ -272,26 +330,25 @@
       clone.querySelectorAll('input[type="checkbox"][name^="market_"]').forEach(cb=>cb.name = `market_${idx}[]`);
       clone.querySelector('.sumcell').textContent = '0.00';
       tbody.appendChild(clone);
-      if(copySlots.checked) applySlotsFromFirst();
-      if(copyMarkets.checked) applyMarketsFromFirst();
+      syncRowVisual(clone);
     }
   }
 
   // 兜底点击：点到 .slot/.mtick 任意位置切换；若直接点到 input 则不重复切换
   document.addEventListener('click', function(e){
-    if (e.target.matches('.slot input, .mtick input')) return;
+    if (e.target.matches('.slot input, .mtick input, .headbox input')) return;
     const block = e.target.closest('.slot, .mtick');
     if(!block) return;
     const cb = block.querySelector('input[type="checkbox"]');
     if(cb && !cb.disabled){
       cb.checked = !cb.checked;
       cb.dispatchEvent(new Event('change', {bubbles:true}));
-      if (block.classList.contains('slot') || block.classList.contains('mtick')) saveFirstRowPref();
+      syncRowVisual(block.closest('tr'));
     }
   }, {passive:true});
 
-  // 提交前校验
-  form.addEventListener('submit', function(e){
+  // 提交前简单校验（可保留/可删）
+  document.getElementById('betForm').addEventListener('submit', function(e){
     const rows = Array.from(document.querySelectorAll('#betTable tbody tr'));
     let validLine = 0;
     for (const tr of rows){
@@ -309,28 +366,8 @@
     if (validLine===0) { alert('没有可提交的有效行。'); e.preventDefault(); }
   });
 
-  // 本地记忆首行选择（slots/markets）
-  function saveFirstRowPref(){
-    const first = document.querySelector('#betTable tbody tr');
-    if(!first) return;
-    const slots = Array.from(first.querySelectorAll('input[name^="slot_"]:checked')).map(cb=>cb.value);
-    const mkts  = Array.from(first.querySelectorAll('input[name^="market_"]:checked')).map(cb=>cb.value);
-    try{
-      localStorage.setItem('pref_slots', JSON.stringify(slots));
-      localStorage.setItem('pref_markets', JSON.stringify(mkts));
-    }catch(_){}
-  }
-  (function restorePref(){
-    const first = document.querySelector('#betTable tbody tr');
-    if(!first) return;
-    try{
-      const slots = JSON.parse(localStorage.getItem('pref_slots')||'[]');
-      const mkts  = JSON.parse(localStorage.getItem('pref_markets')||'[]');
-      first.querySelectorAll('input[name^="slot_"]').forEach(cb=> cb.checked = slots.includes(cb.value) && !cb.disabled);
-      first.querySelectorAll('input[name^="market_"]').forEach(cb=> cb.checked = mkts.includes(cb.value));
-    }catch(_){}
-  })();
-
+  // 初始化一次视觉
+  syncAll();
 })();
 </script>
 </body>
