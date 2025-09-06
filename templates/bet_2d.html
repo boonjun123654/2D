@@ -3,342 +3,243 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-  <title>2D 下注</title>
+  <title>2D 下注（与 4D 同版式）</title>
   <style>
     :root{
       --c-border:#d0d7de; --c-head:#f6f8fa; --c-muted:#666;
-      /* 市场配色 */
-      --M:#ffe766; --P:#2d6bff; --T:#d62828; --S:#5b9bd5; --B:#ef4444; --K:#1f7a4d; --W:#14532d; --H:#ffcf5a; --E:#f0ad4e;
-
-      /* ✅ 固定网格尺寸（桌面） */
-      --slot-cols: 15;
-      --slot-w: 32px;  --slot-h: 28px;  --slot-gap: 6px;
-
-      --market-cols: 9;
-      --market-w: 36px; --market-h: 30px; --market-gap: 2px;
+      /* 市场配色与 4D 一致 */
+      --M:#ffff00; --P:#0000ff; --T:#cc0000; --S:#4c8ed1;
+      --B:#e51d20; --K:#008835; --W:#00540e; --H:#fed606; --E:#ffa500;
     }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px}
+    h1,h2{margin:0 0 12px}
+    table{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--c-border);border-radius:10px;overflow:hidden}
+    th,td{border:1px solid var(--c-border);padding:6px 8px;text-align:center}
+    thead th{background:var(--c-head)}
+    tfoot td{background:#fafbfc}
+    input[type="text"]{text-align:center}
+    input.money{width:64px;text-align:right}
 
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px;}
-    h1{margin:0 0 10px}
-    .muted{color:var(--c-muted)}
-    .btn{padding:6px 12px;border:1px solid var(--c-border);background:#fff;border-radius:8px;cursor:pointer}
-    .btn.primary{background:#0969da;color:#fff;border-color:#0969da}
-    .flash{padding:10px;border-radius:8px;margin:10px 0}
-    .flash.ok{background:#e6ffed;border:1px solid #79d27d}
-    .flash.error{background:#ffe6e6;border:1px solid #ff9999}
-
-    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid var(--c-border);border-radius:10px}
-    table{border-collapse:collapse;width:100%}
-    th,td{border:1px solid var(--c-border);padding:6px 8px;font-size:14px;text-align:center}
-    th{background:var(--c-head)}
-    .sticky-head th{position:sticky;top:0;background:var(--c-head);z-index:3}
-
-    /* 输入更紧凑 */
-    input[type="text"]{width:56px;text-align:center}
-    input[type="number"]{width:72px;text-align:right}
-
-    /* 顶部“列控制”条（时间段、市场） */
-    .headbar{display:grid;gap:var(--slot-gap);justify-content:center;margin-top:6px}
-    .headbar.slots{grid-template-columns:repeat(var(--slot-cols), var(--slot-w))}
-    .headbar.markets{grid-template-columns:repeat(var(--market-cols), var(--market-w))}
-    .headbox{position:relative;width:var(--slot-w);height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px}
-    .headbox.market{width:var(--market-w)}
+    /* 顶部金额列“复制向下”总控小方块（风格与 4D 页面一致） */
+    .headbox{position:relative;display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:6px}
     .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
-    .headbox span{
-      width:18px;height:18px;background:#fff;border:1px solid var(--c-border);border-radius:4px;pointer-events:none;
-      box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;
-    }
+    .headbox span{width:16px;height:16px;background:#fff;border:1px solid var(--c-border);border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;pointer-events:none}
     .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
-    .headbox input:checked + span::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
+    .headbox input:checked + span::after{content:"✓";display:block;text-align:center;font-weight:700;font-size:12px;line-height:16px;color:#111}
 
-    /* —— 时间段（固定 15 列） —— */
-    .slots-head{display:grid;grid-template-columns:repeat(var(--slot-cols), var(--slot-w));gap:var(--slot-gap);justify-content:center}
-    .slots-row{display:grid;grid-template-columns:repeat(var(--slot-cols), var(--slot-w));gap:var(--slot-gap);padding:2px 0;overflow:visible;scroll-snap-type:none}
-    .slot{position:relative;width:var(--slot-w);height:var(--slot-h);border-radius:8px;display:flex;align-items:center;justify-content:center}
-    .slot.locked{opacity:.35}
-    .slot input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;-webkit-appearance:none;appearance:none;background:transparent;touch-action:manipulation}
-    .slot .box{width:22px;height:22px;border:1px solid var(--c-border);border-radius:6px;background:#fff;pointer-events:none;z-index:1;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset}
-    .slot input:checked + .box{border-color:#111;background:#e8f0ff;box-shadow:0 0 0 2px #111 inset}
-    .slot input:checked + .box::after{content:"✓";font-weight:700;font-size:16px;line-height:22px;color:#111;display:block;text-align:center}
+    /* 市场表头颜色块（与 4D 相同） */
+    .Mbg{background:var(--M)} .Pbg{background:var(--P)} .Tbg{background:var(--T)}
+    .Sbg{background:var(--S)} .Bbg{background:var(--B)} .Kbg{background:var(--K)}
+    .Wbg{background:var(--W)} .Hbg{background:var(--H)} .Ebg{background:var(--E)}
 
-    /* ===== 4D 风格“市场”列（实心彩色砖 + 内部白色小方块） ===== */
-    .m-legend{display:grid;grid-template-columns:repeat(var(--market-cols), var(--market-w));gap:var(--slot-gap);justify-content:center}
-    .legend-chip{display:flex;align-items:center;justify-content:center;font-weight:700;color:#111;border-radius:6px;height:22px;box-shadow:0 0 0 1px rgba(0,0,0,.18) inset}
-    .legend-chip.M{background:var(--M)}
-    .legend-chip.P{background:var(--P);color:#fff}
-    .legend-chip.T{background:var(--T);color:#fff}
-    .legend-chip.S{background:var(--S)}
-    .legend-chip.B{background:var(--B);color:#fff}
-    .legend-chip.K{background:var(--K);color:#fff}
-    .legend-chip.W{background:var(--W);color:#fff}
-    .legend-chip.H{background:var(--H)}
-    .legend-chip.E{background:var(--E)}
+    /* 统一列宽，避免“排列乱位” */
+    .num-col{width:86px}
+    .amt-col{width:72px}
+    .slot-head,.slot-cell{width:46px}
+    .market-head,.market-cell{width:46px}
 
-    /* 行内网格：固定 9 列 */
-    .mgrid{display:grid;grid-template-columns:repeat(var(--market-cols), var(--market-w));gap:var(--market-gap);padding:2px 0;overflow:visible}
-    .mtick{position:relative;width:var(--market-w);height:var(--market-h);border-radius:4px;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-sizing:border-box;box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
-    .mtick.M{background:var(--M)}
-    .mtick.P{background:var(--P)}
-    .mtick.T{background:var(--T)}
-    .mtick.S{background:var(--S)}
-    .mtick.B{background:var(--B)}
-    .mtick.K{background:var(--K)}
-    .mtick.W{background:var(--W)}
-    .mtick.H{background:var(--H)}
-    .mtick.E{background:var(--E)}
-    .mtick input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
-    .mbox{width:22px;height:20px;background:#fff;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;pointer-events:none;z-index:1}
-    .mtick input:checked + .mbox{background:#fff;box-shadow:0 0 0 2px #111 inset}
-    .mtick input:checked + .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:18px;color:#111;display:block;text-align:center}
+    /* 单元格里的复选框尺寸统一 */
+    .ck{width:18px;height:18px}
 
-    /* 顶部列控制小格也上色 */
-    .headbar.markets .headbox.market.M{background:var(--M)}
-    .headbar.markets .headbox.market.P{background:var(--P)}
-    .headbar.markets .headbox.market.T{background:var(--T)}
-    .headbar.markets .headbox.market.S{background:var(--S)}
-    .headbar.markets .headbox.market.B{background:var(--B)}
-    .headbar.markets .headbox.market.K{background:var(--K)}
-    .headbar.markets .headbox.market.W{background:var(--W)}
-    .headbar.markets .headbox.market.H{background:var(--H)}
-    .headbar.markets .headbox.market.E{background:var(--E)}
-
-    /* —— 手机优化 —— */
+    /* 手机优化 */
     @media (max-width: 768px){
-      :root{--slot-w:28px;--slot-h:24px;--slot-gap:4px;--market-w:30px;--market-h:26px;--market-gap:2px}
-      body{padding-bottom:70px}
-      th,td{padding:4px 6px}
-      input[type="text"]{width:48px}
-      input[type="number"]{width:64px}
-      .toolbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--c-border);padding:8px;display:flex;gap:8px;justify-content:space-between;z-index:5}
-      .toolbar .btn{padding:8px 10px;border-radius:10px}
+      .amt-col{width:62px}
+      .slot-head,.slot-cell,.market-head,.market-cell{width:42px}
+      input.money{width:56px}
     }
   </style>
 </head>
 <body>
   {% include "_nav.html" %}
-  <h1>下注页面</h1>
+  <h2>下注页面（2D，版式对齐 4D）</h2>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for cat,msg in messages %}
-        <div class="flash {{cat}}">{{ msg }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  <form method="post" id="betForm">
+  <form method="post" id="betForm" onsubmit="return handleBet();">
     <input type="hidden" name="date" value="{{ date }}">
 
-    {# ✅ 固定市场顺序，避免顺序错乱 #}
-    {% set markets = ["M","P","T","S","B","K","W","H","E"] %}
+    <table>
+      <thead>
+      <tr>
+        <th rowspan="2">#</th>
+        <th rowspan="2" class="num-col">下注号码</th>
 
-    <div class="table-wrap">
-      <table id="betTable">
-        <thead class="sticky-head">
-        <tr>
-          <th style="width:38px">#</th>
-          <th style="width:82px">下注号码</th>
-          <th>N1</th>
-          <th>N</th>
-          <th>BIG</th>
-          <th>SMALL</th>
-          <th>ODD</th>
-          <th>EVEN</th>
+        <!-- 六类金额，与 4D 的 B/S/A/C 一致做“复制向下”总控 -->
+        <th rowspan="2" class="amt-col">
+          N1<br>
+          <label class="headbox"><input type="checkbox" id="fillN1" onclick="copyAmountDown('N1', this.checked)"><span></span></label>
+        </th>
+        <th rowspan="2" class="amt-col">
+          N<br>
+          <label class="headbox"><input type="checkbox" id="fillN" onclick="copyAmountDown('N', this.checked)"><span></span></label>
+        </th>
+        <th rowspan="2" class="amt-col">
+          BIG<br>
+          <label class="headbox"><input type="checkbox" id="fillBIG" onclick="copyAmountDown('BIG', this.checked)"><span></span></label>
+        </th>
+        <th rowspan="2" class="amt-col">
+          SMALL<br>
+          <label class="headbox"><input type="checkbox" id="fillSMALL" onclick="copyAmountDown('SMALL', this.checked)"><span></span></label>
+        </th>
+        <th rowspan="2" class="amt-col">
+          ODD<br>
+          <label class="headbox"><input type="checkbox" id="fillODD" onclick="copyAmountDown('ODD', this.checked)"><span></span></label>
+        </th>
+        <th rowspan="2" class="amt-col">
+          EVEN<br>
+          <label class="headbox"><input type="checkbox" id="fillEVEN" onclick="copyAmountDown('EVEN', this.checked)"><span></span></label>
+        </th>
 
-          <!-- 下注时间段（当日 9–23） -->
-          <th>
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-              <div>下注时间段（当日 9–23）</div>
-              <label class="muted" style="font-size:12px"><input type="checkbox" id="copySlots"> 套用首行</label>
-            </div>
-            <div class="slots-head" style="margin-top:6px">
-              {% for s in slots %}<div>{{ "%02d"|format(s.hour) }}</div>{% endfor %}
-            </div>
-            <!-- 顶部每列一个控制小格子 -->
-            <div class="headbar slots" id="headSlots">
-              {% for s in slots %}
-                <label class="headbox"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
-              {% endfor %}
-            </div>
-          </th>
-
-          <!-- 市场 -->
-          <th>
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-              <div>市场</div>
-              <label class="muted" style="font-size:12px"><input type="checkbox" id="copyMarkets"> 套用首行</label>
-            </div>
-            <!-- 顶部彩色字母条 -->
-            <div class="m-legend" style="margin-top:6px">
-              {% for m in markets %}<div class="legend-chip {{m}}" title="{{m}}">{{ m }}</div>{% endfor %}
-            </div>
-            <!-- 顶部每列一个控制小格子（也上色） -->
-            <div class="headbar markets" id="headMarkets">
-              {% for m in markets %}
-                <label class="headbox market {{m}}"><input type="checkbox" data-col="{{ loop.index0 }}"><span></span></label>
-              {% endfor %}
+        <th colspan="15">下注时间段（当日 09–23）</th>
+        <th colspan="9">市场</th>
+        <th rowspan="2">总额</th>
+      </tr>
+      <tr>
+        {# —— 时间段表头：每列一个“总控”复选 + 时刻 —— #}
+        {% set slots = [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] %}
+        {% for h in slots %}
+          <th class="slot-head">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <label class="headbox"><input type="checkbox" id="select_slot_{{ loop.index0 }}" onclick="toggleColumn('slot', {{ loop.index0 }})"><span></span></label>
+              <small class="muted">{{ "%02d"|format(h) }}</small>
             </div>
           </th>
-
-          <th style="width:88px">总额</th>
-        </tr>
-        </thead>
-
-        <tbody>
-        {% for i in range(10) %}
-          <tr>
-            <td>{{ i+1 }}</td>
-            <td><input name="number[]" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*"></td>
-            <td><input name="amount_n1[]"    type="number" step="0.01" min="0" inputmode="decimal"></td>
-            <td><input name="amount_n[]"     type="number" step="0.01" min="0" inputmode="decimal"></td>
-            <td><input name="amount_big[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
-            <td><input name="amount_small[]" type="number" step="0.01" min="0" inputmode="decimal"></td>
-            <td><input name="amount_odd[]"   type="number" step="0.01" min="0" inputmode="decimal"></td>
-            <td><input name="amount_even[]"  type="number" step="0.01" min="0" inputmode="decimal"></td>
-
-            <!-- 时间段：滑动小方块 -->
-            <td>
-              <div class="slots-row">
-                {% for s in slots %}
-                  <label class="slot {{ 'locked' if s.locked else '' }}">
-                    <input type="checkbox" name="slot_{{ i }}[]" value="{{ s.code }}" {% if s.locked %}disabled{% endif %} aria-label="{{ '%02d'|format(s.hour) }}:50">
-                    <span class="box"></span>
-                  </label>
-                {% endfor %}
-              </div>
-            </td>
-
-            <!-- 市场：实心彩色砖 + 白方块 -->
-            <td>
-              <div class="mgrid">
-                {% for m in markets %}
-                  <label class="mtick {{m}}" title="{{m}}">
-                    <input type="checkbox" name="market_{{ i }}[]" value="{{ m }}" aria-label="{{ m }}">
-                    <span class="mbox"></span>
-                  </label>
-                {% endfor %}
-              </div>
-            </td>
-
-            <td class="sumcell">0.00</td>
-          </tr>
         {% endfor %}
-        </tbody>
-      </table>
-    </div>
 
-    <div class="toolbar">
-      <button type="button" class="btn" onclick="addRows(5)">+ 再加 5 行</button>
-      <button type="submit" class="btn primary">提交</button>
-      <a class="btn" href="/2d/history">当日注单</a>
-      <a class="btn" href="/2d/winning">查看中奖</a>
+        {# —— 市场表头（彩色块 + 总控） —— #}
+        {% set market_order = ['M','P','T','S','B','K','W','H','E'] %}
+        {% for m in market_order %}
+          <th class="market-head {{ m }}bg">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <label class="headbox"><input type="checkbox" id="select_market_{{ m }}" onclick="toggleColumn('market', '{{ m }}')"><span></span></label>
+              <strong style="color:#111">{{ m }}</strong>
+            </div>
+          </th>
+        {% endfor %}
+      </tr>
+      </thead>
+
+      <tbody>
+      {% for i in range(1, 13) %}
+        <tr>
+          <td>{{ i }}</td>
+          <td class="num-col">
+            <input type="text" name="number{{ i }}" maxlength="2" inputmode="numeric" pattern="[0-9]{2}"
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="width:80px">
+          </td>
+
+          <td class="amt-col"><input class="money" type="text" name="N1{{ i }}"   inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+          <td class="amt-col"><input class="money" type="text" name="N{{ i }}"    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+          <td class="amt-col"><input class="money" type="text" name="BIG{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+          <td class="amt-col"><input class="money" type="text" name="SMALL{{ i }}"inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+          <td class="amt-col"><input class="money" type="text" name="ODD{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+          <td class="amt-col"><input class="money" type="text" name="EVEN{{ i }}" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+
+          {# —— 时间段列（每格一个 checkbox） —— #}
+          {% for h in slots %}
+            <td class="slot-cell">
+              <input class="ck slot_col_{{ loop.index0 }}" type="checkbox" name="slot{{ i }}_{{ loop.index0 }}">
+            </td>
+          {% endfor %}
+
+          {# —— 市场列 —— #}
+          {% for m in market_order %}
+            <td class="market-cell">
+              <input class="ck market_col_{{ m }}" type="checkbox" name="market{{ i }}_{{ m }}">
+            </td>
+          {% endfor %}
+
+          <td><span class="row-total">0.00</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+
+      <tfoot>
+      <tr>
+        <td colspan="28" style="text-align:right;font-weight:bold">总下注金额：RM <span id="grand-total">0.00</span></td>
+      </tr>
+      </tfoot>
+    </table>
+
+    <div style="margin-top:10px">
+      <button type="submit" style="font-size:16px;padding:8px 16px">提交</button>
+      <button type="reset"  style="font-size:16px;padding:8px 16px">清除</button>
     </div>
   </form>
 
 <script>
-(function(){
-  const tbody = document.querySelector('#betTable tbody');
-  const copySlots = document.getElementById('copySlots');
-  const copyMarkets = document.getElementById('copyMarkets');
-
-  /* 计算行总额 */
-  function recalcRow(tr){
-    const names = ['amount_n1[]','amount_n[]','amount_big[]','amount_small[]','amount_odd[]','amount_even[]'];
-    let sum = 0;
-    names.forEach(n=>{
-      const el = tr.querySelector(`input[name="${n}"]`);
-      if(!el) return;
-      const v = parseFloat(el.value);
-      if(!isNaN(v)) sum += v;
-    });
-    tr.querySelector('.sumcell').textContent = sum.toFixed(2);
+/**************** 金额“复制向下” ****************/
+function copyAmountDown(col, checked){
+  const first = document.querySelector(`input[name="${col}1"]`);
+  const v = first ? first.value : '';
+  for(let i=2;i<=12;i++){
+    const el = document.querySelector(`input[name="${col}${i}"]`);
+    if(!el) continue;
+    el.value = checked ? v : '';
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
   }
-  tbody.querySelectorAll('tr').forEach(recalcRow);
-  tbody.addEventListener('input', e=>{
-    const tr = e.target.closest('tr'); if(tr) recalcRow(tr);
-  });
+  updateTotals();
+}
 
-  /* 顶部列控制：时间段 */
-  document.getElementById('headSlots').addEventListener('change', (e)=>{
-    if (e.target.tagName !== 'INPUT') return;
-    const col = +e.target.dataset.col;
-    const checked = e.target.checked;
-    tbody.querySelectorAll('tr').forEach(tr=>{
-      const slotLbl = tr.querySelectorAll('.slots-row .slot')[col];
-      if(!slotLbl) return;
-      const cb = slotLbl.querySelector('input[type="checkbox"]');
-      if (cb && !cb.disabled){ cb.checked = checked; cb.dispatchEvent(new Event('change',{bubbles:true})); }
-    });
-  });
-
-  /* 顶部列控制：市场 */
-  document.getElementById('headMarkets').addEventListener('change', (e)=>{
-    if (e.target.tagName !== 'INPUT') return;
-    const col = +e.target.dataset.col;
-    const checked = e.target.checked;
-    tbody.querySelectorAll('tr').forEach(tr=>{
-      const mLbl = tr.querySelectorAll('.mgrid .mtick')[col];
-      if(!mLbl) return;
-      const cb = mLbl.querySelector('input[type="checkbox"]');
-      if (cb){ cb.checked = checked; cb.dispatchEvent(new Event('change',{bubbles:true})); }
-    });
-  });
-
-  /* 套用首行（时间段/市场） */
-  function getRow(i){ return tbody.children[i]; }
-
-  function applySlotsFromFirst(){
-    const first = getRow(0); if(!first) return;
-    const sel = Array.from(first.querySelectorAll('input[type="checkbox"][name^="slot_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
-    for(let i=1;i<tbody.children.length;i++){
-      const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="slot_"]');
-      boxes.forEach(cb=>{ if(!cb.disabled) cb.checked = sel.includes(cb.value); });
-    }
+/**************** 列总控：时间段/市场 ****************/
+function toggleColumn(type, key){
+  if(type==='slot'){
+    const state = document.getElementById(`select_slot_${key}`).checked;
+    document.querySelectorAll(`.slot_col_${key}`).forEach(cb=>cb.checked = state);
   }
-  function applyMarketsFromFirst(){
-    const first = getRow(0); if(!first) return;
-    const sel = Array.from(first.querySelectorAll('input[type="checkbox"][name^="market_"]')).filter(cb=>cb.checked).map(cb=>cb.value);
-    for(let i=1;i<tbody.children.length;i++){
-      const boxes = getRow(i).querySelectorAll('input[type="checkbox"][name^="market_"]');
-      boxes.forEach(cb=>{ cb.checked = sel.includes(cb.value); });
-    }
+  if(type==='market'){
+    const state = document.getElementById(`select_market_${key}`).checked;
+    document.querySelectorAll(`.market_col_${key}`).forEach(cb=>cb.checked = state);
   }
+  updateTotals();
+}
 
-  tbody.addEventListener('change', e=>{
-    const tr = e.target.closest('tr'); if(!tr) return;
-    const isFirst = tr === getRow(0);
-    if(isFirst && copySlots.checked && e.target.name.startsWith('slot_')) applySlotsFromFirst();
-    if(isFirst && copyMarkets.checked && e.target.name.startsWith('market_')) applyMarketsFromFirst();
+/**************** 计算总额（与 4D 同思路，2D 的 6 类金额） ****************/
+function updateTotals(){
+  let grand = 0;
+  const SLOT_COUNT = {{ slots|length if slots is defined else 15 }}; // 容错
+  const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
+
+  for(let i=1;i<=12;i++){
+    const N1   = parseFloat(document.querySelector(`input[name="N1${i}"]`)?.value)||0;
+    const N    = parseFloat(document.querySelector(`input[name="N${i}"]`)?.value)||0;
+    const BIG  = parseFloat(document.querySelector(`input[name="BIG${i}"]`)?.value)||0;
+    const SMALL= parseFloat(document.querySelector(`input[name="SMALL${i}"]`)?.value)||0;
+    const ODD  = parseFloat(document.querySelector(`input[name="ODD${i}"]`)?.value)||0;
+    const EVEN = parseFloat(document.querySelector(`input[name="EVEN${i}"]`)?.value)||0;
+
+    let slotCount = 0; for(let s=0;s<15;s++){ const cb = document.querySelector(`input[name="slot${i}_$${'{'}s{'}'}"]`); if(cb?.checked) slotCount++; }
+    // 上面一行因模板转义写法较难，用类选择器统计：
+    slotCount = Array.from(document.querySelectorAll(`[name^=slot${i}_]`)).filter(x=>x.checked).length;
+
+    let marketCount = 0; for(const m of MARKET_ORDER){ const cb = document.querySelector(`input[name="market${i}_${m}"]`); if(cb?.checked) marketCount++; }
+
+    const base = N1 + N + BIG + SMALL + ODD + EVEN;
+    const rowTotal = base * slotCount * marketCount;
+    const cell = document.querySelectorAll('.row-total')[i-1];
+    if(cell) cell.textContent = rowTotal.toFixed(2);
+    grand += rowTotal;
+  }
+  const g = document.getElementById('grand-total'); if(g) g.textContent = grand.toFixed(2);
+}
+
+/**************** 提交前确认（简版，与 4D 一致风格） ****************/
+function handleBet(){
+  updateTotals();
+  const grand = parseFloat(document.getElementById('grand-total').textContent)||0;
+  return confirm(`下注总金额 = RM ${grand.toFixed(2)}
+确认下注？`);
+}
+
+/**************** 初始化监听 ****************/
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('input[type="text"]').forEach(el=>{
+    el.addEventListener('input', updateTotals);
   });
-
-  /* 新增行 */
-  window.addRows = function(n){
-    for(let k=0;k<n;k++){
-      const clone = tbody.lastElementChild.cloneNode(true);
-      clone.querySelectorAll('input').forEach(inp=>{
-        if(inp.type === 'checkbox') inp.checked = false; else inp.value = '';
-      });
-      const idx = tbody.children.length;
-      clone.children[0].textContent = idx+1;
-      clone.querySelectorAll('input[type="checkbox"][name^="slot_"]').forEach(cb=>cb.name = `slot_${idx}[]`);
-      clone.querySelectorAll('input[type="checkbox"][name^="market_"]').forEach(cb=>cb.name = `market_${idx}[]`);
-      clone.querySelector('.sumcell').textContent = '0.00';
-      tbody.appendChild(clone);
-    }
-  };
-
-  /* 兜底：点击 .slot / .mtick 的任意空白也能切换 */
-  document.addEventListener('click', (e)=>{
-    if (e.target.matches('.slot input, .mtick input, .headbox input')) return;
-    const label = e.target.closest('.slot, .mtick');
-    if(!label) return;
-    const cb = label.querySelector('input[type="checkbox"]');
-    if(cb && !cb.disabled){
-      cb.checked = !cb.checked;
-      cb.dispatchEvent(new Event('change', {bubbles:true}));
-    }
-  }, {passive:true});
-})();
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+    cb.addEventListener('change', updateTotals);
+  });
+  updateTotals();
+});
 </script>
 </body>
 </html>
