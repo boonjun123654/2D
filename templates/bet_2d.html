@@ -2,56 +2,25 @@
 <html lang="zh">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-  <title>2D 下注（与 4D 同版式）</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>2D 当日注单</title>
   <style>
     :root{
-      --c-border:#d0d7de; --c-head:#f6f8fa; --c-muted:#666;
-      --M:#ffff00; --P:#0000ff; --T:#cc0000; --S:#4c8ed1;
-      --B:#e51d20; --K:#008835; --W:#00540e; --H:#fed606; --E:#ffa500; --sel:#2d6bff;
       --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff;
     }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px}
-    h1,h2{margin:0}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:20px;}
 
-    /* 顶栏：按钮 + 标题 并排 */
+    /* 顶栏：按钮 + 标题 并排（不覆盖正文） */
     .topbar{
       position:sticky; top:0; z-index:1000;
       display:flex; align-items:center; gap:10px;
       background:#f6f8fa; border:1px solid #e5e7eb; border-radius:12px;
-      padding:8px 10px; margin-bottom:12px;
-      box-shadow:0 10px 28px rgba(16,24,40,.06);
+      padding:8px 10px; margin-bottom:14px;
+      box-shadow:0 10px 28px rgba(16,24,40,.06)
     }
+    .topbar h1{margin:0; font-size:28px}
 
-    table{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--c-border);border-radius:10px;overflow:hidden}
-    th,td{border:1px solid var(--c-border);padding:6px 8px;text-align:center}
-    thead th{background:var(--c-head)}
-    tfoot td{background:#fafbfc}
-    input[type="text"]{text-align:center}
-    input.money{width:64px;text-align:right}
-
-    .headbox{position:relative;display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:6px}
-    .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
-    .headbox span{width:16px;height:16px;background:#fff;border:1px solid var(--c-border);border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;pointer-events:none}
-    .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
-    .headbox input:checked + span::after{content:"✓";display:block;text-align:center;font-weight:700;font-size:12px;line-height:16px;color:#111}
-
-    .Mbg{background:var(--M)} .Pbg{background:var(--P)} .Tbg{background:var(--T)}
-    .Sbg{background:var(--S)} .Bbg{background:var(--B)} .Kbg{background:var(--K)}
-    .Wbg{background:var(--W)} .Hbg{background:var(--H)} .Ebg{background:var(--E)}
-
-    .mtick{position:relative;display:block;width:100%;height:34px;align-items:center;justify-content:center;border-radius:4px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.28) inset;margin:auto}
-    .mtick.M{background:var(--M)} .mtick.P{background:var(--P)} .mtick.T{background:var(--T)}
-    .mtick.S{background:var(--S)} .mtick.B{background:var(--B)} .mtick.K{background:var(--K)}
-    .mtick.W{background:var(--W)} .mtick.H{background:var(--H)} .mtick.E{background:var(--E)}
-
-    .num-col{width:86px}
-    .amt-col{width:72px}
-    .slot-head,.slot-cell{width:46px}
-    .market-head,.market-cell{width:46px}
-    .ck{width:18px;height:18px}
-
-    /* 汉堡按钮（非 fixed，放到顶栏里） */
+    /* 汉堡按钮：非 fixed，放在顶栏内 */
     .hamburger{
       width:42px; height:42px; border-radius:10px; border:1px solid #d0d7de;
       background:#fff; display:flex; align-items:center; justify-content:center;
@@ -67,6 +36,7 @@
     .hamburger.active span::before{ transform:rotate(90deg); top:0 }
     .hamburger.active span::after{ opacity:0 }
 
+    /* 抽屉菜单 */
     .drawer{
       position:fixed; inset:0 auto 0 0; width:280px; max-width:85vw;
       background:var(--nav-bg); color:var(--nav-fg);
@@ -89,20 +59,21 @@
     .backdrop{position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:saturate(120%) blur(1px); opacity:0; visibility:hidden; transition:.2s ease; z-index:1080;}
     .backdrop.show{ opacity:1; visibility:visible }
 
-    @media (max-width: 768px){
-      .amt-col{width:62px}
-      .slot-head,.slot-cell,.market-head,.market-cell{width:42px}
-      input.money{width:56px}
-    }
+    /* 表格 */
+    table{border-collapse:collapse;width:100%;margin-top:12px}
+    th,td{border:1px solid #ddd;padding:6px 8px;font-size:14px}
+    th{background:#f6f6f6;text-align:left}
+    .muted{color:#666}
+    .links{margin:10px 0 4px}
   </style>
 </head>
 <body>
-  <!-- 顶栏（按钮 + 标题） -->
+  <!-- 顶栏 -->
   <div class="topbar">
     <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
       <span></span>
     </button>
-    <h2>下注页面（2D，版式对齐 4D）</h2>
+    <h1>2D 当日注单</h1>
   </div>
 
   <!-- 抽屉菜单 -->
@@ -137,261 +108,71 @@
     </div>
   </aside>
 
-  <form method="post" id="betForm" onsubmit="return handleBet();">
-    <input type="hidden" name="date" value="{{ date }}">
+  <!-- 页面说明 & 链接 -->
+  <div class="muted">按创建时间倒序（当天）。到 :49 会自动锁注，状态会从 active 变为 locked。</div>
+  <div class="links">
+    <a href="/2d/bet">返回下注</a> | <a href="/2d/winning">查看中奖</a>
+  </div>
 
-    <table>
-      <thead>
+  {% if rows %}
+  <table>
+    <thead>
       <tr>
-        <th rowspan="2">#</th>
-        <th rowspan="2" class="num-col">下注号码</th>
-        <th rowspan="2" class="amt-col">
-          N1<br>
-          <label class="headbox"><input type="checkbox" id="fillN1" onclick="copyAmountDown('N1', this.checked)"><span></span></label>
-        </th>
-        <th rowspan="2" class="amt-col">
-          N<br>
-          <label class="headbox"><input type="checkbox" id="fillN" onclick="copyAmountDown('N', this.checked)"><span></span></label>
-        </th>
-        <th rowspan="2" class="amt-col">
-          BIG<br>
-          <label class="headbox"><input type="checkbox" id="fillBIG" onclick="copyAmountDown('BIG', this.checked)"><span></span></label>
-        </th>
-        <th rowspan="2" class="amt-col">
-          SMALL<br>
-          <label class="headbox"><input type="checkbox" id="fillSMALL" onclick="copyAmountDown('SMALL', this.checked)"><span></span></label>
-        </th>
-        <th rowspan="2" class="amt-col">
-          ODD<br>
-          <label class="headbox"><input type="checkbox" id="fillODD" onclick="copyAmountDown('ODD', this.checked)"><span></span></label>
-        </th>
-        <th rowspan="2" class="amt-col">
-          EVEN<br>
-          <label class="headbox"><input type="checkbox" id="fillEVEN" onclick="copyAmountDown('EVEN', this.checked)"><span></span></label>
-        </th>
-
-        <th colspan="15">下注时间段（当日 09–23）</th>
-        <th colspan="9">市场</th>
-        <th rowspan="2">总额</th>
+        <th>时间</th>
+        <th>状态</th>
+        <th>期号</th>
+        <th>市场</th>
+        <th>号码</th>
+        <th>N1</th>
+        <th>N</th>
+        <th>B</th>
+        <th>S</th>
+        <th>DS</th>
+        <th>SS</th>
       </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
       <tr>
-        {% set slots = [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] %}
-        {% for h in slots %}
-          <th class="slot-head">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <label class="headbox"><input type="checkbox" id="select_slot_{{ loop.index0 }}" onclick="toggleColumn('slot', {{ loop.index0 }})"><span></span></label>
-              <small class="muted">{{ "%02d"|format(h) }}</small>
-            </div>
-          </th>
-        {% endfor %}
-        {% set market_order = ['M','P','T','S','B','K','W','H','E'] %}
-        {% for m in market_order %}
-          <th class="market-head {{ m }}bg">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <label class="headbox"><input type="checkbox" id="select_market_{{ m }}" onclick="toggleColumn('market', '{{ m }}')"><span></span></label>
-              <strong style="color:#111">{{ m }}</strong>
-            </div>
-          </th>
-        {% endfor %}
+        <td>{{ r.created_at }}</td>
+        <td>{{ r.status }}</td>
+        <td>{{ r.code }}</td>
+        <td>{{ r.market }}</td>
+        <td>{{ r.number }}</td>
+        <td>{{ '%.2f'|format(r.amount_n1 or 0) }}</td>
+        <td>{{ '%.2f'|format(r.amount_n  or 0) }}</td>
+        <td>{{ '%.2f'|format(r.amount_b  or 0) }}</td>
+        <td>{{ '%.2f'|format(r.amount_s  or 0) }}</td>
+        <td>{{ '%.2f'|format(r.amount_ds or 0) }}</td>
+        <td>{{ '%.2f'|format(r.amount_ss or 0) }}</td>
       </tr>
-      </thead>
-
-      <tbody>
-      {% for i in range(1, 13) %}
-        <tr>
-          <td>{{ i }}</td>
-          <td class="num-col">
-            <input type="text" name="number{{ i }}" maxlength="2" inputmode="numeric" pattern="[0-9]{2}"
-                   oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="width:80px">
-          </td>
-
-          <td class="amt-col"><input class="money" type="text" name="N1{{ i }}"   inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="N{{ i }}"    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="BIG{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="SMALL{{ i }}"inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="ODD{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="EVEN{{ i }}" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-
-          {% for h in slots %}
-            <td class="slot-cell">
-              <input class="ck slot_col_{{ loop.index0 }}" type="checkbox" name="slot{{ i }}_{{ loop.index0 }}">
-            </td>
-          {% endfor %}
-
-          {% for m in market_order %}
-            <td class="market-cell {{ m }}bg">
-              <input class="ck market_col_{{ m }}" type="checkbox" name="market{{ i }}_{{ m }}">
-            </td>
-          {% endfor %}
-
-          <td><span class="row-total">0.00</span></td>
-        </tr>
-      {% endfor %}
-      </tbody>
-
-      <tfoot>
-      <tr>
-        <td colspan="33" style="text-align:right;font-weight:bold">总下注金额：RM <span id="grand-total">0.00</span></td>
-      </tr>
-      </tfoot>
-    </table>
-
-    <div style="margin-top:10px">
-      <button type="submit" style="font-size:16px;padding:8px 16px">提交</button>
-      <button type="reset"  style="font-size:16px;padding:8px 16px">清除</button>
-    </div>
-  </form>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">今天暂无注单。</p>
+  {% endif %}
 
 <script>
-/******************* 主菜单：展开/收起 ********************/
+/* 主菜单：展开/收起 */
 (function(){
   const btn = document.getElementById('hamburgerBtn');
   const drawer = document.getElementById('appDrawer');
   const backdrop = document.getElementById('drawerBackdrop');
-
   function openDrawer(){
-    drawer.classList.add('open');
-    backdrop.classList.add('show');
-    btn.classList.add('active');
-    btn.setAttribute('aria-expanded','true');
-    drawer.setAttribute('aria-hidden','false');
-    backdrop.setAttribute('aria-hidden','false');
+    drawer.classList.add('open'); backdrop.classList.add('show');
+    btn.classList.add('active'); btn.setAttribute('aria-expanded','true');
+    drawer.setAttribute('aria-hidden','false'); backdrop.setAttribute('aria-hidden','false');
   }
   function closeDrawer(){
-    drawer.classList.remove('open');
-    backdrop.classList.remove('show');
-    btn.classList.remove('active');
-    btn.setAttribute('aria-expanded','false');
-    drawer.setAttribute('aria-hidden','true');
-    backdrop.setAttribute('aria-hidden','true');
+    drawer.classList.remove('open'); backdrop.classList.remove('show');
+    btn.classList.remove('active'); btn.setAttribute('aria-expanded','false');
+    drawer.setAttribute('aria-hidden','true'); backdrop.setAttribute('aria-hidden','true');
   }
-  btn.addEventListener('click', (e)=>{
-    e.preventDefault();
-    drawer.classList.contains('open') ? closeDrawer() : openDrawer();
-  });
+  btn.addEventListener('click', (e)=>{ e.preventDefault(); drawer.classList.contains('open')?closeDrawer():openDrawer(); });
   backdrop.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDrawer(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
 })();
-
-/**************** 金额“复制向下” ****************/
-function copyAmountDown(col, checked){
-  const first = document.querySelector(`input[name="${col}1"]`);
-  const v = first ? first.value : '';
-  for(let i=2;i<=12;i++){
-    const el = document.querySelector(`input[name="${col}${i}"]`);
-    if(!el) continue;
-    el.value = checked ? v : '';
-    el.dispatchEvent(new Event('input',{bubbles:true}));
-    el.dispatchEvent(new Event('change',{bubbles:true}));
-  }
-  updateTotals();
-}
-
-/**************** 列总控：时间段/市场 ****************/
-function toggleColumn(type, key){
-  if(type==='slot'){
-    const state = document.getElementById(`select_slot_${key}`).checked;
-    document.querySelectorAll(`.slot_col_${key}`).forEach(cb=>cb.checked = state);
-  }
-  if(type==='market'){
-    const state = document.getElementById(`select_market_${key}`).checked;
-    document.querySelectorAll(`.market_col_${key}`).forEach(cb=>cb.checked = state);
-  }
-  updateTotals();
-}
-
-/**************** 计算总额 ****************/
-function updateTotals(){
-  let grand = 0;
-  const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
-  rows.forEach((tr, idx) => {
-    const i = idx + 1;
-    const getVal = (name) => parseFloat(tr.querySelector(`input[name="${name}${i}"]`)?.value) || 0;
-    const base = getVal('N1') + getVal('N') + getVal('BIG') + getVal('SMALL') + getVal('ODD') + getVal('EVEN');
-    const slotCount   = tr.querySelectorAll('.slot-cell   input[type="checkbox"]:checked').length;
-    const marketCount = tr.querySelectorAll('.market-cell input[type="checkbox"]:checked').length;
-    const rowTotal = base * slotCount * marketCount;
-    const cell = tr.querySelector('.row-total'); if (cell) cell.textContent = rowTotal.toFixed(2);
-    grand += rowTotal;
-  });
-  const g = document.getElementById('grand-total'); if (g) g.textContent = grand.toFixed(2);
-}
-
-/**************** 提交前确认 ****************/
-function handleBet(){
-  updateTotals();
-  const grand = parseFloat(document.getElementById('grand-total').textContent)||0;
-  const popup = buildBetPopupText();
-  if (popup) localStorage.setItem('bet_popup', popup);
-  return confirm(`下注总金额 = RM ${grand.toFixed(2)}\n确认下注？`);
-}
-
-/**************** 初始化监听 ****************/
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.querySelectorAll('input[type="text"]').forEach(el=>el.addEventListener('input', updateTotals));
-  document.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.addEventListener('change', updateTotals));
-  updateTotals();
-});
-
-/**************** 成功弹窗 ****************/
-const params = new URLSearchParams(location.search);
-if (params.get('success') === '1') {
-  const saved = localStorage.getItem('bet_popup');
-  if (saved) showBetPopup(saved);
-  localStorage.removeItem('bet_popup');
-  const url = new URL(location.href);
-  url.searchParams.delete('success');
-  history.replaceState({}, document.title, url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
-}
-
-function buildBetPopupText(){
-  const lines = [];
-  const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
-  const H_BASE = 9;
-  rows.forEach((tr, idx) => {
-    const i = idx + 1;
-    const number = tr.querySelector(`input[name="number${i}"]`)?.value?.trim() || "";
-    if (!number) return;
-    const parts = [];
-    [["N1","N1"],["N","N"],["BIG","B"],["SMALL","S"],["ODD","O"],["EVEN","E"]].forEach(([key, label]) => {
-      const vEl = tr.querySelector(`input[name="${key}${i}"]`);
-      const v = vEl ? vEl.value : "";
-      if (v && !isNaN(parseFloat(v)) && parseFloat(v) > 0) parts.push(`${v}${label}`);
-    });
-    if (!parts.length) return;
-    const slotIdx = Array.from(tr.querySelectorAll('.slot-cell input[type="checkbox"]:checked'))
-      .map(cb => parseInt(cb.name.split('_').pop(),10)).sort((a,b)=>a-b);
-    const slotTags = slotIdx.map(x => String(H_BASE + x).padStart(2,'0')).join(',');
-    const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
-    const mk = MARKET_ORDER.filter(m => tr.querySelector(`input[name="market${i}_${m}"]`)?.checked);
-    const mtag = mk.join('');
-    lines.push(`${number} = ${parts.join(' ')}  |  时段:${slotTags||'-'}  市场:${mtag||'-'}`);
-  });
-  const grand = document.getElementById('grand-total')?.textContent || '0.00';
-  if (lines.length) lines.push('', `GT=${grand}`);
-  return lines.join('\n');
-}
-function showBetPopup(text) {
-  if (!text) return;
-  const old = document.getElementById("resultModal"); if (old) old.remove();
-  const modal = document.createElement('div');
-  modal.innerHTML = `
-    <div id="resultModal" style="position:fixed; top:20px; left:10px; right:10px; background:#fff; border:1px solid #ddd; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.15); padding:16px; z-index:9999; max-width:420px; margin:auto; font-family:system-ui, sans-serif;">
-      <div id="resultText" style="white-space:pre-wrap; word-break:break-word; margin-bottom:16px; font-size:14px;">${text}</div>
-      <div style="display:flex; gap:10px;">
-        <button onclick="copyResult()" style="flex:1; padding:8px; background:#007bff; color:#fff; border:0; border-radius:8px;">复制</button>
-        <button onclick="confirmResult()" style="flex:1; padding:8px; background:#28a745; color:#fff; border:0; border-radius:8px;">确认</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-function copyResult(){
-  const text = document.getElementById('resultText')?.innerText || '';
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(()=>alert('✅ 已复制下注信息')).catch(()=>alert('❌ 复制失败，请手动选择文字'));
-}
-function confirmResult(){ document.getElementById('resultModal')?.remove(); }
 </script>
 </body>
 </html>
