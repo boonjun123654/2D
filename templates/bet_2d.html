@@ -344,33 +344,69 @@ if (params.get('success') === '1') {
   history.replaceState({}, document.title, url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
 }
 
+function fmtNum(n){
+  const v = Number(n);
+  if (!isFinite(v)) return "0";
+  return v.toFixed(2).replace(/\.?0+$/, "");
+}
+
 function buildBetPopupText(){
-  const lines = [];
   const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
-  const H_BASE = 9;
+  const H_BASE = 9; // 09~23
+  const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
+
+  const slotSet   = new Set();     // 合并所有行勾选的时间段
+  const marketSet = new Set();     // 合并所有行勾选的市场
+  const lines     = [];            // 每个号码的明细行
+
   rows.forEach((tr, idx) => {
     const i = idx + 1;
     const number = tr.querySelector(`input[name="number${i}"]`)?.value?.trim() || "";
     if (!number) return;
+
+    // 取各金额（>0 才展示），并做去尾零显示
     const parts = [];
-    [["N1","N1"],["N","N"],["BIG","B"],["SMALL","S"],["ODD","O"],["EVEN","E"]].forEach(([key, label]) => {
-      const vEl = tr.querySelector(`input[name="${key}${i}"]`);
-      const v = vEl ? vEl.value : "";
-      if (v && !isNaN(parseFloat(v)) && parseFloat(v) > 0) parts.push(`${v}${label}`);
-    });
+    const pushIf = (key, label) => {
+      const el = tr.querySelector(`input[name="${key}${i}"]`);
+      if (!el) return;
+      const v = parseFloat((el.value || "").trim());
+      if (isFinite(v) && v > 0) parts.push(`${fmtNum(v)}${label}`);
+    };
+    pushIf("N1","N1"); pushIf("N","N"); pushIf("BIG","B");
+    pushIf("SMALL","S"); pushIf("ODD","O"); pushIf("EVEN","E");
     if (!parts.length) return;
-    const slotIdx = Array.from(tr.querySelectorAll('.slot-cell input[type="checkbox"]:checked'))
-      .map(cb => parseInt(cb.name.split('_').pop(),10)).sort((a,b)=>a-b);
-    const slotTags = slotIdx.map(x => String(H_BASE + x).padStart(2,'0')).join(',');
-    const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
-    const mk = MARKET_ORDER.filter(m => tr.querySelector(`input[name="market${i}_${m}"]`)?.checked);
-    const mtag = mk.join('');
-    lines.push(`${number} = ${parts.join(' ')}  |  时段:${slotTags||'-'}  市场:${mtag||'-'}`);
+
+    // 当前行选中的时间段、市场（用于合并）
+    tr.querySelectorAll('.slot-cell input[type="checkbox"]:checked').forEach(cb=>{
+      const idx = parseInt(cb.name.split('_').pop(),10);
+      if (!Number.isNaN(idx)) slotSet.add(H_BASE + idx);
+    });
+    MARKET_ORDER.forEach(m=>{
+      if (tr.querySelector(`input[name="market${i}_${m}"]`)?.checked) marketSet.add(m);
+    });
+
+    // 本号码明细行（不再附加“时段/市场”）
+    lines.push(`${number} = ${parts.join(' ')}`);
   });
-  const grand = document.getElementById('grand-total')?.textContent || '0.00';
-  if (lines.length) lines.push('', `GT=${grand}`);
-  return lines.join('\n');
+
+  // 第一行：时间段 例如 21-22-23（无则为“-”）
+  const slotLine = Array.from(slotSet).sort((a,b)=>a-b)
+    .map(h => String(h).padStart(2,'0')).join('-') || '-';
+
+  // 第二行：*市场 例如 *MP（按固定顺序，去重合并；无则为 *-）
+  const marketLine = '*' + (MARKET_ORDER.filter(m => marketSet.has(m)).join('') || '-');
+
+  // 合计：从页面合计读取并格式化
+  const grandRaw = parseFloat(document.getElementById('grand-total')?.textContent || '0');
+  const gt = fmtNum(grandRaw);
+
+  // 组装最终文本
+  const out = [slotLine, marketLine];
+  if (lines.length) out.push(...lines);
+  out.push('', `GT=${gt}`);
+  return out.join('\n');
 }
+
 function showBetPopup(text) {
   if (!text) return;
   const old = document.getElementById("resultModal"); if (old) old.remove();
