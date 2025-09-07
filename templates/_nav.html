@@ -1,7 +1,14 @@
-<div style="margin:10px 0 18px;display:flex;gap:10px;flex-wrap:wrap">
-  <a href="/"          >🏠 首页</a>
-  <a href="/2d/bet"    >➕ 下注</a>
-  <a href="/2d/history">📃 当日注单</a>
-  <a href="/2d/winning">🏆 查看中奖</a>
-</div>
-<hr>
+<nav>
+  {% if session.get('role') %}
+    <a href="{{ url_for('bet_2d_view') }}">下注</a>
+    <a href="{{ url_for('history_2d_view') }}">当日注单</a>
+    <a href="{{ url_for('winning_2d_view') }}">查看中奖</a>
+    {% if session.get('role') == 'admin' %}
+      <a href="{{ url_for('agents_admin') }}">代理管理</a>
+    {% endif %}
+    <span style="color:#666;margin-right:8px">用户：{{ session.get('username') or session.get('role') }}</span>
+    <a href="{{ url_for('logout') }}">退出</a>
+  {% else %}
+    <a href="{{ url_for('login') }}">登录</a>
+  {% endif %}
+</nav>
