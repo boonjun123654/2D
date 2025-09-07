@@ -1,14 +1,28 @@
-<nav>
-  {% if session.get('role') %}
-    <a href="{{ url_for('bet_2d_view') }}">下注</a>
-    <a href="{{ url_for('history_2d_view') }}">当日注单</a>
-    <a href="{{ url_for('winning_2d_view') }}">查看中奖</a>
-    {% if session.get('role') == 'admin' %}
-      <a href="{{ url_for('agents_admin') }}">代理管理</a>
+{# 美化版顶部导航 #}
+<div class="topbar">
+  <div class="wrap">
+    <div class="nav">
+      {% if session.get('role') %}
+        <a class="navlink {{ 'active' if request.endpoint == 'bet_2d_view' else '' }}" href="{{ url_for('bet_2d_view') }}">下注</a>
+        <a class="navlink {{ 'active' if request.endpoint == 'history_2d_view' else '' }}" href="{{ url_for('history_2d_view') }}">当日注单</a>
+        <a class="navlink {{ 'active' if request.endpoint == 'winning_2d_view' else '' }}" href="{{ url_for('winning_2d_view') }}">查看中奖</a>
+        {% if session.get('role') == 'admin' %}
+          <a class="navlink {{ 'active' if request.endpoint == 'agents_admin' else '' }}" href="{{ url_for('agents_admin') }}">代理管理</a>
+        {% endif %}
+      {% else %}
+        <a class="navlink {{ 'active' if request.endpoint == 'login' else '' }}" href="{{ url_for('login') }}">登录</a>
+      {% endif %}
+    </div>
+
+    <div class="spacer"></div>
+
+    {% if session.get('role') %}
+      <div class="userbox">
+        <div class="avatar">{{ (session.get('username') or session.get('role') or 'U')[:1]|upper }}</div>
+        <div class="role {{ session.get('role') }}">{{ '管理员' if session.get('role')=='admin' else '代理' }}</div>
+        <span style="color:#64748b;font-size:13px">用户：<strong style="color:#111">{{ session.get('username') or '—' }}</strong></span>
+        <a class="btn-logout" href="{{ url_for('logout') }}">退出</a>
+      </div>
     {% endif %}
-    <span style="color:#666;margin-right:8px">用户：{{ session.get('username') or session.get('role') }}</span>
-    <a href="{{ url_for('logout') }}">退出</a>
-  {% else %}
-    <a href="{{ url_for('login') }}">登录</a>
-  {% endif %}
-</nav>
+  </div>
+</div>
