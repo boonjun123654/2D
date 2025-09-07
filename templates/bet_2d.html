@@ -7,14 +7,22 @@
   <style>
     :root{
       --c-border:#d0d7de; --c-head:#f6f8fa; --c-muted:#666;
-      /* 市场配色与 4D 一致 */
       --M:#ffff00; --P:#0000ff; --T:#cc0000; --S:#4c8ed1;
       --B:#e51d20; --K:#008835; --W:#00540e; --H:#fed606; --E:#ffa500; --sel:#2d6bff;
-      /* 菜单配色 */
       --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff;
     }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px}
-    h1,h2{margin:0 0 12px}
+    h1,h2{margin:0}
+
+    /* 顶栏：按钮 + 标题 并排 */
+    .topbar{
+      position:sticky; top:0; z-index:1000;
+      display:flex; align-items:center; gap:10px;
+      background:#f6f8fa; border:1px solid #e5e7eb; border-radius:12px;
+      padding:8px 10px; margin-bottom:12px;
+      box-shadow:0 10px 28px rgba(16,24,40,.06);
+    }
+
     table{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--c-border);border-radius:10px;overflow:hidden}
     th,td{border:1px solid var(--c-border);padding:6px 8px;text-align:center}
     thead th{background:var(--c-head)}
@@ -22,50 +30,29 @@
     input[type="text"]{text-align:center}
     input.money{width:64px;text-align:right}
 
-    /* 顶部金额列“复制向下”总控小方块（风格与 4D 页面一致） */
     .headbox{position:relative;display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:6px}
     .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
     .headbox span{width:16px;height:16px;background:#fff;border:1px solid var(--c-border);border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;pointer-events:none}
     .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
     .headbox input:checked + span::after{content:"✓";display:block;text-align:center;font-weight:700;font-size:12px;line-height:16px;color:#111}
 
-    /* 市场表头颜色块（与 4D 相同） */
     .Mbg{background:var(--M)} .Pbg{background:var(--P)} .Tbg{background:var(--T)}
     .Sbg{background:var(--S)} .Bbg{background:var(--B)} .Kbg{background:var(--K)}
     .Wbg{background:var(--W)} .Hbg{background:var(--H)} .Ebg{background:var(--E)}
 
-    /* 市场单元格：彩色底 + 内部白色小方块（与 4D 同风格） */
-    .mtick{position:relative;display:block;width:100%;height:34px;
-      align-items:center;justify-content:center;border-radius:4px;border:2px solid #fff;
-      box-shadow:0 0 0 1px rgba(0,0,0,.28) inset;margin:auto}
-    .mtick.M{background:var(--M)}
-    .mtick.P{background:var(--P)}
-    .mtick.T{background:var(--T)}
-    .mtick.S{background:var(--S)}
-    .mtick.B{background:var(--B)}
-    .mtick.K{background:var(--K)}
-    .mtick.W{background:var(--W)}
-    .mtick.H{background:var(--H)}
-    .mtick.E{background:var(--E)}
-    /* 勾选后整格变为高亮蓝色（留作需要时启用白块 ✓ 效果）
-    .mtick input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
-    .mbox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:18px;background:#fff;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;pointer-events:none;z-index:1}
-    .mtick input:checked + .mbox{background:var(--sel);border-color:var(--sel);box-shadow:none}
-    .mtick input:checked + .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:16px;color:#fff;display:block;text-align:center}
-    */
+    .mtick{position:relative;display:block;width:100%;height:34px;align-items:center;justify-content:center;border-radius:4px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.28) inset;margin:auto}
+    .mtick.M{background:var(--M)} .mtick.P{background:var(--P)} .mtick.T{background:var(--T)}
+    .mtick.S{background:var(--S)} .mtick.B{background:var(--B)} .mtick.K{background:var(--K)}
+    .mtick.W{background:var(--W)} .mtick.H{background:var(--H)} .mtick.E{background:var(--E)}
 
-    /* 统一列宽，避免“排列乱位” */
     .num-col{width:86px}
     .amt-col{width:72px}
     .slot-head,.slot-cell{width:46px}
     .market-head,.market-cell{width:46px}
-
-    /* 单元格里的复选框尺寸统一 */
     .ck{width:18px;height:18px}
 
-    /* ===== 左上角隐藏主菜单（汉堡） ===== */
+    /* 汉堡按钮（非 fixed，放到顶栏里） */
     .hamburger{
-      position:fixed; left:10px; top:10px; z-index:1100;
       width:42px; height:42px; border-radius:10px; border:1px solid #d0d7de;
       background:#fff; display:flex; align-items:center; justify-content:center;
       cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.08);
@@ -88,47 +75,38 @@
       display:flex; flex-direction:column;
     }
     .drawer.open{ transform:translateX(0) }
-    .drawer-header{
-      padding:14px 14px 10px; border-bottom:1px solid rgba(255,255,255,.08);
-      display:flex; align-items:center; gap:10px;
-    }
+    .drawer-header{padding:14px 14px 10px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; align-items:center; gap:10px;}
     .brand-dot{width:10px; height:10px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 3px rgba(27,132,255,.25)}
     .drawer-title{font-weight:700}
     .drawer-user{font-size:12px; color:var(--nav-muted)}
     .drawer-nav{padding:8px}
-    .nav-link{
-      display:flex; align-items:center; gap:10px; color:#e6eef8; text-decoration:none;
-      padding:10px 12px; border-radius:8px;
-    }
+    .nav-link{display:flex; align-items:center; gap:10px; color:#e6eef8; text-decoration:none; padding:10px 12px; border-radius:8px;}
     .nav-link:hover{ background:rgba(255,255,255,.06) }
     .nav-link .dot{width:8px; height:8px; border-radius:50%; background:#9bb8ff}
     .drawer-section{padding:8px 12px; font-size:12px; color:var(--nav-muted)}
     .drawer-footer{margin-top:auto; padding:10px; border-top:1px solid rgba(255,255,255,.08)}
     .logout{color:#ffd1d1}
-    .backdrop{
-      position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:saturate(120%) blur(1px);
-      opacity:0; visibility:hidden; transition:.2s ease; z-index:1080;
-    }
+    .backdrop{position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:saturate(120%) blur(1px); opacity:0; visibility:hidden; transition:.2s ease; z-index:1080;}
     .backdrop.show{ opacity:1; visibility:visible }
 
-    /* 手机优化 */
     @media (max-width: 768px){
       .amt-col{width:62px}
       .slot-head,.slot-cell,.market-head,.market-cell{width:42px}
       input.money{width:56px}
     }
-
-    /* 页面顶栏留出按钮位置的小偏移（仅视觉，不影响布局） */
-    .screen-offset{ padding-top:4px; padding-left:4px }
   </style>
 </head>
 <body>
-  <!-- 左上角汉堡按钮 & 抽屉菜单 -->
-  <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
-    <span></span>
-  </button>
-  <div id="drawerBackdrop" class="backdrop" tabindex="-1" aria-hidden="true"></div>
+  <!-- 顶栏（按钮 + 标题） -->
+  <div class="topbar">
+    <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
+      <span></span>
+    </button>
+    <h2>下注页面（2D，版式对齐 4D）</h2>
+  </div>
 
+  <!-- 抽屉菜单 -->
+  <div id="drawerBackdrop" class="backdrop" tabindex="-1" aria-hidden="true"></div>
   <aside id="appDrawer" class="drawer" aria-hidden="true">
     <div class="drawer-header">
       <div class="brand-dot"></div>
@@ -145,7 +123,6 @@
       <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
       <a class="nav-link" href="/2d/history"><span class="dot"></span>当日注单</a>
       <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
-
       {% if session.get('role') == 'admin' %}
       <div class="drawer-section">管理员</div>
       <a class="nav-link" href="/agents"><span class="dot"></span>代理管理</a>
@@ -160,10 +137,6 @@
     </div>
   </aside>
 
-  <!-- 页面标题 -->
-  <div class="screen-offset"></div>
-  <h2>下注页面（2D，版式对齐 4D）</h2>
-
   <form method="post" id="betForm" onsubmit="return handleBet();">
     <input type="hidden" name="date" value="{{ date }}">
 
@@ -172,8 +145,6 @@
       <tr>
         <th rowspan="2">#</th>
         <th rowspan="2" class="num-col">下注号码</th>
-
-        <!-- 六类金额，与 4D 的 B/S/A/C 一致做“复制向下”总控 -->
         <th rowspan="2" class="amt-col">
           N1<br>
           <label class="headbox"><input type="checkbox" id="fillN1" onclick="copyAmountDown('N1', this.checked)"><span></span></label>
@@ -204,7 +175,6 @@
         <th rowspan="2">总额</th>
       </tr>
       <tr>
-        {# —— 时间段表头：每列一个“总控”复选 + 时刻 —— #}
         {% set slots = [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] %}
         {% for h in slots %}
           <th class="slot-head">
@@ -214,8 +184,6 @@
             </div>
           </th>
         {% endfor %}
-
-        {# —— 市场表头（彩色块 + 总控） —— #}
         {% set market_order = ['M','P','T','S','B','K','W','H','E'] %}
         {% for m in market_order %}
           <th class="market-head {{ m }}bg">
@@ -244,14 +212,12 @@
           <td class="amt-col"><input class="money" type="text" name="ODD{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
           <td class="amt-col"><input class="money" type="text" name="EVEN{{ i }}" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
 
-          {# —— 时间段列（每格一个 checkbox） —— #}
           {% for h in slots %}
             <td class="slot-cell">
               <input class="ck slot_col_{{ loop.index0 }}" type="checkbox" name="slot{{ i }}_{{ loop.index0 }}">
             </td>
           {% endfor %}
 
-          {# —— 市场列 —— #}
           {% for m in market_order %}
             <td class="market-cell {{ m }}bg">
               <input class="ck market_col_{{ m }}" type="checkbox" name="market{{ i }}_{{ m }}">
@@ -301,12 +267,10 @@
   }
   btn.addEventListener('click', (e)=>{
     e.preventDefault();
-    if(drawer.classList.contains('open')) closeDrawer(); else openDrawer();
+    drawer.classList.contains('open') ? closeDrawer() : openDrawer();
   });
   backdrop.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape') closeDrawer();
-  });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDrawer(); });
 })();
 
 /**************** 金额“复制向下” ****************/
@@ -336,67 +300,45 @@ function toggleColumn(type, key){
   updateTotals();
 }
 
-/**************** 计算总额（与 4D 同思路，2D 的 6 类金额） ****************/
+/**************** 计算总额 ****************/
 function updateTotals(){
   let grand = 0;
   const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
-
   rows.forEach((tr, idx) => {
     const i = idx + 1;
-
-    // 仅在当前行内取金额
-    const getVal = (name) =>
-      parseFloat(tr.querySelector(`input[name="${name}${i}"]`)?.value) || 0;
-
-    const base =
-      getVal('N1') + getVal('N') + getVal('BIG') +
-      getVal('SMALL') + getVal('ODD') + getVal('EVEN');
-
-    // 仅在当前行内统计“时间段/市场”的勾选数量
+    const getVal = (name) => parseFloat(tr.querySelector(`input[name="${name}${i}"]`)?.value) || 0;
+    const base = getVal('N1') + getVal('N') + getVal('BIG') + getVal('SMALL') + getVal('ODD') + getVal('EVEN');
     const slotCount   = tr.querySelectorAll('.slot-cell   input[type="checkbox"]:checked').length;
     const marketCount = tr.querySelectorAll('.market-cell input[type="checkbox"]:checked').length;
-
     const rowTotal = base * slotCount * marketCount;
-
-    const cell = tr.querySelector('.row-total');
-    if (cell) cell.textContent = rowTotal.toFixed(2);
-
+    const cell = tr.querySelector('.row-total'); if (cell) cell.textContent = rowTotal.toFixed(2);
     grand += rowTotal;
   });
-
-  const g = document.getElementById('grand-total');
-  if (g) g.textContent = grand.toFixed(2);
+  const g = document.getElementById('grand-total'); if (g) g.textContent = grand.toFixed(2);
 }
 
-/**************** 提交前确认（简版，与 4D 一致风格） ****************/
+/**************** 提交前确认 ****************/
 function handleBet(){
   updateTotals();
   const grand = parseFloat(document.getElementById('grand-total').textContent)||0;
-
-  const popup = buildBetPopupText();           // 生成摘要
-  if (popup) localStorage.setItem('bet_popup', popup);  // 暂存，跳转后取出
-
+  const popup = buildBetPopupText();
+  if (popup) localStorage.setItem('bet_popup', popup);
   return confirm(`下注总金额 = RM ${grand.toFixed(2)}\n确认下注？`);
 }
 
 /**************** 初始化监听 ****************/
 document.addEventListener('DOMContentLoaded', ()=>{
-  document.querySelectorAll('input[type="text"]').forEach(el=>{
-    el.addEventListener('input', updateTotals);
-  });
-  document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-    cb.addEventListener('change', updateTotals);
-  });
+  document.querySelectorAll('input[type="text"]').forEach(el=>el.addEventListener('input', updateTotals));
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.addEventListener('change', updateTotals));
   updateTotals();
 });
 
-// ?success=1 时显示弹窗（文案从 localStorage 取）
+/**************** 成功弹窗 ****************/
 const params = new URLSearchParams(location.search);
 if (params.get('success') === '1') {
   const saved = localStorage.getItem('bet_popup');
   if (saved) showBetPopup(saved);
   localStorage.removeItem('bet_popup');
-  // 去掉 success 参数（避免刷新重复弹）
   const url = new URL(location.href);
   url.searchParams.delete('success');
   history.replaceState({}, document.title, url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
@@ -405,37 +347,26 @@ if (params.get('success') === '1') {
 function buildBetPopupText(){
   const lines = [];
   const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
-  const H_BASE = 9; // 09~23
-
+  const H_BASE = 9;
   rows.forEach((tr, idx) => {
     const i = idx + 1;
     const number = tr.querySelector(`input[name="number${i}"]`)?.value?.trim() || "";
     if (!number) return;
-
-    const getVal = (name) =>
-      (tr.querySelector(`input[name="${name}{i}"]`)?.value || "").trim();
-
     const parts = [];
-    [["N1","N1"],["N","N"],["BIG","B"],["SMALL","S"],["ODD","O"],["EVEN","E"]]
-      .forEach(([key, label]) => {
-        const vEl = tr.querySelector(`input[name="${key}${i}"]`);
-        const v = vEl ? vEl.value : "";
-        if (v && !isNaN(parseFloat(v)) && parseFloat(v) > 0) parts.push(`${v}${label}`);
-      });
+    [["N1","N1"],["N","N"],["BIG","B"],["SMALL","S"],["ODD","O"],["EVEN","E"]].forEach(([key, label]) => {
+      const vEl = tr.querySelector(`input[name="${key}${i}"]`);
+      const v = vEl ? vEl.value : "";
+      if (v && !isNaN(parseFloat(v)) && parseFloat(v) > 0) parts.push(`${v}${label}`);
+    });
     if (!parts.length) return;
-
     const slotIdx = Array.from(tr.querySelectorAll('.slot-cell input[type="checkbox"]:checked'))
-      .map(cb => parseInt(cb.name.split('_').pop(),10))
-      .sort((a,b)=>a-b);
+      .map(cb => parseInt(cb.name.split('_').pop(),10)).sort((a,b)=>a-b);
     const slotTags = slotIdx.map(x => String(H_BASE + x).padStart(2,'0')).join(',');
-
     const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
     const mk = MARKET_ORDER.filter(m => tr.querySelector(`input[name="market${i}_${m}"]`)?.checked);
     const mtag = mk.join('');
-
     lines.push(`${number} = ${parts.join(' ')}  |  时段:${slotTags||'-'}  市场:${mtag||'-'}`);
   });
-
   const grand = document.getElementById('grand-total')?.textContent || '0.00';
   if (lines.length) lines.push('', `GT=${grand}`);
   return lines.join('\n');
@@ -445,11 +376,7 @@ function showBetPopup(text) {
   const old = document.getElementById("resultModal"); if (old) old.remove();
   const modal = document.createElement('div');
   modal.innerHTML = `
-    <div id="resultModal" style="
-      position:fixed; top:20px; left:10px; right:10px;
-      background:#fff; border:1px solid #ddd; border-radius:12px;
-      box-shadow:0 6px 20px rgba(0,0,0,.15); padding:16px; z-index:9999; max-width:420px; margin:auto;
-      font-family:system-ui, sans-serif;">
+    <div id="resultModal" style="position:fixed; top:20px; left:10px; right:10px; background:#fff; border:1px solid #ddd; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.15); padding:16px; z-index:9999; max-width:420px; margin:auto; font-family:system-ui, sans-serif;">
       <div id="resultText" style="white-space:pre-wrap; word-break:break-word; margin-bottom:16px; font-size:14px;">${text}</div>
       <div style="display:flex; gap:10px;">
         <button onclick="copyResult()" style="flex:1; padding:8px; background:#007bff; color:#fff; border:0; border-radius:8px;">复制</button>
@@ -462,8 +389,7 @@ function showBetPopup(text) {
 function copyResult(){
   const text = document.getElementById('resultText')?.innerText || '';
   if (!text) return;
-  navigator.clipboard.writeText(text).then(()=>alert('✅ 已复制下注信息'))
-    .catch(()=>alert('❌ 复制失败，请手动选择文字'));
+  navigator.clipboard.writeText(text).then(()=>alert('✅ 已复制下注信息')).catch(()=>alert('❌ 复制失败，请手动选择文字'));
 }
 function confirmResult(){ document.getElementById('resultModal')?.remove(); }
 </script>
