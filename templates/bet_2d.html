@@ -46,12 +46,12 @@
     .mtick.H{background:var(--H)}
     .mtick.E{background:var(--E)}
     /* 勾选后整格变为高亮蓝色 */
-    .mtick:has(input:checked){background:var(--sel) !important}
+    
 
     .mtick input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
     .mbox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:18px;background:#fff;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;pointer-events:none;z-index:1}
-    .mtick input:checked + .mbox{background:#fff;box-shadow:0 0 0 2px #111 inset}
-    .mtick input:checked + .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:16px;color:#111;display:block;text-align:center}
+    .mtick input:checked + .mbox{background:var(--sel);border-color:var(--sel);box-shadow:none}
+    .mtick input:checked + .mbox::after{content:"✓";font-weight:700;font-size:14px;line-height:16px;color:#fff;display:block;text-align:center}
 
     /* 统一列宽，避免“排列乱位” */
     .num-col{width:86px}
