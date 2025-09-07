@@ -16,20 +16,16 @@ from models import db, Bet2D, WinningRecord2D, Agent  # 需要提供 Agent 模�
 MY_TZ = ZoneInfo("Asia/Kuala_Lumpur")
 MARKETS = ["M", "P", "T", "S", "B", "K", "W", "H", "E"]
 
-# ====== 首页（/home）展示的赔率占位 ======
-ODDS_4D = {
-    "M": {"B": 2750, "S": 3850, "A": 726, "C": 242},
-    "P": {"B": 2750, "S": 3850, "A": 726, "C": 242},
-    "T": {"B": 2750, "S": 3850, "A": 726, "C": 242},
-    "S": {"B": 2750, "S": 3850, "A": 726, "C": 242},
-    "B": {"B": 2750, "S": 3850, "A": 726, "C": 242},
-    "K": {"B": 2750, "S": 3850, "A": 726, "C": 242},
-    "W": {"B": 2750, "S": 3850, "A": 726, "C": 242},
-    "H": {"B": 3045, "S": 4095, "A": 740.25, "C": 246.75},
-    "E": {"B": 3045, "S": 4095, "A": 740.25, "C": 246.75},
-}
+# ---- 首页（2D）展示用赔率（不区分市场） ----
 CATS_2D = ["N1", "N", "BIG", "SMALL", "ODD", "EVEN"]
-ODDS_2D = {m: {c: None for c in CATS_2D} for m in MARKETS}
+ODDS_2D_SIMPLE = {
+    "N1": "头奖 1:50 / 特别奖无",
+    "N":  "头奖 1:28 / 特别奖 1:7",
+    "BIG":   "1:1.9",
+    "SMALL": "1:1.9",
+    "ODD":   "1:1.9",
+    "EVEN":  "1:1.9",
+}
 
 
 def _fix_db_url(url: str) -> str:
@@ -120,22 +116,10 @@ def create_app() -> Flask:
         g.user_id = session.get("user_id")    # 代理 id
         g.username = session.get("username")
 
-    # -------------- 首页/健康检查 --------------
+    # -------------- 首页/健康检查/入口 --------------
     @app.get("/")
     def index():
-        # 已登录去 /home，未登录去 /login
-        return redirect(url_for("home") if session.get("role") else url_for("login"))
-
-    @app.get("/home")
-    @login_required
-    def home():
-        return render_template(
-            "home.html",
-            odds4=ODDS_4D,
-            odds2=ODDS_2D,
-            markets=MARKETS,
-            cats2=CATS_2D
-        )
+        return redirect(url_for('home') if session.get('role') else url_for('login'))
 
     @app.get("/healthz")
     def healthz():
@@ -178,6 +162,16 @@ def create_app() -> Flask:
         session.clear()
         flash("已退出登录", "ok")
         return redirect(url_for("login"))
+
+    # -------------- 首页（赔率展示，仅 2D 简版） --------------
+    @app.get("/home")
+    @login_required
+    def home():
+        return render_template(
+            "home.html",
+            odds2=ODDS_2D_SIMPLE,
+            cats2=CATS_2D
+        )
 
     # -------------- 代理管理（管理员） --------------
     @app.route("/agents", methods=["GET", "POST"])
@@ -228,130 +222,132 @@ def create_app() -> Flask:
             flash("密码已重置", "ok")
         return redirect(url_for("agents_admin"))
 
-# -------------- 下注页 --------------
-@app.route("/2d/bet", methods=["GET", "POST"])
-@login_required
-def bet_2d_view():
-    # —— 确定本次下注使用的 agent_id
-    if g.role == "agent" and g.user_id:
-        # 普通代理：强制使用自己的 ID
-        agent_id = int(g.user_id)
-        agents_for_select = None  # 不给模板传列表
-    else:
-        # 管理员：允许通过 form/URL 选择；缺省用 1
-        agent_id = int((request.values.get("agent_id") or "1").strip())
-        # 提供下拉选项
-        try:
-            agents_for_select = Agent.query.order_by(Agent.username.asc()).all()
-        except Exception:
-            agents_for_select = []
-
-    date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
-    try:
-        day = datetime.strptime(date_str, "%Y-%m-%d").date()
-    except ValueError:
-        day = datetime.now(MY_TZ).date()
-        date_str = day.strftime("%Y-%m-%d")
-
-    slots = list_slots_for_day(day)
-
-    if request.method == "POST":
-        # 管理员在 POST 时也允许选择 agent_id；代理忽略该字段
+    # -------------- 下注页 --------------
+    @app.route("/2d/bet", methods=["GET", "POST"])
+    @login_required
+    def bet_2d_view():
+        # —— 确定本次下注使用的 agent_id
         if g.role == "agent" and g.user_id:
             agent_id = int(g.user_id)
+            agents_for_select = None  # 代理不显示选择
         else:
-            agent_id = int((request.form.get("agent_id") or "1").strip())
-
-        form_date = request.form.get("date", date_str)
-        try:
-            _ = datetime.strptime(form_date, "%Y-%m-%d").date()
-        except Exception:
-            form_date = date_str
-
-        created = 0
-        slots_today = list_slots_for_day(day)  # 用于从索引还原 code
-
-        def to_amt(name: str, i: int) -> Decimal:
+            agent_id = int((request.values.get("agent_id") or "1").strip())
             try:
-                raw = (request.form.get(f"{name}{i}") or "").strip()
-                v = Decimal(raw or "0")
-                return Decimal("0.00") if v <= 0 else v
-            except InvalidOperation:
-                return Decimal("0.00")
+                agents_for_select = Agent.query.order_by(Agent.username.asc()).all()
+            except Exception:
+                agents_for_select = []
 
-        for i in range(1, 13):
-            raw_num = (request.form.get(f"number{i}") or "").strip()
-            if not raw_num.isdigit():
-                continue
-            vi = int(raw_num)
-            if vi < 0 or vi > 99:
-                continue
-            number = f"{vi:02d}"
-
-            n1 = to_amt("N1", i); n  = to_amt("N",  i)
-            bg = to_amt("BIG", i); sm = to_amt("SMALL", i)
-            od = to_amt("ODD", i); ev = to_amt("EVEN", i)
-            if (n1 + n + bg + sm + od + ev) == 0:
-                continue
-
-            # time slots
-            slots_sel: list[str] = []
-            for idx, slot in enumerate(slots_today):
-                if request.form.get(f"slot{i}_{idx}") and not is_locked_for_code(slot["code"]):
-                    slots_sel.append(slot["code"])
-            if not slots_sel:
-                slots_sel = [next_slot_code()]
-
-            # markets
-            markets_sel = [m for m in MARKETS if request.form.get(f"market{i}_{m}")]
-            if not markets_sel:
-                markets_sel = ["M"]
-
-            for code in slots_sel:
-                if is_locked_for_code(code):
-                    continue
-                ts = datetime.now(MY_TZ)
-                order_code = ts.strftime("%y%m%d/%H%M%S") + f"{int(ts.microsecond/1000):03d}"
-                lock_at = parse_code_to_hour(code).replace(minute=49, second=0, microsecond=0)
-
-                for m in markets_sel:
-                    db.session.add(Bet2D(
-                        order_code=order_code,
-                        agent_id=agent_id,
-                        market=m, code=code, number=number,
-                        amount_n1=n1, amount_n=n,
-                        amount_b=bg, amount_s=sm,
-                        amount_ds=od, amount_ss=ev,
-                        status="active", locked_at=lock_at
-                    ))
-                    created += 1
-
+        date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
         try:
-            if created > 0:
-                db.session.commit()
-                flash(f"已提交 {created} 条注单。", "ok")
-                # 保留管理员所选代理在 querystring 里
-                if g.role == "admin":
-                    return redirect(url_for("bet_2d_view", date=form_date, success=1, agent_id=agent_id))
-                return redirect(url_for("bet_2d_view", date=form_date, success=1))
-            else:
-                flash("没有有效行（或所选时间段已过锁注）。", "error")
-                return redirect(url_for("bet_2d_view", date=date_str))
-        except Exception as e:
-            db.session.rollback()
-            flash(f"提交失败：{e}", "error")
-            return redirect(url_for("bet_2d_view", date=date_str))
+            day = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            day = datetime.now(MY_TZ).date()
+            date_str = day.strftime("%Y-%m-%d")
 
-    # GET 渲染
-    return render_template(
-        "bet_2d.html",
-        date=date_str,
-        slots=slots,
-        markets=MARKETS,
-        # 仅管理员需要的两个变量
-        agents=agents_for_select,
-        selected_agent_id=agent_id,
-    )
+        slots = list_slots_for_day(day)
+
+        if request.method == "POST":
+            # 再次确认 agent_id（代理强制自己，管理员可选）
+            if g.role == "agent" and g.user_id:
+                agent_id = int(g.user_id)
+            else:
+                agent_id = int((request.form.get("agent_id") or "1").strip())
+
+            form_date = request.form.get("date", date_str)
+            try:
+                _ = datetime.strptime(form_date, "%Y-%m-%d").date()
+            except Exception:
+                form_date = date_str
+
+            created = 0
+            slots_today = list_slots_for_day(day)  # 用于从索引还原 code
+
+            def to_amt(name: str, i: int) -> Decimal:
+                try:
+                    raw = (request.form.get(f"{name}{i}") or "").strip()
+                    v = Decimal(raw or "0")
+                    return Decimal("0.00") if v <= 0 else v
+                except InvalidOperation:
+                    return Decimal("0.00")
+
+            for i in range(1, 13):
+                raw_num = (request.form.get(f"number{i}") or "").strip()
+                if not raw_num.isdigit():  # 空行或非法
+                    continue
+                vi = int(raw_num)
+                if vi < 0 or vi > 99:
+                    continue
+                number = f"{vi:02d}"
+
+                n1 = to_amt("N1", i)
+                n  = to_amt("N",  i)
+                bg = to_amt("BIG", i)
+                sm = to_amt("SMALL", i)
+                od = to_amt("ODD", i)
+                ev = to_amt("EVEN", i)
+                if (n1 + n + bg + sm + od + ev) == 0:
+                    continue
+
+                # 行内选中的时间段：slot{i}_{idx} → code
+                slots_sel: list[str] = []
+                for idx, slot in enumerate(slots_today):
+                    if request.form.get(f"slot{i}_{idx}") and not is_locked_for_code(slot["code"]):
+                        slots_sel.append(slot["code"])
+                if not slots_sel:
+                    slots_sel = [next_slot_code()]  # 没选则默认下一期
+
+                # 行内选中的市场：market{i}_M 等
+                markets_sel = [m for m in MARKETS if request.form.get(f"market{i}_{m}")]
+                if not markets_sel:
+                    markets_sel = ["M"]
+
+                for code in slots_sel:
+                    if is_locked_for_code(code):
+                        continue
+                    ts = datetime.now(MY_TZ)
+                    order_code = ts.strftime("%y%m%d/%H%M%S") + f"{int(ts.microsecond/1000):03d}"
+                    lock_at = parse_code_to_hour(code).replace(minute=49, second=0, microsecond=0)
+
+                    for m in markets_sel:
+                        db.session.add(Bet2D(
+                            order_code=order_code,
+                            agent_id=agent_id,
+                            market=m,
+                            code=code,
+                            number=number,
+                            amount_n1=n1, amount_n=n,
+                            amount_b=bg, amount_s=sm,
+                            amount_ds=od, amount_ss=ev,
+                            status="active",
+                            locked_at=lock_at
+                        ))
+                        created += 1
+
+            try:
+                if created > 0:
+                    db.session.commit()
+                    flash(f"已提交 {created} 条注单。", "ok")
+                    # 成功后回到本页，带 success=1 —— 前端据此弹窗；管理员保留 agent_id
+                    if g.role == "admin":
+                        return redirect(url_for("bet_2d_view", date=form_date, success=1, agent_id=agent_id))
+                    return redirect(url_for("bet_2d_view", date=form_date, success=1))
+                else:
+                    flash("没有有效行（或所选时间段已过锁注）。", "error")
+                    return redirect(url_for("bet_2d_view", date=date_str))
+            except Exception as e:
+                db.session.rollback()
+                flash(f"提交失败：{e}", "error")
+                return redirect(url_for("bet_2d_view", date=date_str))
+
+        # GET 渲染
+        return render_template(
+            "bet_2d.html",
+            date=date_str,
+            slots=slots,
+            markets=MARKETS,
+            agents=agents_for_select,           # 仅管理员非空
+            selected_agent_id=agent_id          # 仅管理员有用
+        )
 
     # -------------- 当日注单 --------------
     @app.get("/2d/history")
