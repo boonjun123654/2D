@@ -130,6 +130,7 @@
     <nav class="drawer-nav">
       <ul class="menu" id="menuList">
         {% if session.get('role') %}
+          <li><a class="{{ 'active' if request.endpoint=='home' else '' }}" href="{{ url_for('home') }}">首页</a></li>
           <li><a class="{{ 'active' if request.endpoint=='bet_2d_view' else '' }}" href="{{ url_for('bet_2d_view') }}">下注</a></li>
           <li><a class="{{ 'active' if request.endpoint=='history_2d_view' else '' }}" href="{{ url_for('history_2d_view') }}">当日注单</a></li>
           <li><a class="{{ 'active' if request.endpoint=='winning_2d_view' else '' }}" href="{{ url_for('winning_2d_view') }}">查看中奖</a></li>
