@@ -1,25 +1,88 @@
-<!doctype html>
-<html lang="zh">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>2D 首页</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:24px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px}
-    a.card{display:block;padding:18px;border:1px solid #ddd;border-radius:12px;text-decoration:none;color:#111}
-    a.card:hover{border-color:#999}
-    .muted{color:#666}
-  </style>
-</head>
-<body>
-  <h1>2D 系统</h1>
-  <p class="muted">选择一个功能进入：</p>
-  <div class="grid">
-    <a class="card" href="/2d/bet">➕ 下注</a>
-    <a class="card" href="/2d/history">📃 当日注单</a>
-    <a class="card" href="/2d/winning">🏆 查看中奖</a>
-    <a class="card" href="/healthz">🩺 健康检查</a>
+{% extends "layout.html" %}
+{% block title %}首页 / 赔率{% endblock %}
+{% block header_title %}首页 · 赔率{% endblock %}
+
+{% block content %}
+<style>
+  .cards{display:grid;grid-template-columns:1fr;gap:14px}
+  @media (min-width: 920px){ .cards{grid-template-columns:1fr 1fr} }
+
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;
+        box-shadow:0 10px 28px rgba(16,24,40,.06)}
+  .card h3{margin:0 0 10px}
+  .muted{color:#64748b;font-size:12px}
+
+  .scroll{overflow:auto;border:1px solid #eef2f7;border-radius:10px}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:720px}
+  thead th{position:sticky;top:0;background:#f6f8fa;border-bottom:1px solid #e5e7eb;padding:8px}
+  tbody td{border-bottom:1px solid #f1f5f9;padding:8px}
+  th,td{text-align:center}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #e5e7eb;font-weight:700}
+  .M{background:#ffff00}.P{background:#0000ff;color:#fff}.T{background:#cc0000;color:#fff}
+  .S{background:#4c8ed1}.B{background:#e51d20;color:#fff}.K{background:#008835;color:#fff}
+  .W{background:#00540e;color:#fff}.H{background:#fed606}.E{background:#ffa500}
+  .soon{background:#fff8e1;border:1px solid #ffe08a;color:#8a6d00;font-weight:600;padding:6px 10px;border-radius:8px}
+</style>
+
+<div class="cards">
+
+  <!-- 2D 赔率（占位） -->
+  <div class="card">
+    <h3>2D 赔率</h3>
+    <div class="muted" style="margin-bottom:8px">以下为结构占位，真实赔率待确认后替换。</div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>市场</th>
+            {% for c in cats2 %}<th>{{ c }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in markets %}
+          <tr>
+            <td><span class="tag {{m}}">{{ m }}</span></td>
+            {% for c in cats2 %}
+              {% set v = odds2[m][c] %}
+              <td>{{ v if v is not none else '—' }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px"><span class="soon">开发中 · 将以后台配置为准</span></div>
   </div>
-</body>
-</html>
+
+  <!-- 4D 赔率（参考） -->
+  <div class="card">
+    <h3>4D 赔率（参考）</h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>市场</th>
+            <th>B（1st）</th>
+            <th>S（1st）</th>
+            <th>A（1st）</th>
+            <th>C（1st）</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in ['M','P','T','S','B','K','W','H','E'] %}
+          <tr>
+            <td><span class="tag {{m}}">{{ m }}</span></td>
+            <td>{{ odds4[m]['B'] }}</td>
+            <td>{{ odds4[m]['S'] }}</td>
+            <td>{{ odds4[m]['A'] }}</td>
+            <td>{{ odds4[m]['C'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="muted" style="margin-top:8px">数据与 4D 页面一致，用于占位与校对。</div>
+  </div>
+
+</div>
+{% endblock %}
