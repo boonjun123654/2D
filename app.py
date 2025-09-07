@@ -16,6 +16,21 @@ from models import db, Bet2D, WinningRecord2D, Agent  # 需要提供 Agent 模�
 MY_TZ = ZoneInfo("Asia/Kuala_Lumpur")
 MARKETS = ["M", "P", "T", "S", "B", "K", "W", "H", "E"]
 
+# ====== 首页（/home）展示的赔率占位 ======
+ODDS_4D = {
+    "M": {"B": 2750, "S": 3850, "A": 726, "C": 242},
+    "P": {"B": 2750, "S": 3850, "A": 726, "C": 242},
+    "T": {"B": 2750, "S": 3850, "A": 726, "C": 242},
+    "S": {"B": 2750, "S": 3850, "A": 726, "C": 242},
+    "B": {"B": 2750, "S": 3850, "A": 726, "C": 242},
+    "K": {"B": 2750, "S": 3850, "A": 726, "C": 242},
+    "W": {"B": 2750, "S": 3850, "A": 726, "C": 242},
+    "H": {"B": 3045, "S": 4095, "A": 740.25, "C": 246.75},
+    "E": {"B": 3045, "S": 4095, "A": 740.25, "C": 246.75},
+}
+CATS_2D = ["N1", "N", "BIG", "SMALL", "ODD", "EVEN"]
+ODDS_2D = {m: {c: None for c in CATS_2D} for m in MARKETS}
+
 
 def _fix_db_url(url: str) -> str:
     """Render 常给 postgres:// 前缀；转换为 SQLAlchemy 需要的前缀。"""
@@ -107,10 +122,20 @@ def create_app() -> Flask:
 
     # -------------- 首页/健康检查 --------------
     @app.get("/")
-    @app.get("/")
     def index():
-        from flask import session
-        return redirect(url_for('home') if session.get('role') else url_for('login'))
+        # 已登录去 /home，未登录去 /login
+        return redirect(url_for("home") if session.get("role") else url_for("login"))
+
+    @app.get("/home")
+    @login_required
+    def home():
+        return render_template(
+            "home.html",
+            odds4=ODDS_4D,
+            odds2=ODDS_2D,
+            markets=MARKETS,
+            cats2=CATS_2D
+        )
 
     @app.get("/healthz")
     def healthz():
@@ -134,7 +159,7 @@ def create_app() -> Flask:
                 session.clear()
                 session.update({"role": "admin", "user_id": None, "username": username})
                 flash("管理员登录成功", "ok")
-                return redirect(request.args.get("next") or url_for("bet_2d_view"))
+                return redirect(request.args.get("next") or url_for("home"))
 
             # 代理（数据库，哈希校验）
             agent = Agent.query.filter_by(username=username, is_active=True).first()
@@ -142,7 +167,7 @@ def create_app() -> Flask:
                 session.clear()
                 session.update({"role": "agent", "user_id": agent.id, "username": agent.username})
                 flash("登录成功", "ok")
-                return redirect(request.args.get("next") or url_for("bet_2d_view"))
+                return redirect(request.args.get("next") or url_for("home"))
 
             flash("用户名或密码错误", "error")
 
@@ -261,8 +286,8 @@ def create_app() -> Flask:
 
                 # 行内选中的时间段：slot{i}_{idx} → code
                 slots_sel: list[str] = []
-                for idx, slot in enumerate(slots_today):
-                    if request.form.get(f"slot{i}_{idx}") and not is_locked_for_code(slot["code"]):
+                for idx2, slot in enumerate(slots_today):
+                    if request.form.get(f"slot{i}_{idx2}") and not is_locked_for_code(slot["code"]):
                         slots_sel.append(slot["code"])
                 if not slots_sel:
                     slots_sel = [next_slot_code()]  # 没选则默认下一期
@@ -343,25 +368,6 @@ def create_app() -> Flask:
 
     return app
 
-def require_login(fn):
-    from functools import wraps
-    from flask import session, redirect, url_for, request, flash
-    @wraps(fn)
-    def _wrap(*args, **kwargs):
-        if not session.get("role"):
-            flash("请先登录", "error")
-            return redirect(url_for("login", next=request.path))
-        return fn(*args, **kwargs)
-    return _wrap
-
-@app.get("/home")
-@require_login
-def home():
-    return render_template("home.html",
-                           odds4=ODDS_4D,
-                           odds2=ODDS_2D,
-                           markets=MARKETS,
-                           cats2=CATS_2D)
 
 # 供 gunicorn 使用：app:app
 app = create_app()
