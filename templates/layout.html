@@ -5,32 +5,92 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}系统{% endblock %}</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Microsoft YaHei",sans-serif;margin:0;background:#fff}
-    header{background:#f6f8fa;border-bottom:1px solid #d0d7de}
+    :root{
+      --c-border:#e5e7eb; --c-head:#f6f8fa; --c-text:#111827; --c-muted:#64748b;
+      --brand:#2563eb; --danger:#ef4444; --ok:#16a34a;
+    }
+
+    /* 基础 */
+    *{box-sizing:border-box}
+    body{
+      margin:0; color:var(--c-text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Microsoft YaHei",Arial,sans-serif;
+      background:#fff;
+    }
     .wrap{max-width:1180px;margin:0 auto;padding:12px}
-    nav a{margin-right:12px;text-decoration:none;color:#0969da}
-    .flash{margin:10px 0;padding:10px;border-radius:8px;border:1px solid #d0d7de}
+
+    /* ===== 顶部导航美化 =====
+       这里使用 <header class="topbar">，这样登录页里写过的 header{display:none} 仍能隐藏导航 */
+    .topbar{background:var(--c-head);border-bottom:1px solid var(--c-border)}
+    .topbar .wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px}
+    .nav{display:flex;gap:8px;flex-wrap:wrap}
+    .nav a.navlink{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 12px;border:1px solid var(--c-border);border-radius:999px;
+      background:#fff;color:#111;text-decoration:none;font-weight:600;font-size:14px;
+      transition:background .15s,border-color .15s,box-shadow .15s,color .15s;
+    }
+    .nav a.navlink:hover{background:#f1f5f9}
+    .nav a.navlink.active{
+      background:var(--brand);border-color:var(--brand);color:#fff;
+      box-shadow:0 6px 18px rgba(37,99,235,.18)
+    }
+    .spacer{flex:1}
+    .userbox{display:flex;align-items:center;gap:10px}
+    .avatar{
+      width:26px;height:26px;border-radius:50%;
+      display:grid;place-items:center;background:var(--brand);color:#fff;font-weight:800;font-size:12px;
+      box-shadow:0 4px 12px rgba(37,99,235,.22)
+    }
+    .role{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid}
+    .role.agent{background:#eaffef;border-color:#79d27d;color:#1a7f37}
+    .role.admin{background:#fff3f3;border-color:#f1a7a7;color:#b42318}
+    a.btn-logout{
+      padding:6px 12px;border-radius:999px;background:var(--danger);color:#fff;
+      text-decoration:none;font-weight:700;border:1px solid transparent;
+      box-shadow:0 6px 16px rgba(239,68,68,.22)
+    }
+    a.btn-logout:hover{filter:brightness(1.05)}
+
+    /* 全局消息提示 */
+    .flash{margin:10px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--c-border);background:#fff}
     .flash.ok{background:#e6ffed;border-color:#79d27d}
     .flash.error{background:#ffe6e6;border-color:#ff9999}
+    .flash.info{background:#eef2ff;border-color:#c7d2fe}
+
+    /* 常用控件（可选） */
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);background:#fff;cursor:pointer}
+    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+    .muted{color:var(--c-muted)}
+
+    /* 表格基础（页面里也可以自带更细样式） */
+    table{border-collapse:separate;border-spacing:0;width:100%}
+    th,td{padding:8px;border-bottom:1px solid var(--c-border);text-align:left}
+    thead th{background:var(--c-head)}
   </style>
 </head>
 <body>
-<header>
-  <div class="wrap">
-    {% include "_nav.html" %}
-  </div>
-</header>
 
-<main class="wrap">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for cat,msg in messages %}
-        <div class="flash {{cat}}">{{ msg }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+  <!-- 顶部导航 -->
+  <header class="topbar">
+    <div class="wrap">
+      {% include "_nav.html" %}
+    </div>
+  </header>
 
-  {% block content %}{% endblock %}
-</main>
+  <!-- 主体 -->
+  <main class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat,msg in messages %}
+          <div class="flash {{cat}}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
 </body>
 </html>
