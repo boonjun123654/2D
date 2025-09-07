@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}系统{% endblock %}</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Microsoft YaHei",sans-serif;margin:0;background:#fff}
+    header{background:#f6f8fa;border-bottom:1px solid #d0d7de}
+    .wrap{max-width:1180px;margin:0 auto;padding:12px}
+    nav a{margin-right:12px;text-decoration:none;color:#0969da}
+    .flash{margin:10px 0;padding:10px;border-radius:8px;border:1px solid #d0d7de}
+    .flash.ok{background:#e6ffed;border-color:#79d27d}
+    .flash.error{background:#ffe6e6;border-color:#ff9999}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    {% include "_nav.html" %}
+  </div>
+</header>
+
+<main class="wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat,msg in messages %}
+        <div class="flash {{cat}}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
