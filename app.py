@@ -107,10 +107,10 @@ def create_app() -> Flask:
 
     # -------------- 首页/健康检查 --------------
     @app.get("/")
+    @app.get("/")
     def index():
-        if not session.get("role"):
-            return redirect(url_for("login"))
-        return redirect(url_for("bet_2d_view"))
+        from flask import session
+        return redirect(url_for('home') if session.get('role') else url_for('login'))
 
     @app.get("/healthz")
     def healthz():
@@ -343,6 +343,25 @@ def create_app() -> Flask:
 
     return app
 
+def require_login(fn):
+    from functools import wraps
+    from flask import session, redirect, url_for, request, flash
+    @wraps(fn)
+    def _wrap(*args, **kwargs):
+        if not session.get("role"):
+            flash("请先登录", "error")
+            return redirect(url_for("login", next=request.path))
+        return fn(*args, **kwargs)
+    return _wrap
+
+@app.get("/home")
+@require_login
+def home():
+    return render_template("home.html",
+                           odds4=ODDS_4D,
+                           odds2=ODDS_2D,
+                           markets=MARKETS,
+                           cats2=CATS_2D)
 
 # 供 gunicorn 使用：app:app
 app = create_app()
