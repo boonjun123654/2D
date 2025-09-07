@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>代理管理</h2>
+
+<h3>新增代理</h3>
+<form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <input name="username" placeholder="用户名" required>
+  <input name="password" type="password" placeholder="初始密码" required>
+  <button type="submit">创建</button>
+</form>
+
+<h3 style="margin-top:16px">代理列表</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+  <thead><tr><th>ID</th><th>用户名</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for a in agents %}
+    <tr>
+      <td>{{ a.id }}</td>
+      <td>{{ a.username }}</td>
+      <td>{{ '启用' if a.is_active else '停用' }}</td>
+      <td>{{ a.created_at }}</td>
+      <td>
+        <form method="post" action="{{ url_for('agent_toggle', agent_id=a.id) }}" style="display:inline">
+          <button>{{ '停用' if a.is_active else '启用' }}</button>
+        </form>
+        <form method="post" action="{{ url_for('agent_reset', agent_id=a.id) }}" style="display:inline;margin-left:6px">
+          <input name="new_password" type="password" placeholder="新密码" required>
+          <button>重置密码</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
