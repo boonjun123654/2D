@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>登录</h2>
+<form method="post" style="max-width:360px">
+  <div style="margin:8px 0">
+    <label>用户名</label><br>
+    <input name="username" required style="width:100%;padding:8px">
+  </div>
+  <div style="margin:8px 0">
+    <label>密码</label><br>
+    <input name="password" type="password" required style="width:100%;padding:8px">
+  </div>
+  <button type="submit" style="padding:8px 16px">登录</button>
+</form>
+{% endblock %}
