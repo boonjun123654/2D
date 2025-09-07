@@ -1,5 +1,6 @@
 import os
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 
 db = SQLAlchemy()
 
@@ -53,3 +54,11 @@ class DrawResult(db.Model):
     __table_args__ = (
         db.UniqueConstraint('code', 'market', name='uq_draw_code_market'),
     )
+
+class Agent(db.Model):
+    __tablename__ = "agents"
+    id            = db.Column(db.Integer, primary_key=True)
+    username      = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(200), nullable=False)
+    is_active     = db.Column(db.Boolean, default=True)
+    created_at    = db.Column(db.DateTime(timezone=True), server_default=func.now())
