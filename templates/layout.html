@@ -8,9 +8,8 @@
     :root{
       --c-border:#e5e7eb; --c-head:#f6f8fa; --c-text:#111827; --c-muted:#64748b;
       --brand:#2563eb; --danger:#ef4444; --ok:#16a34a;
+      --shadow:0 12px 40px rgba(16,24,40,.12);
     }
-
-    /* 基础 */
     *{box-sizing:border-box}
     body{
       margin:0; color:var(--c-text);
@@ -19,52 +18,77 @@
     }
     .wrap{max-width:1180px;margin:0 auto;padding:12px}
 
-    /* ===== 顶部导航美化 =====
-       这里使用 <header class="topbar">，这样登录页里写过的 header{display:none} 仍能隐藏导航 */
-    .topbar{background:var(--c-head);border-bottom:1px solid var(--c-border)}
-    .topbar .wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px}
-    .nav{display:flex;gap:8px;flex-wrap:wrap}
-    .nav a.navlink{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 12px;border:1px solid var(--c-border);border-radius:999px;
-      background:#fff;color:#111;text-decoration:none;font-weight:600;font-size:14px;
-      transition:background .15s,border-color .15s,box-shadow .15s,color .15s;
+    /* 顶部条（仅放汉堡与标题区域） */
+    header.topbar{
+      position:sticky; top:0; z-index:30;
+      background:var(--c-head); border-bottom:1px solid var(--c-border);
     }
-    .nav a.navlink:hover{background:#f1f5f9}
-    .nav a.navlink.active{
-      background:var(--brand);border-color:var(--brand);color:#fff;
-      box-shadow:0 6px 18px rgba(37,99,235,.18)
+    .topbar-inner{
+      display:flex; align-items:center; gap:12px; padding:10px 12px;
+      max-width:1180px; margin:0 auto;
     }
-    .spacer{flex:1}
-    .userbox{display:flex;align-items:center;gap:10px}
+    /* 汉堡按钮 */
+    .hamburger{
+      width:38px;height:34px;border-radius:10px;border:1px solid var(--c-border);
+      background:#fff; display:inline-grid; place-items:center; cursor:pointer;
+      transition:box-shadow .15s, transform .03s ease;
+    }
+    .hamburger:active{ transform:translateY(1px) }
+    .hamburger span{
+      display:block;width:18px;height:2px;background:#111;border-radius:2px;position:relative;
+    }
+    .hamburger span::before,.hamburger span::after{
+      content:""; position:absolute; left:0; width:18px; height:2px; background:#111; border-radius:2px;
+    }
+    .hamburger span::before{ top:-6px } .hamburger span::after{ top:6px }
+
+    .title{font-weight:700}
+
+    /* 左侧抽屉 */
+    .drawer{
+      position:fixed; inset:0 auto 0 0; width:280px; background:#fff; border-right:1px solid var(--c-border);
+      transform:translateX(-100%); transition:transform .2s ease-out; z-index:40; box-shadow:var(--shadow);
+      display:flex; flex-direction:column; min-height:100vh;
+    }
+    .drawer.open{ transform:none }
+    .drawer-head{ padding:14px 14px 8px; border-bottom:1px solid var(--c-border); background:#fff }
+    .brand-row{ display:flex; align-items:center; gap:10px }
     .avatar{
-      width:26px;height:26px;border-radius:50%;
-      display:grid;place-items:center;background:var(--brand);color:#fff;font-weight:800;font-size:12px;
+      width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+      background:var(--brand);color:#fff;font-weight:800;font-size:12px;
       box-shadow:0 4px 12px rgba(37,99,235,.22)
     }
     .role{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid}
     .role.agent{background:#eaffef;border-color:#79d27d;color:#1a7f37}
     .role.admin{background:#fff3f3;border-color:#f1a7a7;color:#b42318}
-    a.btn-logout{
-      padding:6px 12px;border-radius:999px;background:var(--danger);color:#fff;
-      text-decoration:none;font-weight:700;border:1px solid transparent;
-      box-shadow:0 6px 16px rgba(239,68,68,.22)
-    }
-    a.btn-logout:hover{filter:brightness(1.05)}
 
-    /* 全局消息提示 */
+    .drawer-nav{ padding:8px }
+    .menu{ list-style:none; margin:0; padding:0; display:grid; gap:6px }
+    .menu a{
+      display:flex; align-items:center; gap:10px; text-decoration:none;
+      padding:10px 12px; border:1px solid var(--c-border); border-radius:10px; color:#111; background:#fff;
+    }
+    .menu a:hover{ background:#f1f5f9 }
+    .menu a.active{ background:var(--brand); border-color:var(--brand); color:#fff }
+
+    .drawer-foot{ margin-top:auto; padding:10px; border-top:1px solid var(--c-border); display:flex; gap:10px }
+    .btn{ display:inline-flex; align-items:center; gap:8px; padding:9px 12px; border-radius:10px; border:1px solid var(--c-border); background:#fff; cursor:pointer }
+    .btn.danger{ background:var(--danger); border-color:var(--danger); color:#fff }
+
+    /* 遮罩 */
+    .mask{
+      position:fixed; inset:0; background:rgba(2,6,23,.45);
+      opacity:0; pointer-events:none; transition:opacity .15s; z-index:35;
+    }
+    .mask.show{ opacity:1; pointer-events:auto }
+
+    /* 全局 flash */
     .flash{margin:10px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--c-border);background:#fff}
     .flash.ok{background:#e6ffed;border-color:#79d27d}
     .flash.error{background:#ffe6e6;border-color:#ff9999}
     .flash.info{background:#eef2ff;border-color:#c7d2fe}
 
-    /* 常用控件（可选） */
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);background:#fff;cursor:pointer}
-    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
-    .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
-    .muted{color:var(--c-muted)}
-
-    /* 表格基础（页面里也可以自带更细样式） */
+    /* 常用表格/按钮（页面里也可以覆盖） */
     table{border-collapse:separate;border-spacing:0;width:100%}
     th,td{padding:8px;border-bottom:1px solid var(--c-border);text-align:left}
     thead th{background:var(--c-head)}
@@ -72,14 +96,61 @@
 </head>
 <body>
 
-  <!-- 顶部导航 -->
+  <!-- 顶部条：左上角汉堡按钮 -->
   <header class="topbar">
-    <div class="wrap">
-      {% include "_nav.html" %}
+    <div class="topbar-inner">
+      <button id="menuBtn" class="hamburger" aria-label="打开菜单" aria-controls="drawer" aria-expanded="false">
+        <span></span>
+      </button>
+      <div class="title">{% block header_title %}{% endblock %}</div>
+      <div style="margin-left:auto;color:var(--c-muted);font-size:13px">
+        {% if session.get('role') %}
+          欢迎，<strong style="color:#111">{{ session.get('username') or '—' }}</strong>
+        {% else %}
+          未登录
+        {% endif %}
+      </div>
     </div>
   </header>
 
-  <!-- 主体 -->
+  <!-- 左侧抽屉菜单 + 遮罩 -->
+  <aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-label="侧边菜单">
+    <div class="drawer-head">
+      <div class="brand-row">
+        <div class="avatar">{{ (session.get('username') or session.get('role') or 'U')[:1]|upper }}</div>
+        <div>
+          <div style="font-weight:700">{{ session.get('username') or '未登录' }}</div>
+          {% if session.get('role') %}
+            <div class="role {{ session.get('role') }}">{{ '管理员' if session.get('role')=='admin' else '代理' }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <nav class="drawer-nav">
+      <ul class="menu" id="menuList">
+        {% if session.get('role') %}
+          <li><a class="{{ 'active' if request.endpoint=='bet_2d_view' else '' }}" href="{{ url_for('bet_2d_view') }}">下注</a></li>
+          <li><a class="{{ 'active' if request.endpoint=='history_2d_view' else '' }}" href="{{ url_for('history_2d_view') }}">当日注单</a></li>
+          <li><a class="{{ 'active' if request.endpoint=='winning_2d_view' else '' }}" href="{{ url_for('winning_2d_view') }}">查看中奖</a></li>
+          {% if session.get('role') == 'admin' %}
+            <li><a class="{{ 'active' if request.endpoint=='agents_admin' else '' }}" href="{{ url_for('agents_admin') }}">代理管理</a></li>
+          {% endif %}
+        {% else %}
+          <li><a class="{{ 'active' if request.endpoint=='login' else '' }}" href="{{ url_for('login') }}">登录</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+
+    {% if session.get('role') %}
+      <div class="drawer-foot">
+        <a class="btn danger" href="{{ url_for('logout') }}">退出登录</a>
+      </div>
+    {% endif %}
+  </aside>
+  <div id="mask" class="mask" aria-hidden="true"></div>
+
+  <!-- 页面主体 -->
   <main class="wrap">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -91,6 +162,37 @@
 
     {% block content %}{% endblock %}
   </main>
+
+  <script>
+    (function(){
+      const btn = document.getElementById('menuBtn');
+      const drawer = document.getElementById('drawer');
+      const mask = document.getElementById('mask');
+
+      function openDrawer(){
+        drawer.classList.add('open');
+        mask.classList.add('show');
+        btn.setAttribute('aria-expanded','true');
+      }
+      function closeDrawer(){
+        drawer.classList.remove('open');
+        mask.classList.remove('show');
+        btn.setAttribute('aria-expanded','false');
+      }
+      function toggleDrawer(){
+        if(drawer.classList.contains('open')) closeDrawer(); else openDrawer();
+      }
+
+      btn.addEventListener('click', toggleDrawer);
+      mask.addEventListener('click', closeDrawer);
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
+
+      // 点击菜单链接后自动收起
+      document.getElementById('menuList')?.addEventListener('click', function(e){
+        const a = e.target.closest('a'); if(a) closeDrawer();
+      });
+    })();
+  </script>
 
 </body>
 </html>
