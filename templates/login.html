@@ -1,16 +1,150 @@
 {% extends "layout.html" %}
 {% block title %}登录{% endblock %}
+
 {% block content %}
-<h2>登录</h2>
-<form method="post" style="max-width:360px">
-  <div style="margin:8px 0">
-    <label>用户名</label><br>
-    <input name="username" required style="width:100%;padding:8px">
+<style>
+  /* 隐藏全站导航，让登录页更纯净 */
+  header{display:none}
+
+  /* 背景与容器 */
+  .auth-bg{
+    min-height:100vh;
+    background: radial-gradient(1200px 600px at 20% -10%, #e8f0ff 0%, transparent 50%),
+                radial-gradient(1200px 600px at 120% 110%, #e6ffe9 0%, transparent 40%),
+                linear-gradient(135deg, #f7fafc, #f0f4f8);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .auth-card{
+    width:100%;max-width:420px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;
+    box-shadow:0 12px 40px rgba(16,24,40,.12);
+    padding:26px 24px 24px;
+    animation:fadeIn .25s ease-out;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+  .brand{
+    display:flex;align-items:center;gap:10px;margin-bottom:10px;
+  }
+  .brand-badge{
+    width:36px;height:36px;border-radius:10px;background:#1d4ed8;display:grid;place-items:center;color:#fff;font-weight:800;
+    box-shadow:0 6px 18px rgba(29,78,216,.35);
+  }
+  h1{margin:0;font-size:22px}
+  .sub{color:#64748b;font-size:13px;margin-top:4px}
+
+  .field{margin-top:14px}
+  .field label{display:block;font-size:13px;color:#334155;margin-bottom:6px}
+  .control{
+    position:relative;
+  }
+  .control input{
+    width:100%;padding:11px 12px;border:1px solid #d0d7de;border-radius:10px;font-size:15px;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .control input:focus{
+    outline:none;border-color:#2563eb;
+    box-shadow:0 0 0 4px rgba(37,99,235,.15);
+  }
+  .toggle-eye{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    border:0;background:transparent;cursor:pointer;color:#475569;font-size:13px;padding:4px 6px;border-radius:6px;
+  }
+  .toggle-eye:hover{background:#f1f5f9}
+  .actions{margin-top:18px}
+  .btn{
+    width:100%;padding:11px 14px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;
+    box-shadow:0 8px 24px rgba(37,99,235,.28);cursor:pointer;transition:transform .03s ease;
+  }
+  .btn:active{transform:translateY(1px)}
+  .muted{color:#64748b;font-size:12px;margin-top:10px;text-align:center}
+
+  /* flash 的样式与全站一致，但这里加一点动画 */
+  .flash{margin-bottom:10px}
+  .shake{animation:shake .28s ease-in-out}
+  @keyframes shake{
+    0%{transform:translateX(0)}
+    25%{transform:translateX(-4px)}
+    50%{transform:translateX(4px)}
+    75%{transform:translateX(-2px)}
+    100%{transform:translateX(0)}
+  }
+</style>
+
+<div class="auth-bg">
+  <div class="auth-card" id="authCard">
+    <div class="brand">
+      <div class="brand-badge">2D</div>
+      <div>
+        <h1>欢迎登录</h1>
+        <div class="sub">请输入用户名与密码继续</div>
+      </div>
+    </div>
+
+    {# 复用全局 flash；错误时给卡片抖动一下 #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="flash {{cat}}">{{ msg }}</div>
+        {% endfor %}
+        <script>
+          // 若有 error，把卡片轻微抖动下（仅一次）
+          (function(){
+            var hasErr = {{ 'true' if messages|selectattr(0,'equalto','error')|list|length else 'false' }};
+            if(hasErr){
+              var el = document.getElementById('authCard');
+              el.classList.add('shake');
+              setTimeout(()=>el.classList.remove('shake'), 400);
+            }
+          })();
+        </script>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" onsubmit="return onSubmitLogin()" novalidate>
+      <div class="field">
+        <label>用户名</label>
+        <div class="control">
+          <input name="username" autocomplete="username" required placeholder="请输入用户名">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>密码</label>
+        <div class="control">
+          <input id="pwd" name="password" type="password" autocomplete="current-password" required placeholder="••••••••">
+          <button type="button" class="toggle-eye" aria-label="显示/隐藏密码" onclick="togglePwd()">显示</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" type="submit">登录</button>
+        <div class="muted">如忘记密码，请联系管理员重置。</div>
+      </div>
+    </form>
   </div>
-  <div style="margin:8px 0">
-    <label>密码</label><br>
-    <input name="password" type="password" required style="width:100%;padding:8px">
-  </div>
-  <button type="submit" style="padding:8px 16px">登录</button>
-</form>
+</div>
+
+<script>
+  function togglePwd(){
+    const i = document.getElementById('pwd');
+    const b = event.currentTarget;
+    if(i.type === 'password'){ i.type='text'; b.textContent='隐藏'; }
+    else { i.type='password'; b.textContent='显示'; }
+  }
+  function onSubmitLogin(){
+    // 简单前端校验，避免空提交
+    const u = document.querySelector('input[name="username"]');
+    const p = document.getElementById('pwd');
+    if(!u.value.trim() || !p.value){
+      const card = document.getElementById('authCard');
+      card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'), 400);
+      return false;
+    }
+    return true;
+  }
+  // 回车体验优化：在密码框内按 Enter 直接提交
+  document.getElementById('pwd').addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.target.form.requestSubmit(); }
+  });
+</script>
 {% endblock %}
