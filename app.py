@@ -29,10 +29,7 @@ def _fix_db_url(url: str) -> str:
 # ---------- 工具函数 ----------
 def parse_code_to_hour(code: str) -> datetime:
     # 20250906/1950 -> 2025-09-06 19:00 +08:00
-    y = int(code[0:4])
-    m = int(code[4:6])
-    d = int(code[6:8])
-    h = int(code[9:11])
+    y = int(code[0:4]); m = int(code[4:6]); d = int(code[6:8]); h = int(code[9:11])
     return datetime(y, m, d, h, 0, tzinfo=MY_TZ)
 
 
@@ -80,10 +77,7 @@ def create_app() -> Flask:
     app.config.update(
         SQLALCHEMY_DATABASE_URI=db_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        SQLALCHEMY_ENGINE_OPTIONS={
-            "pool_pre_ping": True,
-            "pool_recycle": 300,
-        },
+        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True, "pool_recycle": 300},
     )
     db.init_app(app)
 
@@ -133,16 +127,16 @@ def create_app() -> Flask:
             username = (request.form.get("username") or "").strip()
             password = request.form.get("password") or ""
 
-            # 管理员（Render 环境变量）
+            # 管理员（Render 环境变量，明文密码）
             admin_id = os.environ.get("ADMIN_ID", "")
-            admin_hash = os.environ.get("ADMIN_PWHASH", "")
-            if username == admin_id and admin_hash and check_password_hash(admin_hash, password):
+            admin_pw = os.environ.get("ADMIN_PASSWORD", "")
+            if username == admin_id and admin_pw and password == admin_pw:
                 session.clear()
                 session.update({"role": "admin", "user_id": None, "username": username})
                 flash("管理员登录成功", "ok")
                 return redirect(request.args.get("next") or url_for("bet_2d_view"))
 
-            # 代理（数据库）
+            # 代理（数据库，哈希校验）
             agent = Agent.query.filter_by(username=username, is_active=True).first()
             if agent and check_password_hash(agent.password_hash, password):
                 session.clear()
@@ -257,7 +251,7 @@ def create_app() -> Flask:
                 number = f"{vi:02d}"
 
                 n1 = to_amt("N1", i)
-                n = to_amt("N", i)
+                n  = to_amt("N",  i)
                 bg = to_amt("BIG", i)
                 sm = to_amt("SMALL", i)
                 od = to_amt("ODD", i)
@@ -294,12 +288,9 @@ def create_app() -> Flask:
                             market=m,
                             code=code,
                             number=number,
-                            amount_n1=n1,
-                            amount_n=n,
-                            amount_b=bg,
-                            amount_s=sm,
-                            amount_ds=od,
-                            amount_ss=ev,
+                            amount_n1=n1, amount_n=n,
+                            amount_b=bg, amount_s=sm,
+                            amount_ds=od, amount_ss=ev,
                             status="active",
                             locked_at=lock_at
                         ))
@@ -320,12 +311,7 @@ def create_app() -> Flask:
                 return redirect(url_for("bet_2d_view", date=date_str))
 
         # GET 渲染
-        return render_template(
-            "bet_2d.html",
-            date=date_str,
-            slots=slots,
-            markets=MARKETS
-        )
+        return render_template("bet_2d.html", date=date_str, slots=slots, markets=MARKETS)
 
     # -------------- 当日注单 --------------
     @app.get("/2d/history")
