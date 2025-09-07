@@ -175,7 +175,7 @@
 
       <tfoot>
       <tr>
-        <td colspan="28" style="text-align:right;font-weight:bold">总下注金额：RM <span id="grand-total">0.00</span></td>
+        <td colspan="33" style="text-align:right;font-weight:bold">总下注金额：RM <span id="grand-total">0.00</span></td>
       </tr>
       </tfoot>
     </table>
@@ -249,8 +249,11 @@ function updateTotals(){
 function handleBet(){
   updateTotals();
   const grand = parseFloat(document.getElementById('grand-total').textContent)||0;
-  return confirm(`下注总金额 = RM ${grand.toFixed(2)}
-确认下注？`);
+
+  const popup = buildBetPopupText();           // 生成摘要
+  if (popup) localStorage.setItem('bet_popup', popup);  // 暂存，跳转后取出
+
+  return confirm(`下注总金额 = RM ${grand.toFixed(2)}\n确认下注？`);
 }
 
 /**************** 初始化监听 ****************/
@@ -263,6 +266,82 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   updateTotals();
 });
+
+// ?success=1 时显示弹窗（文案从 localStorage 取）
+const params = new URLSearchParams(location.search);
+if (params.get('success') === '1') {
+  const saved = localStorage.getItem('bet_popup');
+  if (saved) showBetPopup(saved);
+  localStorage.removeItem('bet_popup');
+  // 去掉 success 参数（避免刷新重复弹）
+  const url = new URL(location.href);
+  url.searchParams.delete('success');
+  history.replaceState({}, document.title, url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
+}
+
+function buildBetPopupText(){
+  const lines = [];
+  const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
+  const H_BASE = 9; // 09~23
+
+  rows.forEach((tr, idx) => {
+    const i = idx + 1;
+    const number = tr.querySelector(`input[name="number${i}"]`)?.value?.trim() || "";
+    if (!number) return;
+
+    const getVal = (name) =>
+      (tr.querySelector(`input[name="${name}${i}"]`)?.value || "").trim();
+
+    const parts = [];
+    [["N1","N1"],["N","N"],["BIG","B"],["SMALL","S"],["ODD","O"],["EVEN","E"]]
+      .forEach(([key, label]) => {
+        const v = getVal(key);
+        if (v && !isNaN(parseFloat(v)) && parseFloat(v) > 0) parts.push(`${v}${label}`);
+      });
+    if (!parts.length) return;
+
+    const slotIdx = Array.from(tr.querySelectorAll('.slot-cell input[type="checkbox"]:checked'))
+      .map(cb => parseInt(cb.name.split('_').pop(),10))
+      .sort((a,b)=>a-b);
+    const slotTags = slotIdx.map(x => String(H_BASE + x).padStart(2,'0')).join(',');
+
+    const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
+    const mk = MARKET_ORDER.filter(m => tr.querySelector(`input[name="market${i}_${m}"]`)?.checked);
+    const mtag = mk.join('');
+
+    lines.push(`${number} = ${parts.join(' ')}  |  时段:${slotTags||'-'}  市场:${mtag||'-'}`);
+  });
+
+  const grand = document.getElementById('grand-total')?.textContent || '0.00';
+  if (lines.length) lines.push('', `GT=${grand}`);
+  return lines.join('\n');
+}
+function showBetPopup(text) {
+  if (!text) return;
+  const old = document.getElementById("resultModal"); if (old) old.remove();
+  const modal = document.createElement('div');
+  modal.innerHTML = `
+    <div id="resultModal" style="
+      position:fixed; top:20px; left:10px; right:10px;
+      background:#fff; border:1px solid #ddd; border-radius:12px;
+      box-shadow:0 6px 20px rgba(0,0,0,.15); padding:16px; z-index:9999; max-width:420px; margin:auto;
+      font-family:system-ui, sans-serif;">
+      <div id="resultText" style="white-space:pre-wrap; word-break:break-word; margin-bottom:16px; font-size:14px;">${text}</div>
+      <div style="display:flex; gap:10px;">
+        <button onclick="copyResult()" style="flex:1; padding:8px; background:#007bff; color:#fff; border:0; border-radius:8px;">复制</button>
+        <button onclick="confirmResult()" style="flex:1; padding:8px; background:#28a745; color:#fff; border:0; border-radius:8px;">确认</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function copyResult(){
+  const text = document.getElementById('resultText')?.innerText || '';
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(()=>alert('✅ 已复制下注信息'))
+    .catch(()=>alert('❌ 复制失败，请手动选择文字'));
+}
+function confirmResult(){ document.getElementById('resultModal')?.remove(); }
 </script>
 </body>
 </html>
