@@ -5,15 +5,109 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>2D 当日注单</title>
   <style>
+    :root{
+      /* 抽屉菜单配色 */
+      --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff;
+    }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:20px;}
     h1{margin:0 0 12px}
     table{border-collapse:collapse;width:100%;margin-top:12px}
     th,td{border:1px solid #ddd;padding:6px 8px;font-size:14px}
     th{background:#f6f6f6;text-align:left}
     .muted{color:#666}
+
+    /* ===== 左上角隐藏主菜单（汉堡） ===== */
+    .hamburger{
+      position:fixed; left:10px; top:10px; z-index:1100;
+      width:42px; height:42px; border-radius:10px; border:1px solid #d0d7de;
+      background:#fff; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.08);
+    }
+    .hamburger span, .hamburger span::before, .hamburger span::after{
+      content:""; display:block; width:20px; height:2px; background:#111; border-radius:2px;
+      position:relative; transition:transform .2s ease, opacity .2s ease;
+    }
+    .hamburger span::before{ position:absolute; top:-6px; left:0 }
+    .hamburger span::after{ position:absolute; top:6px; left:0 }
+    .hamburger.active span{ transform:rotate(45deg) }
+    .hamburger.active span::before{ transform:rotate(90deg); top:0 }
+    .hamburger.active span::after{ opacity:0 }
+
+    .drawer{
+      position:fixed; inset:0 auto 0 0; width:280px; max-width:85vw;
+      background:var(--nav-bg); color:var(--nav-fg);
+      transform:translateX(-100%); transition:transform .22s ease-out;
+      z-index:1090; box-shadow:2px 0 16px rgba(0,0,0,.25);
+      display:flex; flex-direction:column;
+    }
+    .drawer.open{ transform:translateX(0) }
+    .drawer-header{
+      padding:14px 14px 10px; border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; gap:10px;
+    }
+    .brand-dot{width:10px; height:10px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 3px rgba(27,132,255,.25)}
+    .drawer-title{font-weight:700}
+    .drawer-user{font-size:12px; color:var(--nav-muted)}
+    .drawer-nav{padding:8px}
+    .nav-link{
+      display:flex; align-items:center; gap:10px; color:#e6eef8; text-decoration:none;
+      padding:10px 12px; border-radius:8px;
+    }
+    .nav-link:hover{ background:rgba(255,255,255,.06) }
+    .nav-link .dot{width:8px; height:8px; border-radius:50%; background:#9bb8ff}
+    .drawer-section{padding:8px 12px; font-size:12px; color:var(--nav-muted)}
+    .drawer-footer{margin-top:auto; padding:10px; border-top:1px solid rgba(255,255,255,.08)}
+    .logout{color:#ffd1d1}
+    .backdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:saturate(120%) blur(1px);
+      opacity:0; visibility:hidden; transition:.2s ease; z-index:1080;
+    }
+    .backdrop.show{ opacity:1; visibility:visible }
+
+    /* 页面顶栏留出按钮位置的小偏移（仅视觉，不影响布局） */
+    .screen-offset{ padding-top:4px; padding-left:4px }
   </style>
 </head>
 <body>
+  <!-- 左上角汉堡按钮 & 抽屉菜单 -->
+  <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
+    <span></span>
+  </button>
+  <div id="drawerBackdrop" class="backdrop" tabindex="-1" aria-hidden="true"></div>
+
+  <aside id="appDrawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="drawer-title">管理菜单</div>
+        <div class="drawer-user">
+          {{ session.get('username') or '未登录' }}{% if session.get('role') %} · {{ session.get('role') }}{% endif %}
+        </div>
+      </div>
+    </div>
+    <nav class="drawer-nav">
+      <div class="drawer-section">常用</div>
+      <a class="nav-link" href="/home"><span class="dot"></span>主页（赔率）</a>
+      <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
+      <a class="nav-link" href="/2d/history"><span class="dot"></span>当日注单</a>
+      <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
+
+      {% if session.get('role') == 'admin' %}
+      <div class="drawer-section">管理员</div>
+      <a class="nav-link" href="/agents"><span class="dot"></span>代理管理</a>
+      {% endif %}
+    </nav>
+    <div class="drawer-footer">
+      {% if session.get('role') %}
+        <a class="nav-link logout" href="/logout"><span class="dot" style="background:#ff7b7b"></span>退出登录</a>
+      {% else %}
+        <a class="nav-link" href="/login"><span class="dot" style="background:#7bff9a"></span>登录</a>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- 页面正文 -->
+  <div class="screen-offset"></div>
   <h1>2D 当日注单</h1>
   <div class="muted">按创建时间倒序（当天）。到 :49 会自动锁注，状态会从 active 变为 locked。</div>
   <div style="margin:10px 0;">
@@ -58,5 +152,39 @@
   {% else %}
     <p class="muted">今天暂无注单。</p>
   {% endif %}
+
+<script>
+/******************* 主菜单：展开/收起 ********************/
+(function(){
+  const btn = document.getElementById('hamburgerBtn');
+  const drawer = document.getElementById('appDrawer');
+  const backdrop = document.getElementById('drawerBackdrop');
+
+  function openDrawer(){
+    drawer.classList.add('open');
+    backdrop.classList.add('show');
+    btn.classList.add('active');
+    btn.setAttribute('aria-expanded','true');
+    drawer.setAttribute('aria-hidden','false');
+    backdrop.setAttribute('aria-hidden','false');
+  }
+  function closeDrawer(){
+    drawer.classList.remove('open');
+    backdrop.classList.remove('show');
+    btn.classList.remove('active');
+    btn.setAttribute('aria-expanded','false');
+    drawer.setAttribute('aria-hidden','true');
+    backdrop.setAttribute('aria-hidden','true');
+  }
+  btn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if(drawer.classList.contains('open')) closeDrawer(); else openDrawer();
+  });
+  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape') closeDrawer();
+  });
+})();
+</script>
 </body>
 </html>
