@@ -104,60 +104,66 @@ def create_app() -> Flask:
             form_date = request.form.get("date", date_str)
             try:
                 _ = datetime.strptime(form_date, "%Y-%m-%d").date()
-            except:
-                form_date = date_str  # 容错
-
-            numbers = request.form.getlist("number[]")
-            a_n1    = request.form.getlist("amount_n1[]")
-            a_n     = request.form.getlist("amount_n[]")
-            a_b     = request.form.getlist("amount_big[]")
-            a_s     = request.form.getlist("amount_small[]")
-            a_o     = request.form.getlist("amount_odd[]")
-            a_e     = request.form.getlist("amount_even[]")
+            except Exception:
+                form_date = date_str
 
             created = 0
-            nowts = datetime.now(MY_TZ)
+            slots_today = list_slots_for_day(day)  # 用于从索引还原 code
 
-            def to_amt(arr, idx):
+            def to_amt(name: str, i: int) -> Decimal:
                 try:
-                    v = Decimal((arr[idx] or "0").strip() or "0")
+                    raw = (request.form.get(f"{name}{i}") or "").strip()
+                    v = Decimal(raw or "0")
                     return Decimal("0.00") if v <= 0 else v
-                except (InvalidOperation, IndexError):
+                except InvalidOperation:
                     return Decimal("0.00")
 
-            for i in range(len(numbers)):
-                raw = (numbers[i] or "").strip()
-                if not raw or not raw.isdigit():
+            for i in range(1, 13):
+                raw_num = (request.form.get(f"number{i}") or "").strip()
+                if not raw_num.isdigit():  # 空行或非法
                     continue
-                vi = int(raw)
+                vi = int(raw_num)
                 if vi < 0 or vi > 99:
                     continue
                 number = f"{vi:02d}"
 
-                n1 = to_amt(a_n1, i); n = to_amt(a_n,  i)
-                big= to_amt(a_b,  i); sml= to_amt(a_s,  i)
-                odd= to_amt(a_o,  i); evn= to_amt(a_e,  i)
-                if (n1+n+big+sml+odd+evn) == 0:
+                n1 = to_amt("N1", i); n  = to_amt("N", i)
+                bg = to_amt("BIG", i); sm = to_amt("SMALL", i)
+                od = to_amt("ODD", i); ev = to_amt("EVEN", i)
+                if (n1 + n + bg + sm + od + ev) == 0:
                     continue
 
-                slots_sel = request.form.getlist(f"slot_{i}[]") or [next_slot_code()]
-                # 市场白名单
-                markets_sel = [m for m in (request.form.getlist(f"market_{i}[]") or ["M"]) if m in MARKETS] or ["M"]
+                # 行内选中的时间段：slot{i}_{idx} → code
+                slots_sel: list[str] = []
+                for idx, slot in enumerate(slots_today):
+                    if request.form.get(f"slot{i}_{idx}") and not is_locked_for_code(slot["code"]):
+                        slots_sel.append(slot["code"])
+                if not slots_sel:
+                    slots_sel = [next_slot_code()]  # 没选则默认下一期
+
+                # 行内选中的市场：market{i}_M 等
+                markets_sel = [m for m in MARKETS if request.form.get(f"market{i}_{m}")]
+                if not markets_sel:
+                    markets_sel = ["M"]
 
                 for code in slots_sel:
                     if is_locked_for_code(code):
                         continue
-                    # 更稳的订单号（到毫秒）
                     ts = datetime.now(MY_TZ)
                     order_code = ts.strftime("%y%m%d/%H%M%S") + f"{int(ts.microsecond/1000):03d}"
+
+                    # 可选：预写入该注单对应的锁定时间（当日 HH:49）
+                    lock_at = parse_code_to_hour(code).replace(minute=49, second=0, microsecond=0)
+
                     for m in markets_sel:
                         db.session.add(Bet2D(
                             order_code=order_code,
-                            agent_id=agent_id, market=m, code=code, number=number,
+                            agent_id=1, market=m, code=code, number=number,
                             amount_n1=n1, amount_n=n,
-                            amount_b=big, amount_s=sml,
-                            amount_ds=odd, amount_ss=evn,
-                            status="active"
+                            amount_b=bg, amount_s=sm,
+                            amount_ds=od, amount_ss=ev,
+                            status="active",
+                            locked_at=lock_at
                         ))
                         created += 1
 
@@ -165,7 +171,8 @@ def create_app() -> Flask:
                 if created > 0:
                     db.session.commit()
                     flash(f"已提交 {created} 条注单。", "ok")
-                    return redirect(url_for("history_2d_view"))
+                    # 成功后回到本页，带 success=1 —— 前端据此弹窗
+                    return redirect(url_for("bet_2d_view", date=form_date, success=1))
                 else:
                     flash("没有有效行（或所选时间段已过锁注）。", "error")
                     return redirect(url_for("bet_2d_view", date=date_str))
