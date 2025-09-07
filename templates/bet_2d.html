@@ -217,32 +217,34 @@ function toggleColumn(type, key){
 /**************** 计算总额（与 4D 同思路，2D 的 6 类金额） ****************/
 function updateTotals(){
   let grand = 0;
-  const SLOT_COUNT = {{ slots|length if slots is defined else 15 }}; // 容错
-  const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
+  const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
 
-  for(let i=1;i<=12;i++){
-    const N1   = parseFloat(document.querySelector(`input[name="N1${i}"]`)?.value)||0;
-    const N    = parseFloat(document.querySelector(`input[name="N${i}"]`)?.value)||0;
-    const BIG  = parseFloat(document.querySelector(`input[name="BIG${i}"]`)?.value)||0;
-    const SMALL= parseFloat(document.querySelector(`input[name="SMALL${i}"]`)?.value)||0;
-    const ODD  = parseFloat(document.querySelector(`input[name="ODD${i}"]`)?.value)||0;
-    const EVEN = parseFloat(document.querySelector(`input[name="EVEN${i}"]`)?.value)||0;
+  rows.forEach((tr, idx) => {
+    const i = idx + 1;
 
-    let slotCount = 0; for(let s=0;s<15;s++){ const cb = document.querySelector(`input[name="slot${i}_$${'{'}s{'}'}"]`); if(cb?.checked) slotCount++; }
-    // 上面一行因模板转义写法较难，用类选择器统计：
-    slotCount = Array.from(document.querySelectorAll(`[name^=slot${i}_]`)).filter(x=>x.checked).length;
+    // 仅在当前行内取金额
+    const getVal = (name) =>
+      parseFloat(tr.querySelector(`input[name="${name}${i}"]`)?.value) || 0;
 
-    let marketCount = 0; for(const m of MARKET_ORDER){ const cb = document.querySelector(`input[name="market${i}_${m}"]`); if(cb?.checked) marketCount++; }
+    const base =
+      getVal('N1') + getVal('N') + getVal('BIG') +
+      getVal('SMALL') + getVal('ODD') + getVal('EVEN');
 
-    const base = N1 + N + BIG + SMALL + ODD + EVEN;
+    // 仅在当前行内统计“时间段/市场”的勾选数量
+    const slotCount   = tr.querySelectorAll('.slot-cell   input[type="checkbox"]:checked').length;
+    const marketCount = tr.querySelectorAll('.market-cell input[type="checkbox"]:checked').length;
+
     const rowTotal = base * slotCount * marketCount;
-    const cell = document.querySelectorAll('.row-total')[i-1];
-    if(cell) cell.textContent = rowTotal.toFixed(2);
-    grand += rowTotal;
-  }
-  const g = document.getElementById('grand-total'); if(g) g.textContent = grand.toFixed(2);
-}
 
+    const cell = tr.querySelector('.row-total');
+    if (cell) cell.textContent = rowTotal.toFixed(2);
+
+    grand += rowTotal;
+  });
+
+  const g = document.getElementById('grand-total');
+  if (g) g.textContent = grand.toFixed(2);
+}
 /**************** 提交前确认（简版，与 4D 一致风格） ****************/
 function handleBet(){
   updateTotals();
