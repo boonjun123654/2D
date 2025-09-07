@@ -103,6 +103,18 @@
       <span></span>
     </button>
     <h2>下注页面（2D，版式对齐 4D）</h2>
+    {% if session.get('role') == 'admin' %}
+    <div class="admin-agent">
+      <label for="agentSelect">下注代理：</label>
+      <select id="agentSelect" name="agent_id">
+        {% for a in (agents or []) %}
+          <option value="{{ a.id }}" {% if a.id == (selected_agent_id or 1) %}selected{% endif %}>
+            [#{{ a.id }}] {{ a.username }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
   </div>
 
   <!-- 抽屉菜单 -->
