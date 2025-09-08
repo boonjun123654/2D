@@ -118,7 +118,7 @@
     {% if session.get('role') == 'admin' %}
     <div class="admin-agent">
       <label for="agentSelect">下注代理：</label>
-      <select id="agentSelect" name="agent_id">
+      <select id="agentSelect" name="agent_id" form="betForm">
         {% for a in (agents or []) %}
           <option value="{{ a.id }}" {% if a.id == (selected_agent_id or 1) %}selected{% endif %}>
             [#{{ a.id }}] {{ a.username }}
