@@ -7,81 +7,55 @@
   <style>
     :root{ --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff; }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:20px;}
-
-    /* 顶栏：按钮 + 标题 并排（不覆盖正文） */
-    .topbar{
-      position:sticky; top:0; z-index:1000;
-      display:flex; align-items:center; gap:10px;
-      background:#f6f8fa; border:1px solid #e5e7eb; border-radius:12px;
-      padding:8px 10px; margin-bottom:14px;
-      box-shadow:0 10px 28px rgba(16,24,40,.06)
-    }
+    /* 顶栏 */
+    .topbar{position:sticky; top:0; z-index:1000; display:flex; align-items:center; gap:10px;
+      background:#f6f8fa; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px; margin-bottom:14px;
+      box-shadow:0 10px 28px rgba(16,24,40,.06)}
     .topbar h1{margin:0; font-size:28px}
-    .right-info{margin-left:auto; color:#475569; font-size:14px}
-
-    /* 汉堡按钮：非 fixed，放在顶栏内 */
-    .hamburger{
-      width:42px; height:42px; border-radius:10px; border:1px solid #d0d7de;
-      background:#fff; display:flex; align-items:center; justify-content:center;
-      cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.08);
-    }
-    .hamburger span, .hamburger span::before, .hamburger span::after{
-      content:""; display:block; width:20px; height:2px; background:#111; border-radius:2px;
-      position:relative; transition:transform .2s ease, opacity .2s ease;
-    }
-    .hamburger span::before{ position:absolute; top:-6px; left:0 }
-    .hamburger span::after{ position:absolute; top:6px; left:0 }
-    .hamburger.active span{ transform:rotate(45deg) }
-    .hamburger.active span::before{ transform:rotate(90deg); top:0 }
-    .hamburger.active span::after{ opacity:0 }
+    /* 汉堡（置于顶栏内） */
+    .hamburger{width:42px;height:42px;border-radius:10px;border:1px solid #d0d7de;background:#fff;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+    .hamburger span,.hamburger span::before,.hamburger span::after{content:"";display:block;width:20px;height:2px;background:#111;border-radius:2px;position:relative;transition:transform .2s,opacity .2s}
+    .hamburger span::before{position:absolute;top:-6px;left:0}
+    .hamburger span::after{position:absolute;top:6px;left:0}
+    .hamburger.active span{transform:rotate(45deg)}
+    .hamburger.active span::before{transform:rotate(90deg);top:0}
+    .hamburger.active span::after{opacity:0}
 
     /* 抽屉 */
-    .drawer{
-      position:fixed; inset:0 auto 0 0; width:280px; max-width:85vw;
-      background:var(--nav-bg); color:var(--nav-fg);
-      transform:translateX(-100%); transition:transform .22s ease-out;
-      z-index:1090; box-shadow:2px 0 16px rgba(0,0,0,.25);
-      display:flex; flex-direction:column;
-    }
-    .drawer.open{ transform:translateX(0) }
-    .drawer-header{padding:14px 14px 10px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; align-items:center; gap:10px;}
-    .brand-dot{width:10px; height:10px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 3px rgba(27,132,255,.25)}
+    .drawer{position:fixed;inset:0 auto 0 0;width:280px;max-width:85vw;background:var(--nav-bg);color:var(--nav-fg);
+      transform:translateX(-100%);transition:transform .22s ease-out;z-index:1090;box-shadow:2px 0 16px rgba(0,0,0,.25);display:flex;flex-direction:column}
+    .drawer.open{transform:translateX(0)}
+    .drawer-header{padding:14px 14px 10px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+    .brand-dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(27,132,255,.25)}
     .drawer-title{font-weight:700}
-    .drawer-user{font-size:12px; color:var(--nav-muted)}
+    .drawer-user{font-size:12px;color:var(--nav-muted)}
     .drawer-nav{padding:8px}
-    .nav-link{display:flex; align-items:center; gap:10px; color:#e6eef8; text-decoration:none; padding:10px 12px; border-radius:8px;}
-    .nav-link:hover{ background:rgba(255,255,255,.06) }
-    .nav-link .dot{width:8px; height:8px; border-radius:50%; background:#9bb8ff}
-    .drawer-section{padding:8px 12px; font-size:12px; color:var(--nav-muted)}
-    .drawer-footer{margin-top:auto; padding:10px; border-top:1px solid rgba(255,255,255,.08)}
+    .nav-link{display:flex;align-items:center;gap:10px;color:#e6eef8;text-decoration:none;padding:10px 12px;border-radius:8px}
+    .nav-link:hover{background:rgba(255,255,255,.06)}
+    .nav-link .dot{width:8px;height:8px;border-radius:50%;background:#9bb8ff}
+    .drawer-section{padding:8px 12px;font-size:12px;color:var(--nav-muted)}
+    .drawer-footer{margin-top:auto;padding:10px;border-top:1px solid rgba(255,255,255,.08)}
     .logout{color:#ffd1d1}
-    .backdrop{position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:saturate(120%) blur(1px); opacity:0; visibility:hidden; transition:.2s ease; z-index:1080;}
-    .backdrop.show{ opacity:1; visibility:visible }
+    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.25);backdrop-filter:saturate(120%) blur(1px);opacity:0;visibility:hidden;transition:.2s ease;z-index:1080}
+    .backdrop.show{opacity:1;visibility:visible}
 
     .muted{color:#666}
-    .links{margin:10px 0 12px}
-    form.filters{display:flex; align-items:center; gap:8px; margin:10px 0 6px}
-    form.filters input[type="date"]{height:34px; padding:4px 8px; border:1px solid #d0d7de; border-radius:8px}
-    form.filters button{height:34px; padding:0 12px}
+    .links{margin:10px 0 4px}
 
-    /* 摘要盒子（和提交成功弹窗同样的呈现风格） */
-    .summary{
-      white-space:pre-wrap; word-break:break-word;
-      background:#fff; border:1px solid #e5e7eb; border-radius:12px;
-      padding:14px; box-shadow:0 10px 28px rgba(16,24,40,.06);
-      font-size:14px; line-height:1.5;
-    }
-    .empty{color:#64748b}
+    /* 卡片（每个 order_code 一张） */
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.06);padding:12px 14px;margin:14px 0}
+    .card-title{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+    .card-title .oc{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+    pre{white-space:pre-wrap;word-break:break-word;margin:4px 0 0}
+    .empty{color:#999;border:1px dashed #ddd;border-radius:12px;padding:14px;margin-top:10px}
   </style>
 </head>
 <body>
   <!-- 顶栏 -->
   <div class="topbar">
-    <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
-      <span></span>
-    </button>
-    <h1>2D 历史记录</h1>
-    <div class="right-info" id="agentInfo">代理ID：—</div>
+    <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false"><span></span></button>
+    <h1>历史记录</h1>
   </div>
 
   <!-- 抽屉菜单 -->
@@ -91,9 +65,7 @@
       <div class="brand-dot"></div>
       <div>
         <div class="drawer-title">管理菜单</div>
-        <div class="drawer-user">
-          {{ session.get('username') or '未登录' }}{% if session.get('role') %} · {{ session.get('role') }}{% endif %}
-        </div>
+        <div class="drawer-user">{{ session.get('username') or '未登录' }}{% if session.get('role') %} · {{ session.get('role') }}{% endif %}</div>
       </div>
     </div>
     <nav class="drawer-nav">
@@ -116,119 +88,118 @@
     </div>
   </aside>
 
-  <!-- 说明、筛选 -->
+  <!-- 查询条件 -->
   <div class="muted">选择日期查看历史下注摘要（样式与下注成功弹窗一致）。</div>
-  <form method="get" class="filters">
+  <form method="get" style="margin:8px 0 10px; display:flex; align-items:center; gap:10px;">
     <label>日期：</label>
-    <input type="date" name="date" value="{{ date }}" />
+    <input type="date" name="date" value="{{ date }}">
     <button type="submit">查询</button>
   </form>
-  <div class="links">
-    <a href="/2d/bet">返回下注</a> | <a href="/2d/winning">查看中奖</a>
-  </div>
+  <div class="links"><a href="/2d/bet">返回下注</a> | <a href="/2d/winning">查看中奖</a></div>
 
-  {% if rows %}
-    <div id="summaryOut" class="summary"></div>
-  {% else %}
-    <p class="empty">该日暂无记录。</p>
-  {% endif %}
+  <div id="cards"></div>
 
-  <!-- 将 rows 序列化给前端做摘要（需要 Flask 的 tojson 过滤器） -->
+  <!-- 数据 -->
   <script id="rowsData" type="application/json">{{ rows_js|tojson if rows_js else '[]' }}</script>
 
-<script>
-/* 主菜单：展开/收起 */
-(function(){
-  const btn = document.getElementById('hamburgerBtn');
-  const drawer = document.getElementById('appDrawer');
-  const backdrop = document.getElementById('drawerBackdrop');
-  function openDrawer(){ drawer.classList.add('open'); backdrop.classList.add('show'); btn.classList.add('active'); btn.setAttribute('aria-expanded','true'); drawer.setAttribute('aria-hidden','false'); backdrop.setAttribute('aria-hidden','false'); }
-  function closeDrawer(){ drawer.classList.remove('open'); backdrop.classList.remove('show'); btn.classList.remove('active'); btn.setAttribute('aria-expanded','false'); drawer.setAttribute('aria-hidden','true'); backdrop.setAttribute('aria-hidden','true'); }
-  btn.addEventListener('click', (e)=>{ e.preventDefault(); drawer.classList.contains('open')?closeDrawer():openDrawer(); });
-  backdrop.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
-})();
+  <script>
+  /* 主菜单：展开/收起 */
+  (function(){
+    const btn = document.getElementById('hamburgerBtn');
+    const drawer = document.getElementById('appDrawer');
+    const backdrop = document.getElementById('drawerBackdrop');
+    const openDrawer=()=>{drawer.classList.add('open');backdrop.classList.add('show');btn.classList.add('active');btn.setAttribute('aria-expanded','true');drawer.setAttribute('aria-hidden','false');backdrop.setAttribute('aria-hidden','false');};
+    const closeDrawer=()=>{drawer.classList.remove('open');backdrop.classList.remove('show');btn.classList.remove('active');btn.setAttribute('aria-expanded','false');drawer.setAttribute('aria-hidden','true');backdrop.setAttribute('aria-hidden','true');};
+    btn.addEventListener('click',e=>{e.preventDefault();drawer.classList.contains('open')?closeDrawer():openDrawer();});
+    backdrop.addEventListener('click',closeDrawer); document.addEventListener('keydown',e=>{if(e.key==='Escape') closeDrawer();});
+  })();
 
-/* 构建与“下注成功弹窗”一致的摘要 */
-(function(){
-  const el = document.getElementById('summaryOut');
-  if(!el) return;
-  const dataEl = document.getElementById('rowsData');
-  let rows = [];
-  try{ rows = JSON.parse(dataEl.textContent || '[]'); }catch(_){ rows = []; }
+  /* 工具 */
+  const MARKETS = ['M','P','T','S','B','K','W','H','E'];
+  const fmt = n => {
+    const v = Number(n||0);
+    if (!isFinite(v)) return '0';
+    const s = v.toFixed(2);
+    return s.replace(/\.?0+$/,'');
+  };
 
-  const H_SET = new Set();            // 时段集合（小时）
-  const M_SET = new Set();            // 市场集合（单字母）
-  const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
+  /* 分组并渲染（每个 order_code 一卡） */
+  (function(){
+    const rows = JSON.parse(document.getElementById('rowsData').textContent || '[]');
+    const cards = document.getElementById('cards');
+    if (!rows.length){ cards.innerHTML = '<div class="empty">当天暂无注单。</div>'; return; }
 
-  // 每个号码保留“首次出现的非零金额”作为显示（避免多时段被累加）
-  const byNumber = new Map();
-  function pickAmount(prev, v){ const n = Number(v||0); return (prev!==undefined && prev!==0) ? prev : (n>0?n:0); }
-
-  let grand = 0;
-
-  rows.forEach(r=>{
-    // code: YYYYMMDD/HHMM -> 取 HH
-    if(typeof r.code === 'string' && r.code.length >= 11){
-      const hh = parseInt(r.code.slice(9,11),10);
-      if(!Number.isNaN(hh)) H_SET.add(hh);
+    // 保持查询顺序：用 Map 分组
+    const groups = new Map();
+    for(const r of rows){
+      if(!groups.has(r.order_code)) groups.set(r.order_code, []);
+      groups.get(r.order_code).push(r);
     }
 
-    // market: 可能是 "MPT" -> 拆成单字母
-    if(typeof r.market === 'string'){
-      r.market.split('').forEach(ch=>{ if(MARKET_ORDER.includes(ch)) M_SET.add(ch); });
+    for(const [oc, list] of groups){
+      // 代理 ID（一个订单应相同，取第一个）
+      const agentId = list[0]?.agent_id ?? '-';
+
+      // 时段（从 code 取小时）
+      const hourSet = new Set();
+      for(const it of list){
+        const h = (it.code||'').split('/')[1]?.slice(0,2);
+        if (h) hourSet.add(h);
+      }
+      const slotsLine = [...hourSet].sort().join('-') || '-';
+
+      // 市场（合并去重并按固定顺序）
+      const mset = new Set();
+      for(const it of list){
+        (it.market||'').split('').forEach(ch=>mset.add(ch));
+      }
+      const marketLine = '*' + (MARKETS.filter(m => mset.has(m)).join('') || '-');
+
+      // 明细行：按“号码+金额组合”去重，按号码排序
+      const lineKey = it => [it.number, fmt(it.amount_n1), fmt(it.amount_n), fmt(it.amount_b), fmt(it.amount_s), fmt(it.amount_ds), fmt(it.amount_ss)].join('|');
+      const uniq = new Map();
+      for(const it of list){
+        const key = lineKey(it);
+        if(!uniq.has(key)) uniq.set(key, it);
+      }
+      const lines = [...uniq.values()]
+        .sort((a,b)=> (a.number||'').localeCompare(b.number||''))
+        .map(it=>{
+          const parts = [];
+          if(it.amount_n1>0) parts.push(`${fmt(it.amount_n1)}N1`);
+          if(it.amount_n >0) parts.push(`${fmt(it.amount_n)}N`);
+          if(it.amount_b >0) parts.push(`${fmt(it.amount_b)}B`);
+          if(it.amount_s >0) parts.push(`${fmt(it.amount_s)}S`);
+          if(it.amount_ds>0) parts.push(`${fmt(it.amount_ds)}O`);
+          if(it.amount_ss>0) parts.push(`${fmt(it.amount_ss)}E`);
+          return `${it.number} = ${parts.join(' ')}`;
+        });
+
+      // GT：每条记录都是“单个时段”的金额，需乘以该行的市场数
+      let gt = 0;
+      for(const it of list){
+        const base = (it.amount_n1||0)+(it.amount_n||0)+(it.amount_b||0)+(it.amount_s||0)+(it.amount_ds||0)+(it.amount_ss||0);
+        const mcnt = new Set((it.market||'').split('')).size || 0;
+        gt += base * mcnt;
+      }
+      const gtLine = `GT=${fmt(gt)}`;
+
+      // 组装文本
+      const text = [slotsLine, marketLine, ...lines, '', gtLine].join('\n');
+
+      // 渲染卡片
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <div class="card-title">
+          <div class="muted">订单：</div><code class="oc">${oc}</code>
+          <div class="muted" style="margin-left:8px">代理ID：</div><strong>#${agentId}</strong>
+        </div>
+        <pre>${text}</pre>
+      `;
+      cards.appendChild(div);
     }
-
-    // 汇总号码的“单次下注金额”
-    const key = String(r.number || '').padStart(2,'0');
-    const cur = byNumber.get(key) || {N1:0,N:0,B:0,S:0,O:0,E:0};
-    cur.N1 = pickAmount(cur.N1, r.amount_n1);
-    cur.N  = pickAmount(cur.N,  r.amount_n);
-    cur.B  = pickAmount(cur.B,  r.amount_b);
-    cur.S  = pickAmount(cur.S,  r.amount_s);
-    cur.O  = pickAmount(cur.O,  r.amount_ds);
-    cur.E  = pickAmount(cur.E,  r.amount_ss);
-    byNumber.set(key, cur);
-
-    // 真实 GT：每条记录 base * 市场数量（已按每个时段一条存表）
-    const base = (Number(r.amount_n1||0)+Number(r.amount_n||0)+Number(r.amount_b||0)+Number(r.amount_s||0)+Number(r.amount_ds||0)+Number(r.amount_ss||0));
-    const mlen = (typeof r.market==='string'? r.market.length : 0);
-    grand += base * mlen;
-  });
-
-  // 构建显示文本
-  const slots = Array.from(H_SET).sort((a,b)=>a-b).map(h=>String(h).padStart(2,'0')).join('-') || '-';
-  const markets = MARKET_ORDER.filter(m=>M_SET.has(m)).join('') || '-';
-
-  function fmtNum(n){ const v = Number(n||0); if(!isFinite(v)) return '0'; return v.toFixed(2).replace(/\.?0+$/,''); }
-
-  const lines = [];
-  // 第一行：时段
-  lines.push(slots);
-  // 第二行：市场（带*）
-  lines.push('*' + markets);
-
-  // 号码行：按号码升序
-  Array.from(byNumber.entries()).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([num, amt])=>{
-    const parts = [];
-    if(amt.N1>0) parts.push(`${fmtNum(amt.N1)}N1`);
-    if(amt.N >0) parts.push(`${fmtNum(amt.N)}N`);
-    if(amt.B >0) parts.push(`${fmtNum(amt.B)}B`);
-    if(amt.S >0) parts.push(`${fmtNum(amt.S)}S`);
-    if(amt.O >0) parts.push(`${fmtNum(amt.O)}O`);
-    if(amt.E >0) parts.push(`${fmtNum(amt.E)}E`);
-    if(parts.length) lines.push(`${num} = ${parts.join(' ')}`);
-  });
-
-  lines.push('', `GT=${fmtNum(grand)}`);
-
-  el.textContent = lines.join('\n');
-
-  // 顶栏显示代理 ID（如果同一天有多个代理，会显示“多个”）
-  const agentIDs = Array.from(new Set(rows.map(r=>r.agent_id).filter(x=>x!==undefined && x!==null)));
-  const info = document.getElementById('agentInfo');
-  info.textContent = '代理ID：' + (agentIDs.length===1 ? agentIDs[0] : (agentIDs.length>1 ? '多个' : '—'));
-})();
-</script>
+  })();
+  </script>
 </body>
 </html>
