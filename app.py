@@ -349,70 +349,18 @@ def create_app() -> Flask:
             selected_agent_id=agent_id          # 仅管理员有用
         )
 
-@app.get("/2d/history")
-@login_required
-def history_2d_view():
-    from collections import defaultdict
-    today_prefix = datetime.now(MY_TZ).strftime("%Y%m%d")
-
-    # 取当天所有原始行
-    raw_rows = (
-        Bet2D.query
-        .filter(Bet2D.code.like(f"{today_prefix}/%"))
-        .order_by(Bet2D.created_at.desc())
-        .all()
-    )
-
-    # 以 (agent_id, code, number, N1,N,B,S,DS,SS) 为 Key 合并
-    agg = {}
-    for r in raw_rows:
-        key = (
-            int(r.agent_id or 0),
-            r.code,
-            r.number,
-            str(r.amount_n1 or 0),
-            str(r.amount_n  or 0),
-            str(r.amount_b  or 0),
-            str(r.amount_s  or 0),
-            str(r.amount_ds or 0),
-            str(r.amount_ss or 0),
+    # -------------- 当日注单 --------------
+    @app.get("/2d/history")
+    @login_required
+    def history_2d_view():
+        today = datetime.now(MY_TZ).strftime("%Y%m%d")
+        rows = (
+            Bet2D.query
+            .filter(Bet2D.code.like(f"{today}/%"))
+            .order_by(Bet2D.created_at.desc())
+            .all()
         )
-        if key not in agg:
-            agg[key] = {
-                "created_at": r.created_at,   # 用最晚的时间
-                "status": r.status,
-                "agent_id": int(r.agent_id or 0),
-                "code": r.code,
-                "number": r.number,
-                "amount_n1": r.amount_n1 or 0,
-                "amount_n":  r.amount_n  or 0,
-                "amount_b":  r.amount_b  or 0,
-                "amount_s":  r.amount_s  or 0,
-                "amount_ds": r.amount_ds or 0,
-                "amount_ss": r.amount_ss or 0,
-                "markets": set([r.market]) if r.market else set(),
-            }
-        else:
-            agg[key]["markets"].add(r.market)
-            # 取最新一条的状态/时间（你也可以改成最早）
-            if r.created_at and r.created_at > agg[key]["created_at"]:
-                agg[key]["created_at"] = r.created_at
-                agg[key]["status"] = r.status
-
-    # 将 markets 集合按固定顺序拼接成字符串
-    def join_markets(ms: set[str]) -> str:
-        order = [m for m in MARKETS if m in ms]
-        return "".join(order)
-
-    rows = []
-    for item in agg.values():
-        item["market_join"] = join_markets(item["markets"])
-        rows.append(item)
-
-    # 按时间倒序
-    rows.sort(key=lambda x: x["created_at"], reverse=True)
-
-    return render_template("history_2d.html", rows=rows, today=today_prefix)
+        return render_template("history_2d.html", rows=rows, today=today)
 
     # -------------- 查看中奖 --------------
     @app.get("/2d/winning")
