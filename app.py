@@ -356,7 +356,7 @@ def create_app() -> Flask:
     @app.get("/2d/history")
     @login_required
     def history_2d_view():
-        # 读日期（默认今天）
+        # 日期（默认今天）
         date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
         try:
             y, m, d = map(int, date_str.split("-"))
@@ -367,7 +367,7 @@ def create_app() -> Flask:
 
         prefix = f"{y:04d}{m:02d}{d:02d}"
 
-        # 取该日所有注单
+        # 取当日所有注单（按创建时间倒序，保证前端分组顺序）
         rows = (
             Bet2D.query
             .filter(Bet2D.code.like(f"{prefix}/%"))
@@ -375,20 +375,20 @@ def create_app() -> Flask:
             .all()
         )
 
-        # —— 序列化为原生结构（给模板里的 tojson 使用）
         def _f(x):
             try:
-                # Decimal -> float
                 return float(x)
             except Exception:
                 return 0.0
 
+        # 原生结构（供前端分组渲染）
         rows_js = []
         for r in rows:
             rows_js.append({
+                "order_code": r.order_code or "",
                 "agent_id":   r.agent_id,
-                "market":     r.market or "",
-                "code":       r.code or "",
+                "market":     r.market or "",     # 例：MPT
+                "code":       r.code or "",       # 例：20250908/2250
                 "number":     r.number or "",
                 "amount_n1":  _f(r.amount_n1 or 0),
                 "amount_n":   _f(r.amount_n  or 0),
@@ -396,17 +396,11 @@ def create_app() -> Flask:
                 "amount_s":   _f(r.amount_s  or 0),
                 "amount_ds":  _f(r.amount_ds or 0),
                 "amount_ss":  _f(r.amount_ss or 0),
-                # 下面两个目前前端没直接用，但留着也无妨
                 "status":     r.status or "active",
                 "created_at": r.created_at.isoformat() if r.created_at else "",
             })
 
-        return render_template(
-            "history_2d.html",
-            date=date_str,        # 顶部 date picker 用
-            rows=rows,            # 可选：如果你在别处还想表格显示
-            rows_js=rows_js       # ✅ 前端摘要使用这个
-        )
+        return render_template("history_2d.html", date=date_str, rows_js=rows_js)
 
     # -------------- 查看中奖 --------------
     @app.get("/2d/winning")
