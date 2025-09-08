@@ -134,7 +134,7 @@
   {% endif %}
 
   <!-- 将 rows 序列化给前端做摘要（需要 Flask 的 tojson 过滤器） -->
-  <script id="rowsData" type="application/json">{{ rows|tojson if rows else '[]' }}</script>
+  <script id="rowsData" type="application/json">{{ rows_js|tojson if rows_js else '[]' }}</script>
 
 <script>
 /* 主菜单：展开/收起 */
