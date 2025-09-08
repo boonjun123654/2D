@@ -3,11 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>2D 当日注单</title>
+  <title>2D 历史记录</title>
   <style>
-    :root{
-      --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff;
-    }
+    :root{ --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff; }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:20px;}
 
     /* 顶栏：按钮 + 标题 并排（不覆盖正文） */
@@ -19,6 +17,7 @@
       box-shadow:0 10px 28px rgba(16,24,40,.06)
     }
     .topbar h1{margin:0; font-size:28px}
+    .right-info{margin-left:auto; color:#475569; font-size:14px}
 
     /* 汉堡按钮：非 fixed，放在顶栏内 */
     .hamburger{
@@ -36,7 +35,7 @@
     .hamburger.active span::before{ transform:rotate(90deg); top:0 }
     .hamburger.active span::after{ opacity:0 }
 
-    /* 抽屉菜单 */
+    /* 抽屉 */
     .drawer{
       position:fixed; inset:0 auto 0 0; width:280px; max-width:85vw;
       background:var(--nav-bg); color:var(--nav-fg);
@@ -59,12 +58,20 @@
     .backdrop{position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:saturate(120%) blur(1px); opacity:0; visibility:hidden; transition:.2s ease; z-index:1080;}
     .backdrop.show{ opacity:1; visibility:visible }
 
-    /* 表格 */
-    table{border-collapse:collapse;width:100%;margin-top:12px}
-    th,td{border:1px solid #ddd;padding:6px 8px;font-size:14px}
-    th{background:#f6f6f6;text-align:left}
     .muted{color:#666}
-    .links{margin:10px 0 4px}
+    .links{margin:10px 0 12px}
+    form.filters{display:flex; align-items:center; gap:8px; margin:10px 0 6px}
+    form.filters input[type="date"]{height:34px; padding:4px 8px; border:1px solid #d0d7de; border-radius:8px}
+    form.filters button{height:34px; padding:0 12px}
+
+    /* 摘要盒子（和提交成功弹窗同样的呈现风格） */
+    .summary{
+      white-space:pre-wrap; word-break:break-word;
+      background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+      padding:14px; box-shadow:0 10px 28px rgba(16,24,40,.06);
+      font-size:14px; line-height:1.5;
+    }
+    .empty{color:#64748b}
   </style>
 </head>
 <body>
@@ -73,7 +80,8 @@
     <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
       <span></span>
     </button>
-    <h1>2D 当日注单</h1>
+    <h1>2D 历史记录</h1>
+    <div class="right-info" id="agentInfo">代理ID：—</div>
   </div>
 
   <!-- 抽屉菜单 -->
@@ -92,7 +100,7 @@
       <div class="drawer-section">常用</div>
       <a class="nav-link" href="/home"><span class="dot"></span>主页（赔率）</a>
       <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
-      <a class="nav-link" href="/2d/history"><span class="dot"></span>当日注单</a>
+      <a class="nav-link" href="/2d/history"><span class="dot"></span>历史记录</a>
       <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
       {% if session.get('role') == 'admin' %}
       <div class="drawer-section">管理员</div>
@@ -108,50 +116,25 @@
     </div>
   </aside>
 
-  <!-- 页面说明 & 链接 -->
-  <div class="muted">按创建时间倒序（当天）。到 :49 会自动锁注，状态会从 active 变为 locked。</div>
+  <!-- 说明、筛选 -->
+  <div class="muted">选择日期查看历史下注摘要（样式与下注成功弹窗一致）。</div>
+  <form method="get" class="filters">
+    <label>日期：</label>
+    <input type="date" name="date" value="{{ date }}" />
+    <button type="submit">查询</button>
+  </form>
   <div class="links">
     <a href="/2d/bet">返回下注</a> | <a href="/2d/winning">查看中奖</a>
   </div>
 
   {% if rows %}
-  <table>
-    <thead>
-      <tr>
-        <th>时间</th>
-        <th>状态</th>
-        <th>期号</th>
-        <th>市场</th>
-        <th>号码</th>
-        <th>N1</th>
-        <th>N</th>
-        <th>B</th>
-        <th>S</th>
-        <th>DS</th>
-        <th>SS</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for r in rows %}
-      <tr>
-        <td>{{ r.created_at }}</td>
-        <td>{{ r.status }}</td>
-        <td>{{ r.code }}</td>
-        <td>{{ r.market }}</td>
-        <td>{{ r.number }}</td>
-        <td>{{ '%.2f'|format(r.amount_n1 or 0) }}</td>
-        <td>{{ '%.2f'|format(r.amount_n  or 0) }}</td>
-        <td>{{ '%.2f'|format(r.amount_b  or 0) }}</td>
-        <td>{{ '%.2f'|format(r.amount_s  or 0) }}</td>
-        <td>{{ '%.2f'|format(r.amount_ds or 0) }}</td>
-        <td>{{ '%.2f'|format(r.amount_ss or 0) }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+    <div id="summaryOut" class="summary"></div>
   {% else %}
-    <p class="muted">今天暂无注单。</p>
+    <p class="empty">该日暂无记录。</p>
   {% endif %}
+
+  <!-- 将 rows 序列化给前端做摘要（需要 Flask 的 tojson 过滤器） -->
+  <script id="rowsData" type="application/json">{{ rows|tojson if rows else '[]' }}</script>
 
 <script>
 /* 主菜单：展开/收起 */
@@ -159,19 +142,92 @@
   const btn = document.getElementById('hamburgerBtn');
   const drawer = document.getElementById('appDrawer');
   const backdrop = document.getElementById('drawerBackdrop');
-  function openDrawer(){
-    drawer.classList.add('open'); backdrop.classList.add('show');
-    btn.classList.add('active'); btn.setAttribute('aria-expanded','true');
-    drawer.setAttribute('aria-hidden','false'); backdrop.setAttribute('aria-hidden','false');
-  }
-  function closeDrawer(){
-    drawer.classList.remove('open'); backdrop.classList.remove('show');
-    btn.classList.remove('active'); btn.setAttribute('aria-expanded','false');
-    drawer.setAttribute('aria-hidden','true'); backdrop.setAttribute('aria-hidden','true');
-  }
+  function openDrawer(){ drawer.classList.add('open'); backdrop.classList.add('show'); btn.classList.add('active'); btn.setAttribute('aria-expanded','true'); drawer.setAttribute('aria-hidden','false'); backdrop.setAttribute('aria-hidden','false'); }
+  function closeDrawer(){ drawer.classList.remove('open'); backdrop.classList.remove('show'); btn.classList.remove('active'); btn.setAttribute('aria-expanded','false'); drawer.setAttribute('aria-hidden','true'); backdrop.setAttribute('aria-hidden','true'); }
   btn.addEventListener('click', (e)=>{ e.preventDefault(); drawer.classList.contains('open')?closeDrawer():openDrawer(); });
   backdrop.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
+})();
+
+/* 构建与“下注成功弹窗”一致的摘要 */
+(function(){
+  const el = document.getElementById('summaryOut');
+  if(!el) return;
+  const dataEl = document.getElementById('rowsData');
+  let rows = [];
+  try{ rows = JSON.parse(dataEl.textContent || '[]'); }catch(_){ rows = []; }
+
+  const H_SET = new Set();            // 时段集合（小时）
+  const M_SET = new Set();            // 市场集合（单字母）
+  const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
+
+  // 每个号码保留“首次出现的非零金额”作为显示（避免多时段被累加）
+  const byNumber = new Map();
+  function pickAmount(prev, v){ const n = Number(v||0); return (prev!==undefined && prev!==0) ? prev : (n>0?n:0); }
+
+  let grand = 0;
+
+  rows.forEach(r=>{
+    // code: YYYYMMDD/HHMM -> 取 HH
+    if(typeof r.code === 'string' && r.code.length >= 11){
+      const hh = parseInt(r.code.slice(9,11),10);
+      if(!Number.isNaN(hh)) H_SET.add(hh);
+    }
+
+    // market: 可能是 "MPT" -> 拆成单字母
+    if(typeof r.market === 'string'){
+      r.market.split('').forEach(ch=>{ if(MARKET_ORDER.includes(ch)) M_SET.add(ch); });
+    }
+
+    // 汇总号码的“单次下注金额”
+    const key = String(r.number || '').padStart(2,'0');
+    const cur = byNumber.get(key) || {N1:0,N:0,B:0,S:0,O:0,E:0};
+    cur.N1 = pickAmount(cur.N1, r.amount_n1);
+    cur.N  = pickAmount(cur.N,  r.amount_n);
+    cur.B  = pickAmount(cur.B,  r.amount_b);
+    cur.S  = pickAmount(cur.S,  r.amount_s);
+    cur.O  = pickAmount(cur.O,  r.amount_ds);
+    cur.E  = pickAmount(cur.E,  r.amount_ss);
+    byNumber.set(key, cur);
+
+    // 真实 GT：每条记录 base * 市场数量（已按每个时段一条存表）
+    const base = (Number(r.amount_n1||0)+Number(r.amount_n||0)+Number(r.amount_b||0)+Number(r.amount_s||0)+Number(r.amount_ds||0)+Number(r.amount_ss||0));
+    const mlen = (typeof r.market==='string'? r.market.length : 0);
+    grand += base * mlen;
+  });
+
+  // 构建显示文本
+  const slots = Array.from(H_SET).sort((a,b)=>a-b).map(h=>String(h).padStart(2,'0')).join('-') || '-';
+  const markets = MARKET_ORDER.filter(m=>M_SET.has(m)).join('') || '-';
+
+  function fmtNum(n){ const v = Number(n||0); if(!isFinite(v)) return '0'; return v.toFixed(2).replace(/\.?0+$/,''); }
+
+  const lines = [];
+  // 第一行：时段
+  lines.push(slots);
+  // 第二行：市场（带*）
+  lines.push('*' + markets);
+
+  // 号码行：按号码升序
+  Array.from(byNumber.entries()).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([num, amt])=>{
+    const parts = [];
+    if(amt.N1>0) parts.push(`${fmtNum(amt.N1)}N1`);
+    if(amt.N >0) parts.push(`${fmtNum(amt.N)}N`);
+    if(amt.B >0) parts.push(`${fmtNum(amt.B)}B`);
+    if(amt.S >0) parts.push(`${fmtNum(amt.S)}S`);
+    if(amt.O >0) parts.push(`${fmtNum(amt.O)}O`);
+    if(amt.E >0) parts.push(`${fmtNum(amt.E)}E`);
+    if(parts.length) lines.push(`${num} = ${parts.join(' ')}`);
+  });
+
+  lines.push('', `GT=${fmtNum(grand)}`);
+
+  el.textContent = lines.join('\n');
+
+  // 顶栏显示代理 ID（如果同一天有多个代理，会显示“多个”）
+  const agentIDs = Array.from(new Set(rows.map(r=>r.agent_id).filter(x=>x!==undefined && x!==null)));
+  const info = document.getElementById('agentInfo');
+  info.textContent = '代理ID：' + (agentIDs.length===1 ? agentIDs[0] : (agentIDs.length>1 ? '多个' : '—'));
 })();
 </script>
 </body>
