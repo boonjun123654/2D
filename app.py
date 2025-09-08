@@ -296,32 +296,35 @@ def create_app() -> Flask:
                 if not slots_sel:
                     slots_sel = [next_slot_code()]  # 没选则默认下一期
 
-                # 行内选中的市场：market{i}_M 等
+                # —— 选中的市场：合并为字符串并按固定顺序排序（保证 MPT、而不是随机顺序）
                 markets_sel = [m for m in MARKETS if request.form.get(f"market{i}_{m}")]
                 if not markets_sel:
                     markets_sel = ["M"]
+                market_str = "".join([m for m in MARKETS if m in markets_sel])  # 例如 "MPT"
 
                 for code in slots_sel:
                     if is_locked_for_code(code):
                         continue
+
                     ts = datetime.now(MY_TZ)
                     order_code = ts.strftime("%y%m%d/%H%M%S") + f"{int(ts.microsecond/1000):03d}"
+
                     lock_at = parse_code_to_hour(code).replace(minute=49, second=0, microsecond=0)
 
-                    for m in markets_sel:
-                        db.session.add(Bet2D(
-                            order_code=order_code,
-                            agent_id=agent_id,
-                            market=m,
-                            code=code,
-                            number=number,
-                            amount_n1=n1, amount_n=n,
-                            amount_b=bg, amount_s=sm,
-                            amount_ds=od, amount_ss=ev,
-                            status="active",
-                            locked_at=lock_at
-                        ))
-                        created += 1
+                    # ✅ 一次仅写入一条 —— market 直接存 "MPT"
+                    db.session.add(Bet2D(
+                        order_code=order_code,
+                        agent_id=int(agent_id or 0),   # ✅ 直接保存“代理ID”本身
+                        market=market_str,             # ✅ 合并后的市场字符串
+                        code=code,
+                        number=number,
+                        amount_n1=n1, amount_n=n,
+                        amount_b=bg, amount_s=sm,
+                        amount_ds=od, amount_ss=ev,
+                        status="active",
+                        locked_at=lock_at
+                    ))
+                    created += 1
 
             try:
                 if created > 0:
