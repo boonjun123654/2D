@@ -352,7 +352,7 @@ def create_app() -> Flask:
             selected_agent_id=agent_id          # 仅管理员有用
         )
 
-    # -------------- 当日注单 --------------
+    # -------------- 历史记录（按日期） --------------
     @app.get("/2d/history")
     @login_required
     def history_2d_view():
@@ -377,8 +377,10 @@ def create_app() -> Flask:
         )
 
         def _f(x):
-            try: return float(x)
-            except Exception: return 0.0
+            try:
+                return float(x)
+            except Exception:
+                return 0.0
 
         rows_js = [{
             "order_code": r.order_code or "",
@@ -401,7 +403,7 @@ def create_app() -> Flask:
     @app.post("/2d/history/delete")
     @login_required
     def history_2d_delete():
-    """
+        """
         将指定 order_code 的订单标记为 delete。
         - 管理员可删除任意订单
         - 代理只能删除自己的订单
