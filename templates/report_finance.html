@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+{% block title %}财务报表{% endblock %}
+{% block header_title %}财务报表{% endblock %}
+
+{% block content %}
+<style>
+  .cards{display:grid;grid-template-columns:1fr;gap:14px}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;
+        box-shadow:0 10px 28px rgba(16,24,40,.06)}
+  .muted{color:#64748b;font-size:12px}
+  .scroll{overflow:auto;border:1px solid #eef2f7;border-radius:10px}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:720px}
+  thead th{position:sticky;top:0;background:#f6f8fa;border-bottom:1px solid #e5e7eb;padding:10px;text-align:left}
+  tbody td{border-bottom:1px solid #f1f5f9;padding:10px}
+  tfoot td{background:#fafafa;font-weight:700;border-top:1px solid #e5e7eb;padding:10px}
+  .right{text-align:right}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{padding:8px 12px;border:1px solid #d0d7de;border-radius:10px;background:#fff;cursor:pointer}
+  .btn.primary{background:#111827;color:#fff;border-color:#111827}
+  .hint{color:#6b7280;font-size:12px}
+</style>
+
+<div class="cards">
+  <div class="card">
+    <h3 style="margin:0 0 6px">筛选</h3>
+    <form method="get" class="controls">
+      <div>
+        <div class="hint">开始日期</div>
+        <input type="date" name="start_date" value="{{ start_date }}" class="btn">
+      </div>
+      <div>
+        <div class="hint">结束日期</div>
+        <input type="date" name="end_date" value="{{ end_date }}" class="btn">
+      </div>
+      <button type="submit" class="btn primary">生成报表</button>
+      <div class="hint">佣金：营业额的 {{ (commission_rate*100)|round(0) }}%</div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 10px">报表（{{ start_date }} 至 {{ end_date }}）</h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px;">代理ID</th>
+            <th class="right">营业额</th>
+            <th class="right">佣金</th>
+            <th class="right">中奖金额</th>
+            <th class="right">总额（净收入）</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if rows and rows|length %}
+            {% for r in rows %}
+              <tr>
+                <td>{{ r.agent_id }}</td>
+                <td class="right">RM {{ '%.2f'|format(r.sales) }}</td>
+                <td class="right">RM {{ '%.2f'|format(r.commission) }}</td>
+                <td class="right">RM {{ '%.2f'|format(r.win) }}</td>
+                <td class="right">RM {{ '%.2f'|format(r.net) }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="5" class="muted">无数据</td></tr>
+          {% endif %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>合计</td>
+            <td class="right">RM {{ '%.2f'|format(totals.sales) }}</td>
+            <td class="right">RM {{ '%.2f'|format(totals.commission) }}</td>
+            <td class="right">RM {{ '%.2f'|format(totals.win) }}</td>
+            <td class="right">RM {{ '%.2f'|format(totals.net) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="hint" style="margin-top:8px">
+      总额 = 营业额 − 佣金 − 中奖金额；佣金固定 10%（可在后端 `COMMISSION_RATE` 修改）。
+    </div>
+  </div>
+</div>
+{% endblock %}
