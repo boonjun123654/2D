@@ -22,6 +22,9 @@
     .hamburger.active span::before{transform:rotate(90deg);top:0}
     .hamburger.active span::after{opacity:0}
 
+    .btn-danger{margin-left:auto; padding:6px 10px; border:1px solid #e11d48; color:#fff;background:#ef4444; border-radius:8px; cursor:pointer;}
+    .btn-danger:hover{ background:#dc2626 }
+
     /* 抽屉 */
     .drawer{position:fixed;inset:0 auto 0 0;width:280px;max-width:85vw;background:var(--nav-bg);color:var(--nav-fg);
       transform:translateX(-100%);transition:transform .22s ease-out;z-index:1090;box-shadow:2px 0 16px rgba(0,0,0,.25);display:flex;flex-direction:column}
@@ -198,8 +201,32 @@
         <pre>${text}</pre>
       `;
       cards.appendChild(div);
+
+      // 绑定删除
+      const btn = div.querySelector('.del-order');
+      btn.addEventListener('click', async ()=>{
+        if(!confirm(`确定删除该订单（${oc}）？\n此操作会将数据库中本订单的 status 设为 delete。`)) return;
+        try{
+          const body = new URLSearchParams({order_code: oc});
+          const resp = await fetch('/2d/history/delete', {
+            method: 'POST',
+            headers: {'Content-Type':'application/x-www-form-urlencoded'},
+            body
+          });
+          const data = await resp.json().catch(()=>({}));
+          if(resp.ok && data.ok){
+            div.remove();
+            if(!cards.children.length){
+              cards.innerHTML = '<div class="empty">暂无记录。</div>';
+            }
+          }else{
+            alert('删除失败：' + (data.error || resp.status));
+          }
+        }catch(err){
+          alert('删除失败：' + err);
+        }
+      });
     }
-  })();
   </script>
 </body>
 </html>
