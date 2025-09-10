@@ -3,197 +3,117 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% block title %}系统{% endblock %}</title>
+  <title>{% block title %}应用{% endblock %}</title>
   <style>
-    :root{
-      --c-border:#e5e7eb; --c-head:#f6f8fa; --c-text:#111827; --c-muted:#64748b;
-      --brand:#2563eb; --danger:#ef4444; --ok:#16a34a;
-      --shadow:0 12px 40px rgba(16,24,40,.12);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; color:var(--c-text);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Microsoft YaHei",Arial,sans-serif;
-      background:#fff;
-    }
-    .wrap{max-width:1180px;margin:0 auto;padding:12px}
+    :root{ --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff; }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f7f8fa;color:#111}
 
-    /* 顶部条（仅放汉堡与标题区域） */
-    header.topbar{
-      position:sticky; top:0; z-index:30;
-      background:var(--c-head); border-bottom:1px solid var(--c-border);
+    /* 顶栏（统一） */
+    .topbar{
+      position:sticky; top:0; z-index:1000;
+      display:flex; align-items:center; gap:10px;
+      background:#f6f8fa; border-bottom:1px solid #e5e7eb;
+      padding:10px 14px; box-shadow:0 8px 22px rgba(16,24,40,.05)
     }
-    .topbar-inner{
-      display:flex; align-items:center; gap:12px; padding:10px 12px;
-      max-width:1180px; margin:0 auto;
-    }
-    /* 汉堡按钮 */
+    .topbar h1{margin:0; font-size:22px; font-weight:700}
+
+    /* 汉堡按钮（放在顶栏） */
     .hamburger{
-      width:38px;height:34px;border-radius:10px;border:1px solid var(--c-border);
-      background:#fff; display:inline-grid; place-items:center; cursor:pointer;
-      transition:box-shadow .15s, transform .03s ease;
+      width:42px;height:42px;border-radius:10px;border:1px solid #d0d7de;background:#fff;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.08)
     }
-    .hamburger:active{ transform:translateY(1px) }
-    .hamburger span{
-      display:block;width:18px;height:2px;background:#111;border-radius:2px;position:relative;
+    .hamburger span,.hamburger span::before,.hamburger span::after{
+      content:"";display:block;width:20px;height:2px;background:#111;border-radius:2px;position:relative;transition:transform .2s,opacity .2s
     }
-    .hamburger span::before,.hamburger span::after{
-      content:""; position:absolute; left:0; width:18px; height:2px; background:#111; border-radius:2px;
-    }
-    .hamburger span::before{ top:-6px } .hamburger span::after{ top:6px }
+    .hamburger span::before{position:absolute;top:-6px;left:0}
+    .hamburger span::after{position:absolute;top:6px;left:0}
+    .hamburger.active span{transform:rotate(45deg)}
+    .hamburger.active span::before{transform:rotate(90deg);top:0}
+    .hamburger.active span::after{opacity:0}
 
-    .title{font-weight:700}
+    /* 抽屉菜单（与历史页一致） */
+    .drawer{position:fixed;inset:0 auto 0 0;width:280px;max-width:85vw;background:var(--nav-bg);color:var(--nav-fg);
+      transform:translateX(-100%);transition:transform .22s ease-out;z-index:1090;box-shadow:2px 0 16px rgba(0,0,0,.25);display:flex;flex-direction:column}
+    .drawer.open{transform:translateX(0)}
+    .drawer-header{padding:14px 14px 10px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+    .brand-dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(27,132,255,.25)}
+    .drawer-title{font-weight:700}
+    .drawer-user{font-size:12px;color:var(--nav-muted)}
+    .drawer-nav{padding:8px}
+    .nav-link{display:flex;align-items:center;gap:10px;color:#e6eef8;text-decoration:none;padding:10px 12px;border-radius:8px}
+    .nav-link:hover{background:rgba(255,255,255,.06)}
+    .nav-link .dot{width:8px;height:8px;border-radius:50%;background:#9bb8ff}
+    .drawer-section{padding:8px 12px;font-size:12px;color:var(--nav-muted)}
+    .drawer-footer{margin-top:auto;padding:10px;border-top:1px solid rgba(255,255,255,.08)}
+    .logout{color:#ffd1d1}
+    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.25);backdrop-filter:saturate(120%) blur(1px);opacity:0;visibility:hidden;transition:.2s ease;z-index:1080}
+    .backdrop.show{opacity:1;visibility:visible}
 
-    /* 左侧抽屉 */
-    .drawer{
-      position:fixed; inset:0 auto 0 0; width:280px; background:#fff; border-right:1px solid var(--c-border);
-      transform:translateX(-100%); transition:transform .2s ease-out; z-index:40; box-shadow:var(--shadow);
-      display:flex; flex-direction:column; min-height:100vh;
-    }
-    .drawer.open{ transform:none }
-    .drawer-head{ padding:14px 14px 8px; border-bottom:1px solid var(--c-border); background:#fff }
-    .brand-row{ display:flex; align-items:center; gap:10px }
-    .avatar{
-      width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
-      background:var(--brand);color:#fff;font-weight:800;font-size:12px;
-      box-shadow:0 4px 12px rgba(37,99,235,.22)
-    }
-    .role{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid}
-    .role.agent{background:#eaffef;border-color:#79d27d;color:#1a7f37}
-    .role.admin{background:#fff3f3;border-color:#f1a7a7;color:#b42318}
-
-    .drawer-nav{ padding:8px }
-    .menu{ list-style:none; margin:0; padding:0; display:grid; gap:6px }
-    .menu a{
-      display:flex; align-items:center; gap:10px; text-decoration:none;
-      padding:10px 12px; border:1px solid var(--c-border); border-radius:10px; color:#111; background:#fff;
-    }
-    .menu a:hover{ background:#f1f5f9 }
-    .menu a.active{ background:var(--brand); border-color:var(--brand); color:#fff }
-
-    .drawer-foot{ margin-top:auto; padding:10px; border-top:1px solid var(--c-border); display:flex; gap:10px }
-    .btn{ display:inline-flex; align-items:center; gap:8px; padding:9px 12px; border-radius:10px; border:1px solid var(--c-border); background:#fff; cursor:pointer }
-    .btn.danger{ background:var(--danger); border-color:var(--danger); color:#fff }
-
-    /* 遮罩 */
-    .mask{
-      position:fixed; inset:0; background:rgba(2,6,23,.45);
-      opacity:0; pointer-events:none; transition:opacity .15s; z-index:35;
-    }
-    .mask.show{ opacity:1; pointer-events:auto }
-
-    /* 全局 flash */
-    .flash{margin:10px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--c-border);background:#fff}
-    .flash.ok{background:#e6ffed;border-color:#79d27d}
-    .flash.error{background:#ffe6e6;border-color:#ff9999}
-    .flash.info{background:#eef2ff;border-color:#c7d2fe}
-
-    /* 常用表格/按钮（页面里也可以覆盖） */
-    table{border-collapse:separate;border-spacing:0;width:100%}
-    th,td{padding:8px;border-bottom:1px solid var(--c-border);text-align:left}
-    thead th{background:var(--c-head)}
+    /* 页面容器 */
+    .page{padding:16px}
   </style>
+  {% block head_extra %}{% endblock %}
 </head>
 <body>
 
-  <!-- 顶部条：左上角汉堡按钮 -->
-  <header class="topbar">
-    <div class="topbar-inner">
-      <button id="menuBtn" class="hamburger" aria-label="打开菜单" aria-controls="drawer" aria-expanded="false">
-        <span></span>
-      </button>
-      <div class="title">{% block header_title %}{% endblock %}</div>
-      <div style="margin-left:auto;color:var(--c-muted);font-size:13px">
-        {% if session.get('role') %}
-          欢迎，<strong style="color:#111">{{ session.get('username') or '—' }}</strong>
-        {% else %}
-          未登录
-        {% endif %}
-      </div>
-    </div>
-  </header>
+  <!-- 顶栏：复用历史页样式 -->
+  <div class="topbar">
+    <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false"><span></span></button>
+    <h1>{% block header_title %}页面{% endblock %}</h1>
+    {% block header_actions %}{% endblock %}
+  </div>
 
-  <!-- 左侧抽屉菜单 + 遮罩 -->
-  <aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-label="侧边菜单">
-    <div class="drawer-head">
-      <div class="brand-row">
-        <div class="avatar">{{ (session.get('username') or session.get('role') or 'U')[:1]|upper }}</div>
-        <div>
-          <div style="font-weight:700">{{ session.get('username') or '未登录' }}</div>
-          {% if session.get('role') %}
-            <div class="role {{ session.get('role') }}">{{ '管理员' if session.get('role')=='admin' else '代理' }}</div>
-          {% endif %}
+  <!-- 抽屉菜单（统一导航） -->
+  <div id="drawerBackdrop" class="backdrop" tabindex="-1" aria-hidden="true"></div>
+  <aside id="appDrawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="drawer-title">管理菜单</div>
+        <div class="drawer-user">
+          {{ session.get('username') or '未登录' }}{% if session.get('role') %} · {{ session.get('role') }}{% endif %}
         </div>
       </div>
     </div>
-
     <nav class="drawer-nav">
-      <ul class="menu" id="menuList">
-        {% if session.get('role') %}
-          <li><a class="{{ 'active' if request.endpoint=='home' else '' }}" href="{{ url_for('home') }}">首页</a></li>
-          <li><a class="{{ 'active' if request.endpoint=='bet_2d_view' else '' }}" href="{{ url_for('bet_2d_view') }}">下注</a></li>
-          <li><a class="{{ 'active' if request.endpoint=='history_2d_view' else '' }}" href="{{ url_for('history_2d_view') }}">当日注单</a></li>
-          <li><a class="{{ 'active' if request.endpoint=='winning_2d_view' else '' }}" href="{{ url_for('winning_2d_view') }}">查看中奖</a></li>
-          {% if session.get('role') == 'admin' %}
-            <li><a class="{{ 'active' if request.endpoint=='agents_admin' else '' }}" href="{{ url_for('agents_admin') }}">代理管理</a></li>
-          {% endif %}
-        {% else %}
-          <li><a class="{{ 'active' if request.endpoint=='login' else '' }}" href="{{ url_for('login') }}">登录</a></li>
-        {% endif %}
-      </ul>
-    </nav>
-
-    {% if session.get('role') %}
-      <div class="drawer-foot">
-        <a class="btn danger" href="{{ url_for('logout') }}">退出登录</a>
-      </div>
-    {% endif %}
-  </aside>
-  <div id="mask" class="mask" aria-hidden="true"></div>
-
-  <!-- 页面主体 -->
-  <main class="wrap">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for cat,msg in messages %}
-          <div class="flash {{cat}}">{{ msg }}</div>
-        {% endfor %}
+      <div class="drawer-section">常用</div>
+      <a class="nav-link" href="/home"><span class="dot"></span>主页</a>
+      <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
+      <a class="nav-link" href="/2d/history"><span class="dot"></span>历史记录</a>
+      <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
+      {% if session.get('role') == 'admin' %}
+      <div class="drawer-section">管理员</div>
+      <a class="nav-link" href="/agents"><span class="dot"></span>代理管理</a>
       {% endif %}
-    {% endwith %}
+    </nav>
+    <div class="drawer-footer">
+      {% if session.get('role') %}
+        <a class="nav-link logout" href="/logout"><span class="dot" style="background:#ff7b7b"></span>退出登录</a>
+      {% else %}
+        <a class="nav-link" href="/login"><span class="dot" style="background:#7bff9a"></span>登录</a>
+      {% endif %}
+    </div>
+  </aside>
 
+  <!-- 页面内容 -->
+  <main class="page">
     {% block content %}{% endblock %}
   </main>
 
   <script>
+    // 抽屉开关（与历史页一致）
     (function(){
-      const btn = document.getElementById('menuBtn');
-      const drawer = document.getElementById('drawer');
-      const mask = document.getElementById('mask');
-
-      function openDrawer(){
-        drawer.classList.add('open');
-        mask.classList.add('show');
-        btn.setAttribute('aria-expanded','true');
-      }
-      function closeDrawer(){
-        drawer.classList.remove('open');
-        mask.classList.remove('show');
-        btn.setAttribute('aria-expanded','false');
-      }
-      function toggleDrawer(){
-        if(drawer.classList.contains('open')) closeDrawer(); else openDrawer();
-      }
-
-      btn.addEventListener('click', toggleDrawer);
-      mask.addEventListener('click', closeDrawer);
-      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
-
-      // 点击菜单链接后自动收起
-      document.getElementById('menuList')?.addEventListener('click', function(e){
-        const a = e.target.closest('a'); if(a) closeDrawer();
-      });
+      const btn = document.getElementById('hamburgerBtn');
+      const drawer = document.getElementById('appDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      const openDrawer=()=>{drawer.classList.add('open');backdrop.classList.add('show');btn.classList.add('active');btn.setAttribute('aria-expanded','true');drawer.setAttribute('aria-hidden','false');backdrop.setAttribute('aria-hidden','false');};
+      const closeDrawer=()=>{drawer.classList.remove('open');backdrop.classList.remove('show');btn.classList.remove('active');btn.setAttribute('aria-expanded','false');drawer.setAttribute('aria-hidden','true');backdrop.setAttribute('aria-hidden','true');};
+      btn.addEventListener('click',e=>{e.preventDefault();drawer.classList.contains('open')?closeDrawer():openDrawer();});
+      backdrop.addEventListener('click',closeDrawer);
+      document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDrawer(); });
     })();
   </script>
 
+  {% block body_extra %}{% endblock %}
 </body>
 </html>
