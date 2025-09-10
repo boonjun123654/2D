@@ -356,7 +356,6 @@ def create_app() -> Flask:
     @app.get("/2d/history")
     @login_required
     def history_2d_view():
-        # 日期（默认今天）
         date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
         try:
             y, m, d = map(int, date_str.split("-"))
@@ -367,40 +366,57 @@ def create_app() -> Flask:
 
         prefix = f"{y:04d}{m:02d}{d:02d}"
 
-        # 取当日所有注单（按创建时间倒序，保证前端分组顺序）
         rows = (
             Bet2D.query
-            .filter(Bet2D.code.like(f"{prefix}/%"))
+            .filter(
+                Bet2D.code.like(f"{prefix}/%"),
+                Bet2D.status != "delete"        # ✅ 排除已删除
+            )
             .order_by(Bet2D.created_at.desc())
             .all()
         )
 
         def _f(x):
-            try:
-                return float(x)
-            except Exception:
-                return 0.0
+            try: return float(x)
+            except Exception: return 0.0
 
-        # 原生结构（供前端分组渲染）
-        rows_js = []
-        for r in rows:
-            rows_js.append({
-                "order_code": r.order_code or "",
-                "agent_id":   r.agent_id,
-                "market":     r.market or "",     # 例：MPT
-                "code":       r.code or "",       # 例：20250908/2250
-                "number":     r.number or "",
-                "amount_n1":  _f(r.amount_n1 or 0),
-                "amount_n":   _f(r.amount_n  or 0),
-                "amount_b":   _f(r.amount_b  or 0),
-                "amount_s":   _f(r.amount_s  or 0),
-                "amount_ds":  _f(r.amount_ds or 0),
-                "amount_ss":  _f(r.amount_ss or 0),
-                "status":     r.status or "active",
-                "created_at": r.created_at.isoformat() if r.created_at else "",
-            })
+        rows_js = [{
+            "order_code": r.order_code or "",
+            "agent_id":   r.agent_id,
+            "market":     r.market or "",
+            "code":       r.code or "",
+            "number":     r.number or "",
+            "amount_n1":  _f(r.amount_n1 or 0),
+            "amount_n":   _f(r.amount_n  or 0),
+            "amount_b":   _f(r.amount_b  or 0),
+            "amount_s":   _f(r.amount_s  or 0),
+            "amount_ds":  _f(r.amount_ds or 0),
+            "amount_ss":  _f(r.amount_ss or 0),
+            "status":     r.status or "active",
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        } for r in rows]
 
         return render_template("history_2d.html", date=date_str, rows_js=rows_js)
+
+    @app.post("/2d/history/delete")
+    @login_required
+    def history_2d_delete():
+        oc = (request.form.get("order_code") or "").strip()
+        if not oc:
+        return {"ok": False, "error": "缺少 order_code"}, 400
+
+        # 代理只能删自己的；管理员不限制
+        q = Bet2D.query.filter(Bet2D.order_code == oc)
+        if g.role == "agent" and g.user_id:
+            q = q.filter(Bet2D.agent_id == g.user_id)
+
+        try:
+            count = q.update({Bet2D.status: "delete"}, synchronize_session=False)
+            db.session.commit()
+            return {"ok": True, "count": int(count)}
+        except Exception as e:
+            db.session.rollback()
+            return {"ok": False, "error": str(e)}, 500
 
     # -------------- 查看中奖 --------------
     @app.get("/2d/winning")
