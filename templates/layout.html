@@ -81,6 +81,7 @@
       <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
       <a class="nav-link" href="/2d/history"><span class="dot"></span>历史记录</a>
       <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
+      <a class="nav-link {% if request.path.startswith('/finance') %}active{% endif %}" href="/finance"><span class="dot"></span>财务报表</a>
       {% if session.get('role') == 'admin' %}
       <div class="drawer-section">管理员</div>
       <a class="nav-link" href="/agents"><span class="dot"></span>代理管理</a>
