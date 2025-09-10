@@ -401,19 +401,38 @@ def create_app() -> Flask:
     @app.post("/2d/history/delete")
     @login_required
     def history_2d_delete():
-        oc = (request.form.get("order_code") or "").strip()
-        if not oc:
-        return {"ok": False, "error": "缺少 order_code"}, 400
+    """
+        将指定 order_code 的订单标记为 delete。
+        - 管理员可删除任意订单
+        - 代理只能删除自己的订单
+        前端以 x-www-form-urlencoded 或 JSON 发送 {order_code: "..."}
+        """
+        # 支持 form 和 json 两种提交
+        data = request.get_json(silent=True) or {}
+        order_code = (request.form.get("order_code")
+                      or data.get("order_code")
+                      or "").strip()
 
-        # 代理只能删自己的；管理员不限制
-        q = Bet2D.query.filter(Bet2D.order_code == oc)
+        if not order_code:
+            return {"ok": False, "error": "缺少 order_code"}, 400
+
+        # 查询范围：管理员不限；代理仅限自己的
+        q = Bet2D.query.filter(
+            Bet2D.order_code == order_code,
+            Bet2D.status != "delete"
+        )
         if g.role == "agent" and g.user_id:
-            q = q.filter(Bet2D.agent_id == g.user_id)
+            q = q.filter(Bet2D.agent_id == int(g.user_id))
+
+        rows = q.all()
+        if not rows:
+            return {"ok": False, "error": "未找到该订单或无权限"}, 404
 
         try:
-            count = q.update({Bet2D.status: "delete"}, synchronize_session=False)
+            for r in rows:
+                r.status = "delete"
             db.session.commit()
-            return {"ok": True, "count": int(count)}
+            return {"ok": True, "count": len(rows)}
         except Exception as e:
             db.session.rollback()
             return {"ok": False, "error": str(e)}, 500
