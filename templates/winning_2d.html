@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>2D 查看中奖</title>
+  <title>查看中奖</title>
   <style>
     :root{
       /* 抽屉菜单配色 */
@@ -74,7 +74,7 @@
     <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
       <span></span>
     </button>
-    <h1>2D 查看中奖</h1>
+    <h1>查看中奖</h1>
   </div>
 
   <!-- 抽屉菜单 -->
@@ -91,9 +91,9 @@
     </div>
     <nav class="drawer-nav">
       <div class="drawer-section">常用</div>
-      <a class="nav-link" href="/home"><span class="dot"></span>主页（赔率）</a>
+      <a class="nav-link" href="/home"><span class="dot"></span>主页</a>
       <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
-      <a class="nav-link" href="/2d/history"><span class="dot"></span>当日注单</a>
+      <a class="nav-link" href="/2d/history"><span class="dot"></span>历史记录</a>
       <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
       {% if session.get('role') == 'admin' %}
       <div class="drawer-section">管理员</div>
@@ -172,3 +172,4 @@
 </script>
 </body>
 </html>
+
