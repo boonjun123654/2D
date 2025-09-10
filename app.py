@@ -7,7 +7,7 @@ from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, session, g
 )
-from sqlalchemy import text
+from sqlalchemy import text,func, and_, cast, Date
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # 确保 models.py 里包含 db = SQLAlchemy()，以及下列模型
@@ -109,6 +109,115 @@ def create_app() -> Flask:
                 return redirect(url_for("login"))
             return f(*a, **kw)
         return _wrap
+
+    @app.route('/finance', methods=['GET'])
+    def finance_report():
+        if 'username' not in session:
+            return redirect('/login')
+
+        role = session.get('role')   # 'admin' or 'agent'
+        username = session.get('username')
+        # 如果你有 Agent4D 模型，可通过用户名查 agent_id；这里假设 session 里已有 agent_id
+        current_agent_id = session.get('agent_id')
+
+        # 读取日期范围（YYYY-MM-DD），默认给今天
+        start_date_str = request.args.get('start_date')
+        end_date_str   = request.args.get('end_date')
+        today_str = datetime.now().strftime("%Y-%m-%d")
+
+        if not start_date_str: start_date_str = today_str
+        if not end_date_str:   end_date_str   = today_str
+
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date   = datetime.strptime(end_date_str,   "%Y-%m-%d").date()
+        except ValueError:
+            # 简单兜底：给今天
+            start_date = end_date = datetime.now().date()
+            start_date_str = end_date_str = today_str
+
+        # —— 1) 销售（营业额）按下注创建时间统计 ——
+        sales_q = (
+            db.session.query(
+                FourDBet.agent_id.label('agent_id'),
+                func.coalesce(func.sum(
+                    func.coalesce(FourDBet.b, 0) +
+                    func.coalesce(FourDBet.s, 0) +
+                    func.coalesce(FourDBet.a, 0) +
+                    func.coalesce(FourDBet.c, 0)
+                ), 0).label('sales')
+            )
+            .filter(
+                FourDBet.status.in_(('active', 'locked')),
+                cast(FourDBet.created_at, Date) >= start_date,
+                cast(FourDBet.created_at, Date) <= end_date
+            )
+            .group_by(FourDBet.agent_id)
+        )
+
+        # 权限：代理只看自己
+        if role != 'admin' and current_agent_id:
+            sales_q = sales_q.filter(FourDBet.agent_id == current_agent_id)
+
+        sales_rows = sales_q.all()
+        sales_by_agent = {row.agent_id: Decimal(row.sales or 0) for row in sales_rows}
+
+        # —— 2) 中奖金额按开奖日期统计 ——
+        wins_q = (
+            db.session.query(
+                WinningRecord4D.agent_id.label('agent_id'),
+                func.coalesce(func.sum(WinningRecord4D.win_amount), 0).label('win_amount')
+            )
+            .filter(
+                WinningRecord4D.draw_date >= start_date,
+                WinningRecord4D.draw_date <= end_date
+            )
+            .group_by(WinningRecord4D.agent_id)
+        )
+        if role != 'admin' and current_agent_id:
+            wins_q = wins_q.filter(WinningRecord4D.agent_id == current_agent_id)
+
+        win_rows = wins_q.all()
+        wins_by_agent = {row.agent_id: Decimal(row.win_amount or 0) for row in win_rows}
+
+        # —— 3) 汇总合并（可能有只销售/只中奖的代理）——
+        all_agent_ids = sorted(set(sales_by_agent.keys()) | set(wins_by_agent.keys()))
+        result_rows = []
+        totals = {'sales': Decimal('0'), 'commission': Decimal('0'), 'win': Decimal('0'), 'net': Decimal('0')}
+
+        COMMISSION_RATE = Decimal('0.10')
+
+        for aid in all_agent_ids:
+            sales = sales_by_agent.get(aid, Decimal('0'))
+            win   = wins_by_agent.get(aid, Decimal('0'))
+            commission = (sales * COMMISSION_RATE).quantize(Decimal('0.01'))
+            net = (sales - commission - win).quantize(Decimal('0.01'))
+
+            totals['sales']      += sales
+            totals['commission'] += commission
+            totals['win']        += win
+            totals['net']        += net
+
+            result_rows.append({
+                'agent_id': aid,
+                'sales': float(sales),           # 交给模板格式化
+                'commission': float(commission),
+                'win': float(win),
+                'net': float(net),
+            })
+
+        # 总计保留两位
+        for k in totals:
+            totals[k] = float(Decimal(totals[k]).quantize(Decimal('0.01')))
+
+        return render_template(
+            'report_finance.html',
+            start_date=start_date_str,
+            end_date=end_date_str,
+            rows=result_rows,
+            totals=totals,
+            commission_rate=float(COMMISSION_RATE)
+        )
 
     @app.before_request
     def load_current_user():
