@@ -1,171 +1,65 @@
-<!doctype html>
-<html lang="zh">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-  <title>2D 下注系统</title>
-  <style>
-    :root{
-      --c-border:#d0d7de; --c-head:#f6f8fa; --c-muted:#666;
-      --M:#ffff00; --P:#0000ff; --T:#cc0000; --S:#4c8ed1;
-      --B:#e51d20; --K:#008835; --W:#00540e; --H:#fed606; --E:#ffa500; --sel:#2d6bff;
-      --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff;
-    }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif; padding:12px}
-    h1,h2{margin:0}
+{% extends "layout.html" %}
 
-    .header-row{
-      display:flex; align-items:center; gap:14px; margin:0 0 10px;
-    }
-    .admin-agent{
-      margin-left:auto; display:flex; align-items:center; gap:8px;
-      font-size:14px;
-    }
-    .admin-agent select{
-      height:34px; padding:4px 8px; border:1px solid #d0d7de; border-radius:8px;
-      background:#fff;
-    }
+{% block title %}2D 下注{% endblock %}
+{% block header_title %}下注页面{% endblock %}
 
-    /* 顶栏：按钮 + 标题 并排 */
-    .topbar{
-      position:sticky; top:0; z-index:1000;
-      display:flex; align-items:center; gap:10px;
-      background:#f6f8fa; border:1px solid #e5e7eb; border-radius:12px;
-      padding:8px 10px; margin-bottom:12px;
-      box-shadow:0 10px 28px rgba(16,24,40,.06);
-    }
-
-    table{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--c-border);border-radius:10px;overflow:hidden}
-    th,td{border:1px solid var(--c-border);padding:6px 8px;text-align:center}
-    thead th{background:var(--c-head)}
-    tfoot td{background:#fafbfc}
-    input[type="text"]{text-align:center}
-    input.money{width:64px;text-align:right}
-
-    .headbox{position:relative;display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:6px}
-    .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
-    .headbox span{width:16px;height:16px;background:#fff;border:1px solid var(--c-border);border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;pointer-events:none}
-    .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
-    .headbox input:checked + span::after{content:"✓";display:block;text-align:center;font-weight:700;font-size:12px;line-height:16px;color:#111}
-
-    .Mbg{background:var(--M)} .Pbg{background:var(--P)} .Tbg{background:var(--T)}
-    .Sbg{background:var(--S)} .Bbg{background:var(--B)} .Kbg{background:var(--K)}
-    .Wbg{background:var(--W)} .Hbg{background:var(--H)} .Ebg{background:var(--E)}
-
-    .mtick{position:relative;display:block;width:100%;height:34px;align-items:center;justify-content:center;border-radius:4px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.28) inset;margin:auto}
-    .mtick.M{background:var(--M)} .mtick.P{background:var(--P)} .mtick.T{background:var(--T)}
-    .mtick.S{background:var(--S)} .mtick.B{background:var(--B)} .mtick.K{background:var(--K)}
-    .mtick.W{background:var(--W)} .mtick.H{background:var(--H)} .mtick.E{background:var(--E)}
-
-    .num-col{width:86px}
-    .amt-col{width:72px}
-    .slot-head,.slot-cell{width:46px}
-    .market-head,.market-cell{width:46px}
-    .ck{width:18px;height:18px}
-
-    /* 汉堡按钮（非 fixed，放到顶栏里） */
-    .hamburger{
-      width:42px; height:42px; border-radius:10px; border:1px solid #d0d7de;
-      background:#fff; display:flex; align-items:center; justify-content:center;
-      cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.08);
-    }
-    .hamburger span, .hamburger span::before, .hamburger span::after{
-      content:""; display:block; width:20px; height:2px; background:#111; border-radius:2px;
-      position:relative; transition:transform .2s ease, opacity .2s ease;
-    }
-    .hamburger span::before{ position:absolute; top:-6px; left:0 }
-    .hamburger span::after{ position:absolute; top:6px; left:0 }
-    .hamburger.active span{ transform:rotate(45deg) }
-    .hamburger.active span::before{ transform:rotate(90deg); top:0 }
-    .hamburger.active span::after{ opacity:0 }
-
-    .drawer{
-      position:fixed; inset:0 auto 0 0; width:280px; max-width:85vw;
-      background:var(--nav-bg); color:var(--nav-fg);
-      transform:translateX(-100%); transition:transform .22s ease-out;
-      z-index:1090; box-shadow:2px 0 16px rgba(0,0,0,.25);
-      display:flex; flex-direction:column;
-    }
-    .drawer.open{ transform:translateX(0) }
-    .drawer-header{padding:14px 14px 10px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; align-items:center; gap:10px;}
-    .brand-dot{width:10px; height:10px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 3px rgba(27,132,255,.25)}
-    .drawer-title{font-weight:700}
-    .drawer-user{font-size:12px; color:var(--nav-muted)}
-    .drawer-nav{padding:8px}
-    .nav-link{display:flex; align-items:center; gap:10px; color:#e6eef8; text-decoration:none; padding:10px 12px; border-radius:8px;}
-    .nav-link:hover{ background:rgba(255,255,255,.06) }
-    .nav-link .dot{width:8px; height:8px; border-radius:50%; background:#9bb8ff}
-    .drawer-section{padding:8px 12px; font-size:12px; color:var(--nav-muted)}
-    .drawer-footer{margin-top:auto; padding:10px; border-top:1px solid rgba(255,255,255,.08)}
-    .logout{color:#ffd1d1}
-    .backdrop{position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:saturate(120%) blur(1px); opacity:0; visibility:hidden; transition:.2s ease; z-index:1080;}
-    .backdrop.show{ opacity:1; visibility:visible }
-
-    @media (max-width: 768px){
-      .amt-col{width:62px}
-      .slot-head,.slot-cell,.market-head,.market-cell{width:42px}
-      input.money{width:56px}
-    }
-  </style>
-</head>
-<body>
-  <!-- 顶栏（按钮 + 标题） -->
-  <div class="topbar">
-    <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false">
-      <span></span>
-    </button>
-    <h2>下注页面</h2>
-    {% if session.get('role') == 'admin' %}
-    <div class="admin-agent">
-      <label for="agentSelect">下注代理：</label>
-      <select id="agentSelect" name="agent_id" form="betForm">
-        {% for a in (agents or []) %}
-          <option value="{{ a.id }}" {% if a.id == (selected_agent_id or 1) %}selected{% endif %}>
-            [#{{ a.id }}] {{ a.username }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-    {% endif %}
+{# 右侧：管理员选择代理 #}
+{% block header_actions %}
+  {% if session.get('role') == 'admin' %}
+  <div class="admin-agent" style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;">
+    <label for="agentSelect">下注代理：</label>
+    <select id="agentSelect" name="agent_id" form="betForm"
+            style="height:34px;padding:4px 8px;border:1px solid #d0d7de;border-radius:8px;background:#fff;">
+      {% for a in (agents or []) %}
+        <option value="{{ a.id }}" {% if a.id == (selected_agent_id or 1) %}selected{% endif %}>
+          [#{{ a.id }}] {{ a.username }}
+        </option>
+      {% endfor %}
+    </select>
   </div>
+  {% endif %}
+{% endblock %}
 
-  <!-- 抽屉菜单 -->
-  <div id="drawerBackdrop" class="backdrop" tabindex="-1" aria-hidden="true"></div>
-  <aside id="appDrawer" class="drawer" aria-hidden="true">
-    <div class="drawer-header">
-      <div class="brand-dot"></div>
-      <div>
-        <div class="drawer-title">管理菜单</div>
-        <div class="drawer-user">
-          {{ session.get('username') or '未登录' }}{% if session.get('role') %} · {{ session.get('role') }}{% endif %}
-        </div>
-      </div>
-    </div>
-    <nav class="drawer-nav">
-      <div class="drawer-section">常用</div>
-      <a class="nav-link" href="/home"><span class="dot"></span>主页</a>
-      <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
-      <a class="nav-link" href="/2d/history"><span class="dot"></span>历史记录</a>
-      <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
-      {% if session.get('role') == 'admin' %}
-      <div class="drawer-section">管理员</div>
-      <a class="nav-link" href="/agents"><span class="dot"></span>代理管理</a>
-      {% endif %}
-    </nav>
-    <div class="drawer-footer">
-      {% if session.get('role') %}
-        <a class="nav-link logout" href="/logout"><span class="dot" style="background:#ff7b7b"></span>退出登录</a>
-      {% else %}
-        <a class="nav-link" href="/login"><span class="dot" style="background:#7bff9a"></span>登录</a>
-      {% endif %}
-    </div>
-  </aside>
+{% block head_extra %}
+<style>
+  :root{
+    --c-border:#d0d7de; --c-head:#f6f8fa;
+    --M:#ffff00; --P:#0000ff; --T:#cc0000; --S:#4c8ed1;
+    --B:#e51d20; --K:#008835; --W:#00540e; --H:#fed606; --E:#ffa500;
+  }
+  table{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--c-border);border-radius:10px;overflow:hidden}
+  th,td{border:1px solid var(--c-border);padding:6px 8px;text-align:center}
+  thead th{background:var(--c-head)}
+  tfoot td{background:#fafbfc}
+  input[type="text"]{text-align:center}
+  input.money{width:64px;text-align:right}
+  .headbox{position:relative;display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:6px}
+  .headbox input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .headbox span{width:16px;height:16px;background:#fff;border:1px solid var(--c-border);border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;pointer-events:none}
+  .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
+  .headbox input:checked + span::after{content:"✓";display:block;text-align:center;font-weight:700;font-size:12px;line-height:16px;color:#111}
+  .Mbg{background:var(--M)} .Pbg{background:var(--P)} .Tbg{background:var(--T)}
+  .Sbg{background:var(--S)} .Bbg{background:var(--B)} .Kbg{background:var(--K)}
+  .Wbg{background:var(--W)} .Hbg{background:var(--H)} .Ebg{background:var(--E)}
+  .num-col{width:86px}
+  .amt-col{width:72px}
+  .slot-head,.slot-cell{width:46px}
+  .market-head,.market-cell{width:46px}
+  .ck{width:18px;height:18px}
+  @media (max-width: 768px){
+    .amt-col{width:62px}
+    .slot-head,.slot-cell,.market-head,.market-cell{width:42px}
+    input.money{width:56px}
+  }
+</style>
+{% endblock %}
 
-  <form method="post" id="betForm" onsubmit="return handleBet();">
-    <input type="hidden" name="date" value="{{ date }}">
+{% block content %}
+<form method="post" id="betForm" onsubmit="return handleBet();">
+  <input type="hidden" name="date" value="{{ date }}">
 
-    <table>
-      <thead>
+  <table>
+    <thead>
       <tr>
         <th rowspan="2">#</th>
         <th rowspan="2" class="num-col">下注号码</th>
@@ -218,54 +112,56 @@
           </th>
         {% endfor %}
       </tr>
-      </thead>
+    </thead>
 
-      <tbody>
-      {% for i in range(1, 13) %}
-        <tr>
-          <td>{{ i }}</td>
-          <td class="num-col">
-            <input type="text" name="number{{ i }}" maxlength="2" inputmode="numeric" pattern="[0-9]{2}"
-                   oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="width:80px">
+    <tbody>
+      {% for i in range(1, 12+1) %}
+      <tr>
+        <td>{{ i }}</td>
+        <td class="num-col">
+          <input type="text" name="number{{ i }}" maxlength="2" inputmode="numeric" pattern="[0-9]{2}"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="width:80px">
+        </td>
+
+        <td class="amt-col"><input class="money" type="text" name="N1{{ i }}"   inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+        <td class="amt-col"><input class="money" type="text" name="N{{ i }}"    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+        <td class="amt-col"><input class="money" type="text" name="BIG{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+        <td class="amt-col"><input class="money" type="text" name="SMALL{{ i }}"inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+        <td class="amt-col"><input class="money" type="text" name="ODD{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+        <td class="amt-col"><input class="money" type="text" name="EVEN{{ i }}" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+
+        {% for h in slots %}
+          <td class="slot-cell">
+            <input class="ck slot_col_{{ loop.index0 }}" type="checkbox" name="slot{{ i }}_{{ loop.index0 }}">
           </td>
+        {% endfor %}
 
-          <td class="amt-col"><input class="money" type="text" name="N1{{ i }}"   inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="N{{ i }}"    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="BIG{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="SMALL{{ i }}"inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="ODD{{ i }}"  inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
-          <td class="amt-col"><input class="money" type="text" name="EVEN{{ i }}" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
+        {% for m in market_order %}
+          <td class="market-cell {{ m }}bg">
+            <input class="ck market_col_{{ m }}" type="checkbox" name="market{{ i }}_{{ m }}">
+          </td>
+        {% endfor %}
 
-          {% for h in slots %}
-            <td class="slot-cell">
-              <input class="ck slot_col_{{ loop.index0 }}" type="checkbox" name="slot{{ i }}_{{ loop.index0 }}">
-            </td>
-          {% endfor %}
-
-          {% for m in market_order %}
-            <td class="market-cell {{ m }}bg">
-              <input class="ck market_col_{{ m }}" type="checkbox" name="market{{ i }}_{{ m }}">
-            </td>
-          {% endfor %}
-
-          <td><span class="row-total">0.00</span></td>
-        </tr>
+        <td><span class="row-total">0.00</span></td>
+      </tr>
       {% endfor %}
-      </tbody>
+    </tbody>
 
-      <tfoot>
+    <tfoot>
       <tr>
         <td colspan="33" style="text-align:right;font-weight:bold">总下注金额：RM <span id="grand-total">0.00</span></td>
       </tr>
-      </tfoot>
-    </table>
+    </tfoot>
+  </table>
 
-    <div style="margin-top:10px">
-      <button type="submit" style="font-size:16px;padding:8px 16px">提交</button>
-      <button type="reset"  style="font-size:16px;padding:8px 16px">清除</button>
-    </div>
-  </form>
+  <div style="margin-top:10px">
+    <button type="submit" style="font-size:16px;padding:8px 16px">提交</button>
+    <button type="reset"  style="font-size:16px;padding:8px 16px">清除</button>
+  </div>
+</form>
+{% endblock %}
 
+{% block body_extra %}
 <script>
 /******************* 主菜单：展开/收起 ********************/
 (function(){
