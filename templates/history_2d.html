@@ -1,117 +1,28 @@
-<!doctype html>
-<html lang="zh">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>历史记录</title>
-  <style>
-    :root{ --nav-bg:#0b1220; --nav-fg:#fff; --nav-muted:#b6c2cf; --brand:#1b84ff; }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Microsoft YaHei",sans-serif;padding:20px;}
+{% extends "layout.html" %}
+{% block title %}历史记录{% endblock %}
+{% block header_title %}历史记录{% endblock %}
 
-    /* 顶栏 */
-    .topbar{
-      position:sticky; top:0; z-index:1000;
-      display:flex; align-items:center; gap:10px;
-      background:#f6f8fa; border:1px solid #e5e7eb; border-radius:12px;
-      padding:8px 10px; margin-bottom:14px;
-      box-shadow:0 10px 28px rgba(16,24,40,.06)
-    }
-    .topbar h1{margin:0; font-size:28px}
+{% block head_extra %}
+<style>
+  .muted{color:#666}
+  .links{margin:10px 0 4px}
+  .card{
+    background:#fff;border:1px solid #e5e7eb;border-radius:12px;
+    box-shadow:0 10px 28px rgba(16,24,40,.06);padding:12px 14px;margin:14px 0
+  }
+  .card-title{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .card-title .oc{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+  .btn-danger{
+    margin-left:auto;padding:6px 10px;border:1px solid #e11d48;
+    color:#fff;background:#ef4444;border-radius:8px;cursor:pointer;
+  }
+  .btn-danger:hover{ background:#dc2626 }
+  pre{white-space:pre-wrap;word-break:break-word;margin:4px 0 0}
+  .empty{color:#999;border:1px dashed #ddd;border-radius:12px;padding:14px;margin-top:10px}
+</style>
+{% endblock %}
 
-    /* 汉堡（置于顶栏内） */
-    .hamburger{
-      width:42px;height:42px;border-radius:10px;border:1px solid #d0d7de;background:#fff;
-      display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.08)
-    }
-    .hamburger span,.hamburger span::before,.hamburger span::after{
-      content:"";display:block;width:20px;height:2px;background:#111;border-radius:2px;position:relative;transition:transform .2s,opacity .2s
-    }
-    .hamburger span::before{position:absolute;top:-6px;left:0}
-    .hamburger span::after{position:absolute;top:6px;left:0}
-    .hamburger.active span{transform:rotate(45deg)}
-    .hamburger.active span::before{transform:rotate(90deg);top:0}
-    .hamburger.active span::after{opacity:0}
-
-    /* 删除按钮（卡片右上） */
-    .btn-danger{
-      margin-left:auto; padding:6px 10px;
-      border:1px solid #e11d48; color:#fff;background:#ef4444;
-      border-radius:8px; cursor:pointer;
-    }
-    .btn-danger:hover{ background:#dc2626 }
-
-    /* 抽屉 */
-    .drawer{
-      position:fixed;inset:0 auto 0 0;width:280px;max-width:85vw;background:var(--nav-bg);color:var(--nav-fg);
-      transform:translateX(-100%);transition:transform .22s ease-out;z-index:1090;box-shadow:2px 0 16px rgba(0,0,0,.25);display:flex;flex-direction:column
-    }
-    .drawer.open{transform:translateX(0)}
-    .drawer-header{padding:14px 14px 10px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
-    .brand-dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(27,132,255,.25)}
-    .drawer-title{font-weight:700}
-    .drawer-user{font-size:12px;color:var(--nav-muted)}
-    .drawer-nav{padding:8px}
-    .nav-link{display:flex;align-items:center;gap:10px;color:#e6eef8;text-decoration:none;padding:10px 12px;border-radius:8px}
-    .nav-link:hover{background:rgba(255,255,255,.06)}
-    .nav-link .dot{width:8px;height:8px;border-radius:50%;background:#9bb8ff}
-    .drawer-section{padding:8px 12px;font-size:12px;color:var(--nav-muted)}
-    .drawer-footer{margin-top:auto;padding:10px;border-top:1px solid rgba(255,255,255,.08)}
-    .logout{color:#ffd1d1}
-    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.25);backdrop-filter:saturate(120%) blur(1px);opacity:0;visibility:hidden;transition:.2s ease;z-index:1080}
-    .backdrop.show{opacity:1;visibility:visible}
-
-    .muted{color:#666}
-    .links{margin:10px 0 4px}
-
-    /* 卡片（每个 order_code 一张） */
-    .card{
-      background:#fff;border:1px solid #e5e7eb;border-radius:12px;
-      box-shadow:0 10px 28px rgba(16,24,40,.06);padding:12px 14px;margin:14px 0
-    }
-    .card-title{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-    .card-title .oc{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
-    pre{white-space:pre-wrap;word-break:break-word;margin:4px 0 0}
-    .empty{color:#999;border:1px dashed #ddd;border-radius:12px;padding:14px;margin-top:10px}
-  </style>
-</head>
-<body>
-  <!-- 顶栏 -->
-  <div class="topbar">
-    <button id="hamburgerBtn" class="hamburger" aria-label="打开主菜单" aria-controls="appDrawer" aria-expanded="false"><span></span></button>
-    <h1>历史记录</h1>
-  </div>
-
-  <!-- 抽屉菜单 -->
-  <div id="drawerBackdrop" class="backdrop" tabindex="-1" aria-hidden="true"></div>
-  <aside id="appDrawer" class="drawer" aria-hidden="true">
-    <div class="drawer-header">
-      <div class="brand-dot"></div>
-      <div>
-        <div class="drawer-title">管理菜单</div>
-        <div class="drawer-user">{{ session.get('username') or '未登录' }}{% if session.get('role') %} · {{ session.get('role') }}{% endif %}</div>
-      </div>
-    </div>
-    <nav class="drawer-nav">
-      <div class="drawer-section">常用</div>
-      <a class="nav-link" href="/home"><span class="dot"></span>主页</a>
-      <a class="nav-link" href="/2d/bet"><span class="dot"></span>2D 下注</a>
-      <a class="nav-link" href="/2d/history"><span class="dot"></span>历史记录</a>
-      <a class="nav-link" href="/2d/winning"><span class="dot"></span>查看中奖</a>
-      {% if session.get('role') == 'admin' %}
-      <div class="drawer-section">管理员</div>
-      <a class="nav-link" href="/agents"><span class="dot"></span>代理管理</a>
-      {% endif %}
-    </nav>
-    <div class="drawer-footer">
-      {% if session.get('role') %}
-        <a class="nav-link logout" href="/logout"><span class="dot" style="background:#ff7b7b"></span>退出登录</a>
-      {% else %}
-        <a class="nav-link" href="/login"><span class="dot" style="background:#7bff9a"></span>登录</a>
-      {% endif %}
-    </div>
-  </aside>
-
-  <!-- 查询条件 -->
+{% block content %}
   <div class="muted">选择日期查看历史下注摘要（样式与下注成功弹窗一致，每个订单一张卡片）。</div>
   <form method="get" style="margin:8px 0 10px; display:flex; align-items:center; gap:10px;">
     <label>日期：</label>
@@ -124,138 +35,127 @@
 
   <!-- 数据（后端传入 rows_js） -->
   <script id="rowsData" type="application/json">{{ rows_js|tojson if rows_js else '[]' }}</script>
+{% endblock %}
 
-  <script>
-  /* 主菜单：展开/收起 */
-  (function(){
-    const btn = document.getElementById('hamburgerBtn');
-    const drawer = document.getElementById('appDrawer');
-    const backdrop = document.getElementById('drawerBackdrop');
-    const openDrawer=()=>{drawer.classList.add('open');backdrop.classList.add('show');btn.classList.add('active');btn.setAttribute('aria-expanded','true');drawer.setAttribute('aria-hidden','false');backdrop.setAttribute('aria-hidden','false');};
-    const closeDrawer=()=>{drawer.classList.remove('open');backdrop.classList.remove('show');btn.classList.remove('active');btn.setAttribute('aria-expanded','false');drawer.setAttribute('aria-hidden','true');backdrop.setAttribute('aria-hidden','true');};
-    btn.addEventListener('click',e=>{e.preventDefault();drawer.classList.contains('open')?closeDrawer():openDrawer();});
-    backdrop.addEventListener('click',closeDrawer); document.addEventListener('keydown',e=>{if(e.key==='Escape') closeDrawer();});
-  })();
+{% block body_extra %}
+<script>
+/* 工具 */
+const MARKETS = ['M','P','T','S','B','K','W','H','E'];
+const fmt = n => {
+  const v = Number(n||0);
+  if (!isFinite(v)) return '0';
+  const s = v.toFixed(2);
+  return s.replace(/\.?0+$/,'');
+};
 
-  /* 工具 */
-  const MARKETS = ['M','P','T','S','B','K','W','H','E'];
-  const fmt = n => {
-    const v = Number(n||0);
-    if (!isFinite(v)) return '0';
-    const s = v.toFixed(2);
-    return s.replace(/\.?0+$/,'');
-  };
+/* 分组并渲染（每个 order_code 一卡） */
+(function(){
+  const rows = JSON.parse(document.getElementById('rowsData').textContent || '[]');
+  const cards = document.getElementById('cards');
+  if (!rows.length){ cards.innerHTML = '<div class="empty">当天暂无注单。</div>'; return; }
 
-  /* 分组并渲染（每个 order_code 一卡） */
-  (function(){
-    const rows = JSON.parse(document.getElementById('rowsData').textContent || '[]');
-    const cards = document.getElementById('cards');
-    if (!rows.length){ cards.innerHTML = '<div class="empty">当天暂无注单。</div>'; return; }
+  // 按 order_code 分组（保持原顺序）
+  const groups = new Map();
+  for(const r of rows){
+    if(!groups.has(r.order_code)) groups.set(r.order_code, []);
+    groups.get(r.order_code).push(r);
+  }
 
-    // 保持查询顺序：用 Map 分组
-    const groups = new Map();
-    for(const r of rows){
-      if(!groups.has(r.order_code)) groups.set(r.order_code, []);
-      groups.get(r.order_code).push(r);
+  for(const [oc, list] of groups){
+    const agentId = list[0]?.agent_id ?? '-';
+
+    // 时段（从 code 取小时）
+    const hourSet = new Set();
+    for(const it of list){
+      const h = (it.code||'').split('/')[1]?.slice(0,2);
+      if (h) hourSet.add(h);
     }
+    const slotsLine = [...hourSet].sort().join('-') || '-';
 
-    for(const [oc, list] of groups){
-      // 代理 ID（一个订单应相同，取第一个）
-      const agentId = list[0]?.agent_id ?? '-';
+    // 市场（合并去重并按固定顺序）
+    const mset = new Set();
+    for(const it of list){
+      (it.market||'').split('').forEach(ch=>mset.add(ch));
+    }
+    const marketLine = '*' + (MARKETS.filter(m => mset.has(m)).join('') || '-');
 
-      // 时段（从 code 取小时）
-      const hourSet = new Set();
-      for(const it of list){
-        const h = (it.code||'').split('/')[1]?.slice(0,2);
-        if (h) hourSet.add(h);
-      }
-      const slotsLine = [...hourSet].sort().join('-') || '-';
+    // 明细行：按“号码+金额组合”去重，按号码排序
+    const asKey = it => [
+      it.number, fmt(it.amount_n1), fmt(it.amount_n), fmt(it.amount_b),
+      fmt(it.amount_s), fmt(it.amount_ds), fmt(it.amount_ss)
+    ].join('|');
 
-      // 市场（合并去重并按固定顺序）
-      const mset = new Set();
-      for(const it of list){
-        (it.market||'').split('').forEach(ch=>mset.add(ch));
-      }
-      const marketLine = '*' + (MARKETS.filter(m => mset.has(m)).join('') || '-');
-
-      // 明细行：按“号码+金额组合”去重，按号码排序
-      const asKey = it => [
-        it.number, fmt(it.amount_n1), fmt(it.amount_n), fmt(it.amount_b),
-        fmt(it.amount_s), fmt(it.amount_ds), fmt(it.amount_ss)
-      ].join('|');
-
-      const uniq = new Map();
-      for(const it of list){
-        const key = asKey(it);
-        if(!uniq.has(key)) uniq.set(key, it);
-      }
-      const lines = [...uniq.values()]
-        .sort((a,b)=> (a.number||'').localeCompare(b.number||''))
-        .map(it=>{
-          const parts = [];
-          if(Number(it.amount_n1)>0) parts.push(`${fmt(it.amount_n1)}N1`);
-          if(Number(it.amount_n )>0) parts.push(`${fmt(it.amount_n )}N`);
-          if(Number(it.amount_b )>0) parts.push(`${fmt(it.amount_b )}B`);
-          if(Number(it.amount_s )>0) parts.push(`${fmt(it.amount_s )}S`);
-          if(Number(it.amount_ds)>0) parts.push(`${fmt(it.amount_ds)}O`);
-          if(Number(it.amount_ss)>0) parts.push(`${fmt(it.amount_ss)}E`);
-          return `${it.number} = ${parts.join(' ')}`;
-        });
-
-      // GT：每条记录 base * 该条目的市场数（我们保存的是合并市场字符串）
-      let gt = 0;
-      for(const it of list){
-        const base =
-          Number(it.amount_n1||0)+Number(it.amount_n||0)+Number(it.amount_b||0)+
-          Number(it.amount_s||0)+Number(it.amount_ds||0)+Number(it.amount_ss||0);
-        const mcnt = new Set((it.market||'').split('')).size || 0;
-        gt += base * mcnt;
-      }
-      const gtLine = `GT=${fmt(gt)}`;
-
-      // 组装文本
-      const text = [slotsLine, marketLine, ...lines, '', gtLine].join('\n');
-
-      // 渲染卡片
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <div class="card-title">
-          <div class="muted">订单：</div><code class="oc">${oc}</code>
-          <div class="muted" style="margin-left:8px">代理ID：</div><strong>#${agentId}</strong>
-          <button type="button" class="btn-danger del-order" title="删除此订单">删除</button>
-        </div>
-        <pre></pre>
-      `;
-      div.querySelector('pre').textContent = text; // 避免 HTML 注入
-      cards.appendChild(div);
-
-      // 绑定删除按钮
-      const btn = div.querySelector('.del-order');
-      btn.addEventListener('click', async ()=>{
-        if(!confirm(`确定删除该订单（${oc}）？\n此操作会将数据库中本订单的 status 设为 delete。`)) return;
-        try{
-          const body = new URLSearchParams({order_code: oc});
-          const resp = await fetch('/2d/history/delete', {
-            method: 'POST',
-            headers: {'Content-Type':'application/x-www-form-urlencoded'},
-            body
-          });
-          const data = await resp.json().catch(()=>({}));
-          if(resp.ok && data.ok){
-            div.remove();
-            if(!cards.children.length){
-              cards.innerHTML = '<div class="empty">暂无记录。</div>';
-            }
-          }else{
-            alert('删除失败：' + (data.error || resp.status));
-          }
-        }catch(err){
-          alert('删除失败：' + err);
-        }
+    const uniq = new Map();
+    for(const it of list){
+      const key = asKey(it);
+      if(!uniq.has(key)) uniq.set(key, it);
+    }
+    const lines = [...uniq.values()]
+      .sort((a,b)=> (a.number||'').localeCompare(b.number||''))
+      .map(it=>{
+        const parts = [];
+        if(Number(it.amount_n1)>0) parts.push(`${fmt(it.amount_n1)}N1`);
+        if(Number(it.amount_n )>0) parts.push(`${fmt(it.amount_n )}N`);
+        if(Number(it.amount_b )>0) parts.push(`${fmt(it.amount_b )}B`);
+        if(Number(it.amount_s )>0) parts.push(`${fmt(it.amount_s )}S`);
+        if(Number(it.amount_ds)>0) parts.push(`${fmt(it.amount_ds)}O`);
+        if(Number(it.amount_ss)>0) parts.push(`${fmt(it.amount_ss)}E`);
+        return `${it.number} = ${parts.join(' ')}`;
       });
+
+    // GT：每条记录 base * 该条目的市场数（保存的是合并后的市场字符串）
+    let gt = 0;
+    for(const it of list){
+      const base =
+        Number(it.amount_n1||0)+Number(it.amount_n||0)+Number(it.amount_b||0)+
+        Number(it.amount_s||0)+Number(it.amount_ds||0)+Number(it.amount_ss||0);
+      const mcnt = new Set((it.market||'').split('')).size || 0;
+      gt += base * mcnt;
     }
-  })();
-  </script>
-</body>
-</html>
+    const gtLine = `GT=${fmt(gt)}`;
+
+    // 组装文本
+    const text = [slotsLine, marketLine, ...lines, '', gtLine].join('\n');
+
+    // 渲染卡片
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <div class="card-title">
+        <div class="muted">订单：</div><code class="oc">${oc}</code>
+        <div class="muted" style="margin-left:8px">代理ID：</div><strong>#${agentId}</strong>
+        <button type="button" class="btn-danger del-order" title="删除此订单">删除</button>
+      </div>
+      <pre></pre>
+    `;
+    div.querySelector('pre').textContent = text; // 避免 HTML 注入
+    cards.appendChild(div);
+
+    // 绑定删除按钮
+    const btn = div.querySelector('.del-order');
+    btn.addEventListener('click', async ()=>{
+      if(!confirm(`确定删除该订单（${oc}）？\n此操作会将数据库中本订单的 status 设为 delete。`)) return;
+      try{
+        const body = new URLSearchParams({order_code: oc});
+        const resp = await fetch('/2d/history/delete', {
+          method: 'POST',
+          headers: {'Content-Type':'application/x-www-form-urlencoded'},
+          body
+        });
+        const data = await resp.json().catch(()=>({}));
+        if(resp.ok && data.ok){
+          div.remove();
+          if(!cards.children.length){
+            cards.innerHTML = '<div class="empty">暂无记录。</div>';
+          }
+        }else{
+          alert('删除失败：' + (data.error || resp.status));
+        }
+      }catch(err){
+        alert('删除失败：' + err);
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}
