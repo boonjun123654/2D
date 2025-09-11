@@ -112,80 +112,89 @@ def create_app() -> Flask:
 
     @app.route('/finance', methods=['GET'])
     def finance_report():
-        if 'username' not in session:
+        if not session.get('role'):
             return redirect('/login')
 
-        role = session.get('role')   # 'admin' or 'agent'
+        role = session.get('role')            # 'admin' or 'agent'
         username = session.get('username')
-        # 如果你有 Agent4D 模型，可通过用户名查 agent_id；这里假设 session 里已有 agent_id
         current_agent_id = session.get('agent_id')
 
-        # 读取日期范围（YYYY-MM-DD），默认给今天
-        start_date_str = request.args.get('start_date')
-        end_date_str   = request.args.get('end_date')
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        # 兜底：若 session 没 agent_id，就用用户名查一次（可选）
+        if role != 'admin' and not current_agent_id and username:
+            ag = Agent.query.filter_by(username=username).first()
+            if ag:
+                current_agent_id = ag.id
 
-        if not start_date_str: start_date_str = today_str
-        if not end_date_str:   end_date_str   = today_str
+        # 读取日期（YYYY-MM-DD），默认今天
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        start_date_str = request.args.get('start_date') or today_str
+        end_date_str   = request.args.get('end_date')   or today_str
 
         try:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end_date   = datetime.strptime(end_date_str,   "%Y-%m-%d").date()
         except ValueError:
-            # 简单兜底：给今天
             start_date = end_date = datetime.now().date()
             start_date_str = end_date_str = today_str
 
-        # —— 1) 销售（营业额）按下注创建时间统计 ——
+        # —— 口径选择：按“创建时间(created_at)”统计（推荐、最直观） ——
+        bet_date_col = cast(Bet2D.created_at, Date)
+
+        # 如需按“开奖期号(code=YYYYMMDD/HHMM)”的日期统计，可改为：
+        # bet_date_col = func.to_date(func.substr(Bet2D.code, 1, 8), 'YYYYMMDD')
+
+        # 1) 营业额（六个金额相加）
         sales_q = (
             db.session.query(
-                FourDBet.agent_id.label('agent_id'),
+                Bet2D.agent_id.label('agent_id'),
                 func.coalesce(func.sum(
-                    func.coalesce(FourDBet.b, 0) +
-                    func.coalesce(FourDBet.s, 0) +
-                    func.coalesce(FourDBet.a, 0) +
-                    func.coalesce(FourDBet.c, 0)
+                    func.coalesce(Bet2D.amount_n1, 0) +
+                    func.coalesce(Bet2D.amount_n,  0) +
+                    func.coalesce(Bet2D.amount_b,  0) +
+                    func.coalesce(Bet2D.amount_s,  0) +
+                    func.coalesce(Bet2D.amount_ds, 0) +
+                    func.coalesce(Bet2D.amount_ss, 0)
                 ), 0).label('sales')
             )
             .filter(
-                FourDBet.status.in_(('active', 'locked')),
-                cast(FourDBet.created_at, Date) >= start_date,
-                cast(FourDBet.created_at, Date) <= end_date
+                Bet2D.status.in_(('active', 'locked')),
+                bet_date_col >= start_date,
+                bet_date_col <= end_date
             )
-            .group_by(FourDBet.agent_id)
+            .group_by(Bet2D.agent_id)
         )
-
-        # 权限：代理只看自己
         if role != 'admin' and current_agent_id:
-            sales_q = sales_q.filter(FourDBet.agent_id == current_agent_id)
+            sales_q = sales_q.filter(Bet2D.agent_id == current_agent_id)
 
         sales_rows = sales_q.all()
         sales_by_agent = {row.agent_id: Decimal(row.sales or 0) for row in sales_rows}
 
-        # —— 2) 中奖金额按开奖日期统计 ——
+        # 2) 中奖金额：用 WinningRecord2D.payout（不含本金）
+        #    这里按“开奖期号 code 的日期”统计更合理：从 code 的 YYYYMMDD 取日期
+        win_date_col = func.to_date(func.substr(WinningRecord2D.code, 1, 8), 'YYYYMMDD')
         wins_q = (
             db.session.query(
-                WinningRecord4D.agent_id.label('agent_id'),
-                func.coalesce(func.sum(WinningRecord4D.win_amount), 0).label('win_amount')
+                WinningRecord2D.agent_id.label('agent_id'),
+                func.coalesce(func.sum(WinningRecord2D.payout), 0).label('win_amount')
             )
             .filter(
-                WinningRecord4D.draw_date >= start_date,
-                WinningRecord4D.draw_date <= end_date
+                win_date_col >= start_date,
+                win_date_col <= end_date
             )
-            .group_by(WinningRecord4D.agent_id)
+            .group_by(WinningRecord2D.agent_id)
         )
         if role != 'admin' and current_agent_id:
-            wins_q = wins_q.filter(WinningRecord4D.agent_id == current_agent_id)
+            wins_q = wins_q.filter(WinningRecord2D.agent_id == current_agent_id)
 
         win_rows = wins_q.all()
         wins_by_agent = {row.agent_id: Decimal(row.win_amount or 0) for row in win_rows}
 
-        # —— 3) 汇总合并（可能有只销售/只中奖的代理）——
+        # 3) 汇总&净额
+        COMMISSION_RATE = Decimal('0.10')  # 佣金 10%
         all_agent_ids = sorted(set(sales_by_agent.keys()) | set(wins_by_agent.keys()))
         result_rows = []
-        totals = {'sales': Decimal('0'), 'commission': Decimal('0'), 'win': Decimal('0'), 'net': Decimal('0')}
-
-        COMMISSION_RATE = Decimal('0.10')
+        totals = {'sales': Decimal('0'), 'commission': Decimal('0'),
+                  'win': Decimal('0'), 'net': Decimal('0')}
 
         for aid in all_agent_ids:
             sales = sales_by_agent.get(aid, Decimal('0'))
@@ -200,13 +209,12 @@ def create_app() -> Flask:
 
             result_rows.append({
                 'agent_id': aid,
-                'sales': float(sales),           # 交给模板格式化
+                'sales': float(sales),
                 'commission': float(commission),
                 'win': float(win),
                 'net': float(net),
             })
 
-        # 总计保留两位
         for k in totals:
             totals[k] = float(Decimal(totals[k]).quantize(Decimal('0.01')))
 
