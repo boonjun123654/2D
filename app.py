@@ -484,56 +484,59 @@ def create_app() -> Flask:
             start_date = end_date = date.today()
             start_date_str = end_date_str = today
 
-        q = (db.session.query(Bet2D)
-             .filter(Bet2D.status.in_(('active','locked')),
-                     cast(Bet2D.created_at, Date) >= start_date,
-                     cast(Bet2D.created_at, Date) <= end_date))
+        q = (
+            db.session.query(Bet2D)
+            # 只排除“删除”的，其他都展示；是否锁注由 locked_at 判断
+            .filter(Bet2D.status != 'delete',
+                    cast(Bet2D.created_at, Date) >= start_date,
+                    cast(Bet2D.created_at, Date) <= end_date)
+        )
 
         # 非管理员只看自己的：
         if session.get('role') != 'admin':
-            q = q.filter(Bet2D.agent_id == session.get('agent_id'))
+            q = q.filter(Bet2D.agent_id == session.get('user_id'))
 
         rows = q.order_by(Bet2D.order_code.asc(), Bet2D.id.asc()).all()
 
-        # 序列化为 rows_js（你原先已有就复用）
+        now_ts = datetime.now(MY_TZ).isoformat()
+
         rows_js = [{
             "order_code": r.order_code,
-            "agent_id": r.agent_id,
-            "market": r.market,
-            "code": r.code,
-            "number": r.number,
-            "amount_n1": float(r.amount_n1 or 0),
-            "amount_n":  float(r.amount_n  or 0),
-            "amount_b":  float(r.amount_b  or 0),
-            "amount_s":  float(r.amount_s  or 0),
-            "amount_ds": float(r.amount_ds or 0),
-            "amount_ss": float(r.amount_ss or 0),
+            "agent_id":   r.agent_id,
+            "market":     r.market,
+            "code":       r.code,
+            "number":     r.number,
+            "amount_n1":  float(r.amount_n1 or 0),
+            "amount_n":   float(r.amount_n  or 0),
+            "amount_b":   float(r.amount_b  or 0),
+            "amount_s":   float(r.amount_s  or 0),
+            "amount_ds":  float(r.amount_ds or 0),
+            "amount_ss":  float(r.amount_ss or 0),
+            # 传给前端用于判断是否锁注
+            "locked_at":  (r.locked_at.isoformat() if r.locked_at else None),
         } for r in rows]
 
-        return render_template('history_2d.html',
-                               start_date=start_date_str,
-                               end_date=end_date_str,
-                               rows_js=rows_js)
+        return render_template(
+            'history_2d.html',
+            start_date=start_date_str,
+            end_date=end_date_str,
+            rows_js=rows_js,
+            now_ts=now_ts,   # 服务器当前时间（带时区）
+        )
 
     @app.post("/2d/history/delete")
     @login_required
     def history_2d_delete():
         """
         将指定 order_code 的订单标记为 delete。
-        - 管理员可删除任意订单
-        - 代理只能删除自己的订单
-        前端以 x-www-form-urlencoded 或 JSON 发送 {order_code: "..."}
+        - 管理员可删除任意“未锁注”的订单
+        - 代理只能删除自己的且“未锁注”的订单
         """
-        # 支持 form 和 json 两种提交
         data = request.get_json(silent=True) or {}
-        order_code = (request.form.get("order_code")
-                      or data.get("order_code")
-                      or "").strip()
-
+        order_code = (request.form.get("order_code") or data.get("order_code") or "").strip()
         if not order_code:
             return {"ok": False, "error": "缺少 order_code"}, 400
 
-        # 查询范围：管理员不限；代理仅限自己的
         q = Bet2D.query.filter(
             Bet2D.order_code == order_code,
             Bet2D.status != "delete"
@@ -544,6 +547,11 @@ def create_app() -> Flask:
         rows = q.all()
         if not rows:
             return {"ok": False, "error": "未找到该订单或无权限"}, 404
+
+        # 如果订单中任意一条已过 locked_at，则整单不可删除
+        now = datetime.now(MY_TZ)
+        if any(r.locked_at and now >= r.locked_at for r in rows):
+            return {"ok": False, "error": "订单已锁注，不能删除"}, 400
 
         try:
             for r in rows:
