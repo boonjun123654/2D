@@ -470,52 +470,50 @@ def create_app() -> Flask:
         )
 
     # -------------- 历史记录（按日期） --------------
-    @app.get("/2d/history")
+    @app.route('/2d/history')
     @login_required
-    def history_2d_view():
-        date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
+    def history_2d():
+        today = date.today().strftime("%Y-%m-%d")
+        start_date_str = request.args.get('start_date', today)
+        end_date_str   = request.args.get('end_date',   start_date_str)
+
         try:
-            y, m, d = map(int, date_str.split("-"))
-        except Exception:
-            dt = datetime.now(MY_TZ).date()
-            date_str = dt.strftime("%Y-%m-%d")
-            y, m, d = dt.year, dt.month, dt.day
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date   = datetime.strptime(end_date_str,   "%Y-%m-%d").date()
+        except ValueError:
+            start_date = end_date = date.today()
+            start_date_str = end_date_str = today
 
-        prefix = f"{y:04d}{m:02d}{d:02d}"
+        q = (db.session.query(Bet2D)
+             .filter(Bet2D.status.in_(('active','locked')),
+                     cast(Bet2D.created_at, Date) >= start_date,
+                     cast(Bet2D.created_at, Date) <= end_date))
 
-        rows = (
-            Bet2D.query
-            .filter(
-                Bet2D.code.like(f"{prefix}/%"),
-                Bet2D.status != "delete"        # ✅ 排除已删除
-            )
-            .order_by(Bet2D.created_at.desc())
-            .all()
-        )
+        # 非管理员只看自己的：
+        if session.get('role') != 'admin':
+            q = q.filter(Bet2D.agent_id == session.get('agent_id'))
 
-        def _f(x):
-            try:
-                return float(x)
-            except Exception:
-                return 0.0
+        rows = q.order_by(Bet2D.order_code.asc(), Bet2D.id.asc()).all()
 
+        # 序列化为 rows_js（你原先已有就复用）
         rows_js = [{
-            "order_code": r.order_code or "",
-            "agent_id":   r.agent_id,
-            "market":     r.market or "",
-            "code":       r.code or "",
-            "number":     r.number or "",
-            "amount_n1":  _f(r.amount_n1 or 0),
-            "amount_n":   _f(r.amount_n  or 0),
-            "amount_b":   _f(r.amount_b  or 0),
-            "amount_s":   _f(r.amount_s  or 0),
-            "amount_ds":  _f(r.amount_ds or 0),
-            "amount_ss":  _f(r.amount_ss or 0),
-            "status":     r.status or "active",
-            "created_at": r.created_at.isoformat() if r.created_at else "",
+            "order_code": r.order_code,
+            "agent_id": r.agent_id,
+            "market": r.market,
+            "code": r.code,
+            "number": r.number,
+            "amount_n1": float(r.amount_n1 or 0),
+            "amount_n":  float(r.amount_n  or 0),
+            "amount_b":  float(r.amount_b  or 0),
+            "amount_s":  float(r.amount_s  or 0),
+            "amount_ds": float(r.amount_ds or 0),
+            "amount_ss": float(r.amount_ss or 0),
         } for r in rows]
 
-        return render_template("history_2d.html", date=date_str, rows_js=rows_js)
+        return render_template('history_2d.html',
+                               start_date=start_date_str,
+                               end_date=end_date_str,
+                               rows_js=rows_js)
 
     @app.post("/2d/history/delete")
     @login_required
