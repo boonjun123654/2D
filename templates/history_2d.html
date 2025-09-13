@@ -5,6 +5,7 @@
 {% block head_extra %}
 <style>
   .muted{color:#666}
+
   /* 顶部筛选行：更紧凑，移动端换行 */
   .filters{
     margin:8px 0 10px;
@@ -24,7 +25,7 @@
     box-shadow:0 8px 22px rgba(16,24,40,.06); padding:12px; margin:12px 0;
   }
 
-  /* 顶部行：左侧订单，右侧代理徽章+删除 */
+  /* 顶部行：左侧订单，右侧徽章+删除 */
   .card-top{
     display:flex; align-items:center; gap:10px; min-height:34px;
   }
@@ -42,16 +43,23 @@
   .card-top .right{
     margin-left:auto; display:flex; align-items:center; gap:8px;
   }
+
   .agent-badge{
     display:inline-flex; align-items:center; justify-content:center;
     height:28px; min-width:38px; padding:0 10px; border-radius:999px;
     background:#eef2ff; color:#1e40af; border:1px solid #dbe3ff; font-weight:600; font-size:13px;
   }
+
+  .badge{padding:2px 8px;border-radius:999px;font-size:12px;line-height:18px}
+  .badge.active{background:#e6f4ff;color:#1a6ee8;border:1px solid #b3d5ff}
+  .badge.locked{background:#fff7e6;color:#b76e00;border:1px solid #ffd591}
+
   .btn-del{
     height:28px; padding:0 12px; border-radius:10px;
     background:#ef4444; color:#fff; border:1px solid #e11d48; cursor:pointer;
   }
   .btn-del:active{ transform:translateY(1px) }
+  .btn-del[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(20%)}
 
   /* 文本主体 */
   .card-body{
@@ -80,8 +88,10 @@
 
   <div id="cards"></div>
 
-  <!-- 后端传 rows_js：[{order_code, agent_id, market, code, number, amount_*}] -->
+  <!-- 后端传 rows_js：[{order_code, agent_id, market, code, number, amount_*, locked_at}] -->
   <script id="rowsData" type="application/json">{{ rows_js|tojson if rows_js else '[]' }}</script>
+  <!-- 服务器当前时间（ISO8601）。若后端未提供 now_ts，则脚本里会回退到客户端当前时间 -->
+  <script id="serverNow" type="application/json">{{ now_ts|tojson if now_ts else 'null' }}</script>
 {% endblock %}
 
 {% block body_extra %}
@@ -93,6 +103,12 @@ const fmt = n => {
   const s = v.toFixed(2);
   return s.replace(/\.?0+$/,'');
 };
+const SERVER_NOW = (() => {
+  try {
+    const t = JSON.parse(document.getElementById('serverNow').textContent || 'null');
+    return t ? new Date(t) : new Date();
+  } catch(e){ return new Date(); }
+})();
 
 (function(){
   const rows = JSON.parse(document.getElementById('rowsData').textContent || '[]');
@@ -109,7 +125,14 @@ const fmt = n => {
   for(const [oc, list] of groups){
     const agentId = list[0]?.agent_id ?? '-';
 
-    // 时段
+    // 订单是否“已锁注”：订单内任意一条过了 locked_at 就算锁注
+    const isLockedOrder = list.some(it => {
+      if(!it.locked_at) return false;
+      const la = new Date(it.locked_at);
+      return SERVER_NOW >= la;
+    });
+
+    // 时段（从 code 提取小时）
     const hourSet = new Set();
     for(const it of list){
       const h = (it.code||'').split('/')[1]?.slice(0,2);
@@ -117,12 +140,12 @@ const fmt = n => {
     }
     const slotsLine = [...hourSet].sort().join('-') || '-';
 
-    // 市场（合并去重并按固定顺序）
+    // 市场（合并去重，并按固定顺序）
     const mset = new Set();
     for(const it of list){ (it.market||'').split('').forEach(ch=>mset.add(ch)); }
     const marketLine = '*' + (MARKETS.filter(m => mset.has(m)).join('') || '-');
 
-    // 明细行（号码+金额去重）
+    // 明细行（号码+金额组合去重，按号码排序）
     const asKey = it => [
       it.number, fmt(it.amount_n1), fmt(it.amount_n), fmt(it.amount_b),
       fmt(it.amount_s), fmt(it.amount_ds), fmt(it.amount_ss)
@@ -157,7 +180,7 @@ const fmt = n => {
     // 组装文案
     const text = [slotsLine, marketLine, ...lines, '', gtLine].join('\n');
 
-    // 渲染卡片（新版结构）
+    // 渲染卡片
     const div = document.createElement('div');
     div.className = 'card';
     div.innerHTML = `
@@ -168,7 +191,10 @@ const fmt = n => {
         </div>
         <div class="right">
           <span class="agent-badge">#${agentId}</span>
-          <button type="button" class="btn-del del-order" title="删除此订单">删除</button>
+          <span class="badge ${isLockedOrder ? 'locked' : 'active'}" title="${isLockedOrder ? '该订单已过锁注时间，不可删除' : '未过锁注时间，可撤单'}">
+            ${isLockedOrder ? '已锁注' : '可撤单'}
+          </span>
+          <button type="button" class="btn-del del-order" ${isLockedOrder ? 'disabled' : ''} title="${isLockedOrder ? '已锁注：不可删除' : '删除此订单'}">删除</button>
         </div>
       </div>
       <pre class="card-body"></pre>
@@ -177,12 +203,16 @@ const fmt = n => {
     cards.appendChild(div);
 
     // 删除
-    div.querySelector('.del-order').addEventListener('click', async ()=>{
+    const btn = div.querySelector('.del-order');
+    btn.addEventListener('click', async ()=>{
+      if (btn.disabled) return;
       if(!confirm(`确定删除该订单（${oc}）？\n此操作会将数据库中本订单的 status 设为 delete。`)) return;
       try{
         const body = new URLSearchParams({order_code: oc});
         const resp = await fetch('/2d/history/delete', {
-          method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body
+          method: 'POST',
+          headers: {'Content-Type':'application/x-www-form-urlencoded'},
+          body
         });
         const data = await resp.json().catch(()=>({}));
         if(resp.ok && data.ok){
@@ -191,7 +221,9 @@ const fmt = n => {
         }else{
           alert('删除失败：' + (data.error || resp.status));
         }
-      }catch(err){ alert('删除失败：' + err); }
+      }catch(err){
+        alert('删除失败：' + err);
+      }
     });
   }
 })();
