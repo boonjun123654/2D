@@ -77,7 +77,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="muted">选择日期范围查看历史下注摘要（每个订单一张卡片）。</div>
+  <div class="muted"></div>
   <form method="get" class="filters">
     <label>开始日期：</label>
     <input type="date" name="start_date" value="{{ start_date or date }}">
@@ -192,7 +192,7 @@ const SERVER_NOW = (() => {
         <div class="right">
           <span class="agent-badge">#${agentId}</span>
           <span class="badge ${isLockedOrder ? 'locked' : 'active'}" title="${isLockedOrder ? '该订单已过锁注时间，不可删除' : '未过锁注时间，可撤单'}">
-            ${isLockedOrder ? '已锁注' : '可撤单'}
+            ${isLockedOrder ? '已锁注' : '活跃'}
           </span>
           <button type="button" class="btn-del del-order" ${isLockedOrder ? 'disabled' : ''} title="${isLockedOrder ? '已锁注：不可删除' : '删除此订单'}">删除</button>
         </div>
@@ -206,7 +206,7 @@ const SERVER_NOW = (() => {
     const btn = div.querySelector('.del-order');
     btn.addEventListener('click', async ()=>{
       if (btn.disabled) return;
-      if(!confirm(`确定删除该订单（${oc}）？\n此操作会将数据库中本订单的 status 设为 delete。`)) return;
+      if(!confirm(`确定删除该订单？`)) return;
       try{
         const body = new URLSearchParams({order_code: oc});
         const resp = await fetch('/2d/history/delete', {
