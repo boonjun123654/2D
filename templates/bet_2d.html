@@ -163,36 +163,6 @@
 
 {% block body_extra %}
 <script>
-/******************* 主菜单：展开/收起 ********************/
-(function(){
-  const btn = document.getElementById('hamburgerBtn');
-  const drawer = document.getElementById('appDrawer');
-  const backdrop = document.getElementById('drawerBackdrop');
-
-  function openDrawer(){
-    drawer.classList.add('open');
-    backdrop.classList.add('show');
-    btn.classList.add('active');
-    btn.setAttribute('aria-expanded','true');
-    drawer.setAttribute('aria-hidden','false');
-    backdrop.setAttribute('aria-hidden','false');
-  }
-  function closeDrawer(){
-    drawer.classList.remove('open');
-    backdrop.classList.remove('show');
-    btn.classList.remove('active');
-    btn.setAttribute('aria-expanded','false');
-    drawer.setAttribute('aria-hidden','true');
-    backdrop.setAttribute('aria-hidden','true');
-  }
-  btn.addEventListener('click', (e)=>{
-    e.preventDefault();
-    drawer.classList.contains('open') ? closeDrawer() : openDrawer();
-  });
-  backdrop.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDrawer(); });
-})();
-
 /**************** 金额“复制向下” ****************/
 function copyAmountDown(col, checked){
   const first = document.querySelector(`input[name="${col}1"]`);
@@ -251,18 +221,18 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.querySelectorAll('input[type="text"]').forEach(el=>el.addEventListener('input', updateTotals));
   document.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.addEventListener('change', updateTotals));
   updateTotals();
-});
 
-/**************** 成功弹窗 ****************/
-const params = new URLSearchParams(location.search);
-if (params.get('success') === '1') {
-  const saved = localStorage.getItem('bet_popup');
-  if (saved) showBetPopup(saved);
-  localStorage.removeItem('bet_popup');
-  const url = new URL(location.href);
-  url.searchParams.delete('success');
-  history.replaceState({}, document.title, url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
-}
+  // 成功弹窗（?success=1）
+  const params = new URLSearchParams(location.search);
+  if (params.get('success') === '1') {
+    const saved = localStorage.getItem('bet_popup');
+    if (saved) showBetPopup(saved);
+    localStorage.removeItem('bet_popup');
+    const url = new URL(location.href);
+    url.searchParams.delete('success');
+    history.replaceState({}, document.title, url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
+  }
+});
 
 function fmtNum(n){
   const v = Number(n);
@@ -275,16 +245,15 @@ function buildBetPopupText(){
   const H_BASE = 9; // 09~23
   const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
 
-  const slotSet   = new Set();     // 合并所有行勾选的时间段
-  const marketSet = new Set();     // 合并所有行勾选的市场
-  const lines     = [];            // 每个号码的明细行
+  const slotSet   = new Set();
+  const marketSet = new Set();
+  const lines     = [];
 
   rows.forEach((tr, idx) => {
     const i = idx + 1;
     const number = tr.querySelector(`input[name="number${i}"]`)?.value?.trim() || "";
     if (!number) return;
 
-    // 取各金额（>0 才展示），并做去尾零显示
     const parts = [];
     const pushIf = (key, label) => {
       const el = tr.querySelector(`input[name="${key}${i}"]`);
@@ -296,7 +265,6 @@ function buildBetPopupText(){
     pushIf("SMALL","S"); pushIf("ODD","O"); pushIf("EVEN","E");
     if (!parts.length) return;
 
-    // 当前行选中的时间段、市场（用于合并）
     tr.querySelectorAll('.slot-cell input[type="checkbox"]:checked').forEach(cb=>{
       const idx = parseInt(cb.name.split('_').pop(),10);
       if (!Number.isNaN(idx)) slotSet.add(H_BASE + idx);
@@ -305,22 +273,16 @@ function buildBetPopupText(){
       if (tr.querySelector(`input[name="market${i}_${m}"]`)?.checked) marketSet.add(m);
     });
 
-    // 本号码明细行（不再附加“时段/市场”）
     lines.push(`${number} = ${parts.join(' ')}`);
   });
 
-  // 第一行：时间段 例如 21-22-23（无则为“-”）
   const slotLine = Array.from(slotSet).sort((a,b)=>a-b)
     .map(h => String(h).padStart(2,'0')).join('-') || '-';
-
-  // 第二行：*市场 例如 *MP（按固定顺序，去重合并；无则为 *-）
   const marketLine = '*' + (MARKET_ORDER.filter(m => marketSet.has(m)).join('') || '-');
 
-  // 合计：从页面合计读取并格式化
   const grandRaw = parseFloat(document.getElementById('grand-total')?.textContent || '0');
   const gt = fmtNum(grandRaw);
 
-  // 组装最终文本
   const out = [slotLine, marketLine];
   if (lines.length) out.push(...lines);
   out.push('', `GT=${gt}`);
