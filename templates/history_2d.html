@@ -5,7 +5,6 @@
 {% block head_extra %}
 <style>
   .muted{color:#666}
-  .links{margin:10px 0 4px}
   .card{
     background:#fff;border:1px solid #e5e7eb;border-radius:12px;
     box-shadow:0 10px 28px rgba(16,24,40,.06);padding:12px 14px;margin:14px 0
@@ -23,17 +22,18 @@
 {% endblock %}
 
 {% block content %}
-  <div class="muted">选择日期查看历史下注摘要（样式与下注成功弹窗一致，每个订单一张卡片）。</div>
-  <form method="get" style="margin:8px 0 10px; display:flex; align-items:center; gap:10px;">
-    <label>日期：</label>
-    <input type="date" name="date" value="{{ date }}">
+  <div class="muted">选择日期范围查看历史下注摘要（每个订单一张卡片）。</div>
+  <form method="get" style="margin:8px 0 10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <label>开始日期：</label>
+    <input type="date" name="start_date" value="{{ start_date or date }}">
+    <label>结束日期：</label>
+    <input type="date" name="end_date" value="{{ end_date or start_date or date }}">
     <button type="submit">查询</button>
   </form>
-  <div class="links"><a href="/2d/bet">返回下注</a> | <a href="/2d/winning">查看中奖</a></div>
 
   <div id="cards"></div>
 
-  <!-- 数据（后端传入 rows_js） -->
+  <!-- 数据（后端传入 rows_js：已按筛选范围返回的记录列表） -->
   <script id="rowsData" type="application/json">{{ rows_js|tojson if rows_js else '[]' }}</script>
 {% endblock %}
 
@@ -52,7 +52,7 @@ const fmt = n => {
 (function(){
   const rows = JSON.parse(document.getElementById('rowsData').textContent || '[]');
   const cards = document.getElementById('cards');
-  if (!rows.length){ cards.innerHTML = '<div class="empty">当天暂无注单。</div>'; return; }
+  if (!rows.length){ cards.innerHTML = '<div class="empty">该日期范围暂无注单。</div>'; return; }
 
   // 按 order_code 分组（保持原顺序）
   const groups = new Map();
