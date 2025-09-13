@@ -1,17 +1,19 @@
 import os
+import time
 from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
 from functools import wraps
+from threading import Thread
 
 from flask import (
-    Flask, render_template, request, redirect, url_for, flash, session, g
+    Flask, render_template, request, redirect, url_for, flash, session, g, jsonify
 )
-from sqlalchemy import text,func, and_, cast, Date
+from sqlalchemy import text, func, and_, cast, Date
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # 确保 models.py 里包含 db = SQLAlchemy()，以及下列模型
-from models import db, Bet2D, WinningRecord2D, Agent  # 需要提供 Agent 模型
+from models import db, Bet2D, WinningRecord2D, Agent, DrawResult  # 新增 DrawResult
 
 MY_TZ = ZoneInfo("Asia/Kuala_Lumpur")
 MARKETS = ["M", "P", "T", "S", "B", "K", "W", "H", "E"]
@@ -77,6 +79,138 @@ def next_slot_code(now: datetime | None = None) -> str:
         day = day + timedelta(days=1)
         hour = 9
     return f"{day.strftime('%Y%m%d')}/{hour:02d}50"
+
+
+# ========================= 自动结算：工具与线程 =========================
+# 含本金赔率（与首页文案一致；用于计算不含本金的 payout）
+ODDS_SETTLE = {
+    'N1': Decimal('50'),
+    'N_HEAD': Decimal('28'),
+    'N_SPECIAL': Decimal('7'),
+    'B': Decimal('1.9'),
+    'S': Decimal('1.9'),
+    'DS': Decimal('1.9'),
+    'SS': Decimal('1.9'),
+}
+
+def _payout(stake: Decimal, odds: Decimal) -> Decimal:
+    # 赔付为不含本金
+    return (Decimal(stake or 0) * (Decimal(odds) - Decimal('1'))).quantize(Decimal('0.01'))
+
+def settle_one(code: str, market: str) -> int:
+    """结算单期单市场：把命中写入 WinningRecord2D（应用层幂等）"""
+    dr = DrawResult.query.filter_by(code=code, market=market).first()
+    if not dr:
+        return 0
+
+    head = (dr.head or '').zfill(2)
+    specials = {s.strip().zfill(2) for s in (dr.specials or '').split(',') if s.strip()}
+    size = dr.size_type   # '大' / '小'
+    parity = dr.parity_type  # '单' / '双'
+
+    # 如未提供 size/parity，可根据 head 兜底推断（可选）
+    try:
+        _hn = int(head)
+        if not size:
+            size = '大' if _hn >= 50 else '小'
+        if not parity:
+            parity = '单' if _hn % 2 == 1 else '双'
+    except Exception:
+        pass
+
+    bets = (Bet2D.query
+            .filter(Bet2D.code == code,
+                    Bet2D.status.in_(('active', 'locked')),
+                    Bet2D.market.contains(market))  # 合并市场字符串里包含该字母
+            .all())
+
+    created = 0
+    for b in bets:
+        def add(hit_type: str, cond: bool, stake):
+            nonlocal created
+            if not cond:
+                return
+            stake = Decimal(stake or 0)
+            if stake <= 0:
+                return
+            # 防重复（幂等）
+            exists = WinningRecord2D.query.filter_by(
+                bet_id=b.id, market=market, code=code, hit_type=hit_type
+            ).first()
+            if exists:
+                return
+            odds = ODDS_SETTLE[hit_type]
+            db.session.add(WinningRecord2D(
+                bet_id=b.id,
+                agent_id=b.agent_id,
+                market=market,
+                code=code,
+                number=b.number,
+                hit_type=hit_type,
+                stake=stake,
+                odds=odds,
+                payout=_payout(stake, odds),
+            ))
+            created += 1
+
+        add('N1',        b.amount_n1 and b.number == head,         b.amount_n1)
+        add('N_HEAD',    b.amount_n  and b.number == head,         b.amount_n)
+        add('N_SPECIAL', b.amount_n  and b.number in specials,     b.amount_n)
+        add('B',         b.amount_b  and size == '大',             b.amount_b)
+        add('S',         b.amount_s  and size == '小',             b.amount_s)
+        add('DS',        b.amount_ds and parity == '单',           b.amount_ds)
+        add('SS',        b.amount_ss and parity == '双',           b.amount_ss)
+
+    if created:
+        db.session.commit()
+    return created
+
+def _target_code_for_53(now: datetime) -> str | None:
+    """根据当前时间计算要在 :53 结算的期号（HH:50）。
+       :53 及之后 => 当小时 :50；否则 => 上一小时 :50。
+       仅 09~23 的小时有效。"""
+    if now.minute >= 53:
+        tgt = now
+    else:
+        tgt = now - timedelta(hours=1)
+    if tgt.hour < 9 or tgt.hour > 23:
+        return None
+    return f"{tgt.strftime('%Y%m%d')}/{tgt.hour:02d}50"
+
+def settle_due_draws(now: datetime | None = None) -> int:
+    """结算“该在此刻结算”的所有市场（依据 draw_results 是否存在）"""
+    now = now or datetime.now(MY_TZ)
+    code = _target_code_for_53(now)
+    if not code:
+        return 0
+    drs = DrawResult.query.filter_by(code=code).all()
+    total = 0
+    for dr in drs:
+        total += settle_one(code, dr.market)
+    return total
+
+def start_settle_daemon(flask_app: Flask):
+    """每小时的 :53 自动结算上一张/当小时的 :50 期"""
+    if os.environ.get("ENABLE_SETTLE_DAEMON", "1") not in ("1", "true", "True", "yes"):
+        return
+    def _loop():
+        last_key = None  # 防重复：每小时只跑一次
+        while True:
+            try:
+                now = datetime.now(MY_TZ)
+                key = now.strftime("%Y%m%d%H")
+                if now.minute == 53 and key != last_key:
+                    with flask_app.app_context():
+                        n = settle_due_draws(now)
+                        flask_app.logger.info(f"[auto-settle] {now.isoformat()} -> created={n}")
+                    last_key = key
+            except Exception as e:
+                try:
+                    flask_app.logger.exception(f"[auto-settle] error: {e}")
+                except Exception:
+                    pass
+            time.sleep(10)  # 10s 轮询
+    Thread(target=_loop, daemon=True).start()
 
 
 # ========================= 应用工厂 =========================
@@ -568,6 +702,27 @@ def create_app() -> Flask:
             .all()
         )
         return render_template("winning_2d.html", records=records, date=date_str)
+
+    # -------------- 结算：管理员手动触发 --------------
+    @app.post("/admin/settle_now")
+    @admin_required
+    def admin_settle_now():
+        n = settle_due_draws()
+        return jsonify(ok=True, created=int(n))
+
+    @app.post("/admin/settle_one")
+    @admin_required
+    def admin_settle_one():
+        payload = request.get_json(silent=True) or {}
+        code = (request.form.get("code") or payload.get("code") or "").strip()
+        market = (request.form.get("market") or payload.get("market") or "").strip()
+        if not code or not market:
+            return jsonify(ok=False, error="missing code/market"), 400
+        n = settle_one(code, market)
+        return jsonify(ok=True, created=int(n))
+
+    # 启动自动结算守护线程
+    start_settle_daemon(app)
 
     return app
 
