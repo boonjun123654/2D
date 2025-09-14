@@ -4,83 +4,82 @@
 
 {% block head_extra %}
 <style>
-  :root{
-    --card-bg:#fff; --card-bd:#e5e7eb;
-  }
-  .wrap{display:grid;grid-template-columns:1fr;gap:14px}
+  :root{ --card:#fff; --bd:#e5e7eb; --muted:#64748b; }
+
+  /* 容器：手机一列 */
+  .wrap{ display:grid; grid-template-columns:1fr; gap:12px; }
 
   /* 卡片 */
   .card{
-    background:var(--card-bg);
-    border:1px solid var(--card-bd);
+    background:var(--card);
+    border:1px solid var(--bd);
     border-radius:14px;
-    padding:14px;
+    padding:12px;
     box-shadow:0 10px 28px rgba(16,24,40,.06);
   }
-  .card h3{margin:0 0 10px}
+  .card h3{ margin:0 0 8px; font-size:18px; }
 
-  /* 表格（赔率） */
-  .scroll{overflow:auto;border:1px solid #eef2f7;border-radius:10px}
-  table{border-collapse:separate;border-spacing:0;width:100%;min-width:560px}
-  thead th{
-    position:sticky;top:0;background:#f6f8fa;
-    border-bottom:1px solid #e5e7eb;padding:10px;text-align:center;
+  /* 表格（两列：项目｜赔率），为手机优化 */
+  table{ width:100%; border-collapse:collapse; }
+  th, td{
+    padding:12px 10px;
+    border-bottom:1px solid #f1f5f9;
+    font-size:16px;
+    text-align:center;
   }
-  tbody td{border-bottom:1px solid #f1f5f9;padding:10px;text-align:center}
-  td.left{text-align:left}
-  .muted{color:#64748b;font-size:12px}
+  thead th{
+    background:#f6f8fa; border-bottom:1px solid var(--bd);
+    font-weight:600;
+  }
+
+  /* 小屏进一步增大触控面积与字号 */
+  @media (max-width:480px){
+    th, td{ padding:14px 10px; font-size:17px; }
+    .card h3{ font-size:17px; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="wrap">
 
-  <!-- 2D 统一赔率 -->
+  <!-- 2D 统一赔率（手机友好，两列） -->
   <section class="card">
     <h3>2D 统一赔率</h3>
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:90px">项目</th>
-            <th class="left">说明</th>
-            <th style="width:180px">赔率</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>N1</td>
-            <td class="left">头奖</td>
-            <td>1 : 50</td>
-          </tr>
-          <tr>
-            <td>N</td>
-            <td class="left">头奖 / 特别奖</td>
-            <td>头奖 1 : 28 ／ 特别奖 1 : 7</td>
-          </tr>
-          <tr>
-            <td>BIG</td>
-            <td class="left">头奖</td>
-            <td>1 : 1.9</td>
-          </tr>
-          <tr>
-            <td>SMALL</td>
-            <td class="left">头奖</td>
-            <td>1 : 1.9</td>
-          </tr>
-          <tr>
-            <td>ODD</td>
-            <td class="left">头奖</td>
-            <td>1 : 1.9</td>
-          </tr>
-          <tr>
-            <td>EVEN</td>
-            <td class="left">头奖</td>
-            <td>1 : 1.9</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40%">项目</th>
+          <th>赔率</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>N1</td>
+          <td>1 : 50</td>
+        </tr>
+        <tr>
+          <td>N</td>
+          <td>头奖 1 : 28　·　特别 1 : 7</td>
+        </tr>
+        <tr>
+          <td>BIG</td>
+          <td>1 : 1.9</td>
+        </tr>
+        <tr>
+          <td>SMALL</td>
+          <td>1 : 1.9</td>
+        </tr>
+        <tr>
+          <td>ODD</td>
+          <td>1 : 1.9</td>
+        </tr>
+        <tr>
+          <td>EVEN</td>
+          <td>1 : 1.9</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 
 </div>
