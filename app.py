@@ -691,7 +691,7 @@ def create_app() -> Flask:
             .all()
         )
         total_return = sum((r.stake or 0) + (r.payout or 0) for r in records)
-        return render_template("winning_2d.html", records=records, date=date_str, total_return=total_retur)
+        return render_template("winning_2d.html", records=records, date=date_str, total_return=total_return)
 
     return app
 
