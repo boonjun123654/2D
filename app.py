@@ -437,6 +437,20 @@ def create_app() -> Flask:
             flash("密码已重置", "ok")
         return redirect(url_for("agents_admin"))
 
+
+    @app.post("/agents/<int:agent_id>/delete")
+    @admin_required
+    def agent_delete(agent_id):
+        agent = Agent.query.get_or_404(agent_id)
+        try:
+            db.session.delete(agent)   # 物理删除
+            db.session.commit()
+            flash("已删除代理", "ok")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"删除失败：{e}", "error")
+        return redirect(url_for("agents_admin"))
+
     # -------------- 下注页 --------------
     @app.route("/2d/bet", methods=["GET", "POST"])
     @login_required
