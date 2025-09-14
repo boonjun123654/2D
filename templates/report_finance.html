@@ -37,12 +37,11 @@
   </div>
 
   <div class="card">
-    <h3 style="margin:0 0 10px"></h3>
     <div class="scroll">
       <table>
         <thead>
           <tr>
-            <th style="width:120px;">代理ID</th>
+            <th style="width:160px;">代理</th>
             <th class="right">营业额</th>
             <th class="right">佣金</th>
             <th class="right">中奖金额</th>
@@ -53,7 +52,7 @@
           {% if rows and rows|length %}
             {% for r in rows %}
               <tr>
-                <td>{{ r.agent_id }}</td>
+                <td>{{ r.agent_name }}</td>
                 <td class="right">RM {{ '%.2f'|format(r.sales) }}</td>
                 <td class="right">RM {{ '%.2f'|format(r.commission) }}</td>
                 <td class="right">RM {{ '%.2f'|format(r.win) }}</td>
