@@ -690,7 +690,8 @@ def create_app() -> Flask:
             .order_by(WinningRecord2D.code.desc(), WinningRecord2D.market.asc(), WinningRecord2D.id.asc())
             .all()
         )
-        return render_template("winning_2d.html", records=records, date=date_str)
+        total_return = sum((r.stake or 0) + (r.payout or 0) for r in records)
+        return render_template("winning_2d.html", records=records, date=date_str, total_return=total_retur)
 
     return app
 
