@@ -7,11 +7,11 @@ from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, session, g
 )
-from sqlalchemy import text,func, and_, cast, Date
+from sqlalchemy import text, func, and_, cast, Date
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # 确保 models.py 里包含 db = SQLAlchemy()，以及下列模型
-from models import db, Bet2D, WinningRecord2D, Agent  # 需要提供 Agent 模型
+from models import db, Bet2D, WinningRecord2D, Agent, DrawResult
 
 MY_TZ = ZoneInfo("Asia/Kuala_Lumpur")
 MARKETS = ["M", "P", "T", "S", "B", "K", "W", "H", "E"]
@@ -25,6 +25,18 @@ ODDS_2D_SIMPLE = {
     "SMALL": "1:1.9",
     "ODD":   "1:1.9",
     "EVEN":  "1:1.9",
+}
+
+# ---- 中奖赔率（含本金倍率）用于入库 ----
+# 中奖记录里：odds 保存“含本倍率”，payout 保存“不含本实付 = stake * (odds - 1)”
+ODDS_2D_MULTIPLIER = {
+    "N1":        Decimal("50"),
+    "N_HEAD":    Decimal("28"),
+    "N_SPECIAL": Decimal("7"),
+    "B":         Decimal("1.9"),
+    "S":         Decimal("1.9"),
+    "DS":        Decimal("1.9"),  # 单
+    "SS":        Decimal("1.9"),  # 双
 }
 
 
@@ -92,6 +104,96 @@ def create_app() -> Flask:
     )
     db.init_app(app)
 
+    # ---------- 幂等计算：按日期对比并落库中奖 ----------
+    def compute_and_persist_wins_for_date(target_day: date) -> int:
+        """
+        幂等：对 target_day 的所有开奖(code=YYYYMMDD/HHMM)逐个比对当期注单，写入 winning_record_2d。
+        - 仅处理 Bet2D.status != 'delete'
+        - Bet2D.market 是合并字符串（如 'MPT'），只要包含开奖 market 即视为该市场下注
+        - 每次命中前检查是否已存在相同 (bet_id, code, market, hit_type) 记录，避免重复
+        返回：本次新增的记录条数
+        """
+        day_prefix = target_day.strftime("%Y%m%d") + "/"
+        draws = (db.session.query(DrawResult)
+                 .filter(DrawResult.code.like(f"{day_prefix}%"))
+                 .all())
+
+        inserted = 0
+
+        for dr in draws:
+            code = dr.code                   # YYYYMMDD/HHMM
+            mkt  = dr.market                 # 'M' / 'P' / ...
+            head = (dr.head or "").strip()
+            # specials 存 "71,89,30" 这样的字符串
+            specials_set = set()
+            if (dr.specials or "").strip():
+                specials_set = {s.strip() for s in dr.specials.split(",") if s.strip()}
+
+            # 取当期、包含该市场的注单（排除 delete）
+            bets = (db.session.query(Bet2D)
+                    .filter(
+                        Bet2D.status != "delete",
+                        Bet2D.code == code,
+                        Bet2D.market.contains(mkt)   # 合并市场里包含当前开奖市场
+                    )
+                    .all())
+
+            for b in bets:
+                # 逐类判断命中；命中则写入（先查重）
+                def _ensure_write(hit_type: str, stake: Decimal):
+                    nonlocal inserted
+                    if stake is None:
+                        return
+                    if Decimal(stake or 0) <= 0:
+                        return
+                    exists = (db.session.query(WinningRecord2D.id)
+                              .filter_by(bet_id=b.id, code=code, market=mkt, hit_type=hit_type)
+                              .first())
+                    if exists:
+                        return
+                    odds = ODDS_2D_MULTIPLIER[hit_type]
+                    payout = (Decimal(stake) * (odds - Decimal("1"))).quantize(Decimal("0.01"))
+                    rec = WinningRecord2D(
+                        bet_id=b.id,
+                        agent_id=b.agent_id,
+                        market=mkt,
+                        code=code,
+                        number=b.number,
+                        hit_type=hit_type,
+                        stake=Decimal(stake).quantize(Decimal("0.01")),
+                        odds=odds,
+                        payout=payout
+                    )
+                    db.session.add(rec)
+                    inserted += 1
+
+                # N1：只中头奖
+                if (b.amount_n1 or Decimal("0")) > 0 and b.number == head:
+                    _ensure_write("N1", b.amount_n1)
+
+                # N：分头奖/特别奖
+                if (b.amount_n or Decimal("0")) > 0:
+                    if b.number == head:
+                        _ensure_write("N_HEAD", b.amount_n)
+                    elif b.number in specials_set:
+                        _ensure_write("N_SPECIAL", b.amount_n)
+
+                # 大/小（按开奖 size_type）
+                if dr.size_type == "大" and (b.amount_b or Decimal("0")) > 0:
+                    _ensure_write("B", b.amount_b)
+                if dr.size_type == "小" and (b.amount_s or Decimal("0")) > 0:
+                    _ensure_write("S", b.amount_s)
+
+                # 单/双（按开奖 parity_type）
+                if dr.parity_type == "单" and (b.amount_ds or Decimal("0")) > 0:
+                    _ensure_write("DS", b.amount_ds)
+                if dr.parity_type == "双" and (b.amount_ss or Decimal("0")) > 0:
+                    _ensure_write("SS", b.amount_ss)
+
+        if inserted:
+            db.session.commit()
+        return inserted
+
     # ------------- 简单会话/权限 -------------
     def login_required(f):
         @wraps(f)
@@ -117,9 +219,9 @@ def create_app() -> Flask:
 
         role = session.get('role')            # 'admin' or 'agent'
         username = session.get('username')
-        current_agent_id = session.get('agent_id')
+        current_agent_id = session.get('user_id')  # 统一使用 user_id
 
-        # 兜底：若 session 没 agent_id，就用用户名查一次（可选）
+        # 兜底：若 session 没 user_id，就用用户名查一次（可选）
         if role != 'admin' and not current_agent_id and username:
             ag = Agent.query.filter_by(username=username).first()
             if ag:
@@ -139,9 +241,6 @@ def create_app() -> Flask:
 
         # —— 口径选择：按“创建时间(created_at)”统计（推荐、最直观） ——
         bet_date_col = cast(Bet2D.created_at, Date)
-
-        # 如需按“开奖期号(code=YYYYMMDD/HHMM)”的日期统计，可改为：
-        # bet_date_col = func.to_date(func.substr(Bet2D.code, 1, 8), 'YYYYMMDD')
 
         # 1) 营业额（六个金额相加）
         sales_q = (
@@ -170,7 +269,6 @@ def create_app() -> Flask:
         sales_by_agent = {row.agent_id: Decimal(row.sales or 0) for row in sales_rows}
 
         # 2) 中奖金额：用 WinningRecord2D.payout（不含本金）
-        #    这里按“开奖期号 code 的日期”统计更合理：从 code 的 YYYYMMDD 取日期
         win_date_col = func.to_date(func.substr(WinningRecord2D.code, 1, 8), 'YYYYMMDD')
         wins_q = (
             db.session.query(
@@ -562,17 +660,34 @@ def create_app() -> Flask:
             db.session.rollback()
             return {"ok": False, "error": str(e)}, 500
 
-    # -------------- 查看中奖 --------------
+    # -------------- 查看中奖（半自动结算） --------------
     @app.get("/2d/winning")
     @login_required
     def winning_2d_view():
+        # 1) 解析日期（默认今天）
         date_str = request.args.get('date') or datetime.now(MY_TZ).strftime("%Y-%m-%d")
-        y, m, d = map(int, date_str.split('-'))
-        prefix = f"{y:04d}{m:02d}{d:02d}"
+        try:
+            y, m, d = map(int, date_str.split('-'))
+            the_day = date(y, m, d)
+        except Exception:
+            the_day = datetime.now(MY_TZ).date()
+            date_str = the_day.strftime("%Y-%m-%d")
+
+        # 2) 首访触发：先计算并入库（幂等）
+        try:
+            inserted = compute_and_persist_wins_for_date(the_day)
+            if inserted:
+                flash(f"已计算并写入 {inserted} 条中奖记录。", "ok")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"计算中奖时出错：{e}", "error")
+
+        # 3) 查询并展示（当天全部期号）
+        prefix = the_day.strftime("%Y%m%d")
         records = (
             WinningRecord2D.query
             .filter(WinningRecord2D.code.like(f"{prefix}/%"))
-            .order_by(WinningRecord2D.code.desc(), WinningRecord2D.market.asc())
+            .order_by(WinningRecord2D.code.desc(), WinningRecord2D.market.asc(), WinningRecord2D.id.asc())
             .all()
         )
         return render_template("winning_2d.html", records=records, date=date_str)
