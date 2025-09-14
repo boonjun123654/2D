@@ -4,12 +4,16 @@
 
 {% block head_extra %}
 <style>
-  form{margin:12px 0 20px}
+  form{margin:12px 0 16px}
   table{border-collapse:collapse;width:100%}
   th, td{border:1px solid #e5e7eb;padding:8px;font-size:14px}
   th{background:#f6f8fa;text-align:left}
   .muted{color:#666}
-  .empty{color:#999;border:1px dashed #ddd;border-radius:12px;padding:14px;margin-top:10px}
+  .empty{color:#999;border:1px dashed #ddd;border-radius:12px;padding:14px;margin-top:10px;background:#fff}
+  .totals{
+    margin-top:10px;padding:10px;border:1px solid #e5e7eb;border-radius:12px;
+    background:#fff;font-weight:700;display:flex;justify-content:flex-end
+  }
 </style>
 {% endblock %}
 
@@ -29,7 +33,6 @@
           <th>号码</th>
           <th>类型</th>
           <th>下注</th>
-          <th>赔率(含本)</th>
           <th>赔付</th>
           <th>时间</th>
         </tr>
@@ -42,14 +45,18 @@
           <td>{{ r.number }}</td>
           <td>{{ r.hit_type }}</td>
           <td>{{ '%.2f'|format(r.stake) }}</td>
-          <td>{{ '%.2f'|format(r.odds) }}</td>
-          <td>{{ '%.2f'|format(r.payout) }}</td>
+          {# 赔付显示：本金 + 赔款（payout 不含本） #}
+          <td>{{ '%.2f'|format(r.stake + r.payout) }}</td>
           <td class="muted">{{ r.created_at }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    <div class="totals">
+      总赔付：RM {{ '%.2f'|format(total_return) }}
+    </div>
   {% else %}
-    <div class="empty">暂无记录（当天可能尚未开奖或无人中奖）。</div>
+    <div class="empty">暂无记录</div>
   {% endif %}
 {% endblock %}
