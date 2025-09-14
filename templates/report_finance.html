@@ -32,13 +32,12 @@
         <div class="hint">结束日期</div>
         <input type="date" name="end_date" value="{{ end_date }}" class="btn">
       </div>
-      <button type="submit" class="btn primary">生成报表</button>
-      <div class="hint">佣金：营业额的 {{ (commission_rate*100)|round(0) }}%</div>
+      <button type="submit" class="btn primary">查询</button>
     </form>
   </div>
 
   <div class="card">
-    <h3 style="margin:0 0 10px">报表（{{ start_date }} 至 {{ end_date }}）</h3>
+    <h3 style="margin:0 0 10px"></h3>
     <div class="scroll">
       <table>
         <thead>
@@ -47,7 +46,7 @@
             <th class="right">营业额</th>
             <th class="right">佣金</th>
             <th class="right">中奖金额</th>
-            <th class="right">总额（净收入）</th>
+            <th class="right">总额</th>
           </tr>
         </thead>
         <tbody>
@@ -77,7 +76,6 @@
       </table>
     </div>
     <div class="hint" style="margin-top:8px">
-      总额 = 营业额 − 佣金 − 中奖金额；佣金固定 10%（可在后端 `COMMISSION_RATE` 修改）。
     </div>
   </div>
 </div>
