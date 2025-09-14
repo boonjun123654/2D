@@ -219,9 +219,9 @@ def create_app() -> Flask:
 
         role = session.get('role')            # 'admin' or 'agent'
         username = session.get('username')
-        current_agent_id = session.get('user_id')  # 统一使用 user_id
+        current_agent_id = session.get('agent_id')
 
-        # 兜底：若 session 没 user_id，就用用户名查一次（可选）
+        # 兜底：若 session 没 agent_id，就用用户名查一次
         if role != 'admin' and not current_agent_id and username:
             ag = Agent.query.filter_by(username=username).first()
             if ag:
@@ -239,24 +239,29 @@ def create_app() -> Flask:
             start_date = end_date = datetime.now().date()
             start_date_str = end_date_str = today_str
 
-        # —— 口径选择：按“创建时间(created_at)”统计（推荐、最直观） ——
-        bet_date_col = cast(Bet2D.created_at, Date)
+        # ====== 口径修正：按“开奖期号 code 的日期”统计 ======
+        bet_date_col = func.to_date(func.substr(Bet2D.code, 1, 8), 'YYYYMMDD')
+        win_date_col = func.to_date(func.substr(WinningRecord2D.code, 1, 8), 'YYYYMMDD')
 
-        # 1) 营业额（六个金额相加）
+        # ====== 营业额（含市场数量倍数） ======
+        base_amount = (
+            func.coalesce(Bet2D.amount_n1, 0) +
+            func.coalesce(Bet2D.amount_n,  0) +
+            func.coalesce(Bet2D.amount_b,  0) +
+            func.coalesce(Bet2D.amount_s,  0) +
+            func.coalesce(Bet2D.amount_ds, 0) +
+            func.coalesce(Bet2D.amount_ss, 0)
+        )
+        # 市场数量：market 是已去重合并的字符串，例如 "MPT" => 3
+        market_count = func.length(func.coalesce(Bet2D.market, ""))
+
         sales_q = (
             db.session.query(
                 Bet2D.agent_id.label('agent_id'),
-                func.coalesce(func.sum(
-                    func.coalesce(Bet2D.amount_n1, 0) +
-                    func.coalesce(Bet2D.amount_n,  0) +
-                    func.coalesce(Bet2D.amount_b,  0) +
-                    func.coalesce(Bet2D.amount_s,  0) +
-                    func.coalesce(Bet2D.amount_ds, 0) +
-                    func.coalesce(Bet2D.amount_ss, 0)
-                ), 0).label('sales')
+                func.coalesce(func.sum(base_amount * market_count), 0).label('sales')
             )
             .filter(
-                Bet2D.status.in_(('active', 'locked')),
+                Bet2D.status != 'delete',        # 排除删除单
                 bet_date_col >= start_date,
                 bet_date_col <= end_date
             )
@@ -268,12 +273,16 @@ def create_app() -> Flask:
         sales_rows = sales_q.all()
         sales_by_agent = {row.agent_id: Decimal(row.sales or 0) for row in sales_rows}
 
-        # 2) 中奖金额：用 WinningRecord2D.payout（不含本金）
-        win_date_col = func.to_date(func.substr(WinningRecord2D.code, 1, 8), 'YYYYMMDD')
-        wins_q = (
+        # ====== 中奖金额（含本金）：直接用 stake * odds 聚合 ======
+        win_q = (
             db.session.query(
                 WinningRecord2D.agent_id.label('agent_id'),
-                func.coalesce(func.sum(WinningRecord2D.payout), 0).label('win_amount')
+                func.coalesce(
+                    func.sum(
+                        func.coalesce(WinningRecord2D.stake, 0) *
+                        func.coalesce(WinningRecord2D.odds,  0)
+                    ), 0
+                ).label('win_amount')
             )
             .filter(
                 win_date_col >= start_date,
@@ -282,21 +291,30 @@ def create_app() -> Flask:
             .group_by(WinningRecord2D.agent_id)
         )
         if role != 'admin' and current_agent_id:
-            wins_q = wins_q.filter(WinningRecord2D.agent_id == current_agent_id)
+            win_q = win_q.filter(WinningRecord2D.agent_id == current_agent_id)
 
-        win_rows = wins_q.all()
+        win_rows = win_q.all()
         wins_by_agent = {row.agent_id: Decimal(row.win_amount or 0) for row in win_rows}
 
-        # 3) 汇总&净额
+        # ====== 代理名映射（用于前端显示） ======
+        agent_ids = sorted(set(sales_by_agent.keys()) | set(wins_by_agent.keys()))
+        if role != 'admin' and current_agent_id and not agent_ids:
+            agent_ids = [int(current_agent_id)]
+        if agent_ids:
+            agents = Agent.query.filter(Agent.id.in_(agent_ids)).all()
+        else:
+            agents = []
+        agent_name_map = {a.id: a.username for a in agents}
+
+        # ====== 汇总 ======
         COMMISSION_RATE = Decimal('0.10')  # 佣金 10%
-        all_agent_ids = sorted(set(sales_by_agent.keys()) | set(wins_by_agent.keys()))
         result_rows = []
         totals = {'sales': Decimal('0'), 'commission': Decimal('0'),
                   'win': Decimal('0'), 'net': Decimal('0')}
 
-        for aid in all_agent_ids:
-            sales = sales_by_agent.get(aid, Decimal('0'))
-            win   = wins_by_agent.get(aid, Decimal('0'))
+        for aid in agent_ids:
+            sales = sales_by_agent.get(aid, Decimal('0'))          # 已乘市场数
+            win   = wins_by_agent.get(aid,  Decimal('0'))          # 含本金
             commission = (sales * COMMISSION_RATE).quantize(Decimal('0.01'))
             net = (sales - commission - win).quantize(Decimal('0.01'))
 
@@ -307,6 +325,7 @@ def create_app() -> Flask:
 
             result_rows.append({
                 'agent_id': aid,
+                'agent_name': agent_name_map.get(aid, f'#{aid}'),
                 'sales': float(sales),
                 'commission': float(commission),
                 'win': float(win),
