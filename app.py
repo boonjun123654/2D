@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Bet2D, WinningRecord2D, Agent, DrawResult
 
 MY_TZ = ZoneInfo("Asia/Kuala_Lumpur")
-MARKETS = ["M", "P", "T", "S", "B", "K", "W", "H", "E"]
+MARKETS = ["MGV21", "UCA68", "SFC99"]
 
 # ---- 首页（2D）展示用赔率（不区分市场） ----
 CATS_2D = ["N1", "N", "BIG", "SMALL", "ODD", "EVEN"]
