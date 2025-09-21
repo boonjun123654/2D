@@ -220,14 +220,7 @@ def create_app() -> Flask:
             return redirect('/login')
 
         role = session.get('role')            # 'admin' or 'agent'
-        username = session.get('username')
-        current_agent_id = session.get('agent_id')
-
-        # 兜底：若 session 没 agent_id，就用用户名查一次
-        if role != 'admin' and not current_agent_id and username:
-            ag = Agent.query.filter_by(username=username).first()
-            if ag:
-                current_agent_id = ag.id
+        current_agent_name = session.get('username') if role != 'admin' else None
 
         # 读取日期（YYYY-MM-DD），默认今天
         today_str = datetime.now().strftime("%Y-%m-%d")
@@ -331,8 +324,8 @@ def create_app() -> Flask:
             totals['net']        += net
 
             result_rows.append({
-                'agent_id': aid,
-                'agent_name': agent_name_map.get(aid, f'#{aid}'),
+                'agent_id':agent_name,
+                'agent_name': agent_name,
                 'sales': float(sales),
                 'commission': float(commission),
                 'win': float(win),
@@ -630,7 +623,7 @@ def create_app() -> Flask:
 
         # 非管理员只看自己的：
         if session.get('role') != 'admin':
-            q = q.filter(Bet2D.agent_id == session.get('user_id'))
+            q = q.filter(Bet2D.agent_id == session.get('username'))
 
         rows = q.order_by(Bet2D.order_code.asc(), Bet2D.id.asc()).all()
 
