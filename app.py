@@ -483,14 +483,11 @@ def create_app() -> Flask:
     def bet_2d_view():
         # —— 确定本次下注使用的 agent_id
         if g.role == "agent" and g.user_id:
-            agent_id = int(g.user_id)
+            agent_name = (g.username or "").strip()
             agents_for_select = None  # 代理不显示选择
         else:
-            agent_id = int((request.values.get("agent_id") or "1").strip())
-            try:
-                agents_for_select = Agent.query.order_by(Agent.username.asc()).all()
-            except Exception:
-                agents_for_select = []
+            agent_row = Agent.query.get(int((request.form.get("agent_id") or "1").strip()))
+            agent_name = (agent_row.username if agent_row else "").strip() or "#unknown"
 
         date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
         try:
@@ -569,7 +566,7 @@ def create_app() -> Flask:
                     # ✅ 一次仅写入一条 —— market 直接存 "MPT"
                     db.session.add(Bet2D(
                         order_code=order_code,
-                        agent_id=int(agent_id or 0),   # ✅ 直接保存“代理ID”本身
+                        agent_id=agent_name,   # ✅ 直接保存“代理ID”本身
                         market=market_str,             # ✅ 合并后的市场字符串
                         code=code,
                         number=number,
