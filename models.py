@@ -8,7 +8,7 @@ class Bet2D(db.Model):
     __tablename__ = 'bets_2d'
     id = db.Column(db.BigInteger, primary_key=True)
     order_code = db.Column(db.String(16))
-    agent_id = db.Column(db.Integer, nullable=False)
+    agent_id = db.Column(db.String(64), nullable=False)
     market = db.Column(db.String(64), nullable=False)  
     code = db.Column(db.String(13), nullable=False)   # YYYYMMDD/HHMM
     number = db.Column(db.String(2), nullable=False)  # '00'..'99'
@@ -28,7 +28,7 @@ class WinningRecord2D(db.Model):
     __tablename__ = 'winning_record_2d'
     id = db.Column(db.BigInteger, primary_key=True)
     bet_id   = db.Column(db.BigInteger, db.ForeignKey('bets_2d.id', ondelete='CASCADE'), nullable=False)
-    agent_id = db.Column(db.Integer, nullable=False)
+    agent_id = db.Column(db.String(64), nullable=False)
     market   = db.Column(db.String(1), nullable=False)
     code     = db.Column(db.String(13), nullable=False)
     number   = db.Column(db.String(2), nullable=False)
