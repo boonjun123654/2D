@@ -219,14 +219,13 @@ def create_app() -> Flask:
         if not session.get('role'):
             return redirect('/login')
 
-        role = session.get('role')            # 'admin' or 'agent'
+        role = session.get('role')                  # 'admin' or 'agent'
         current_agent_name = session.get('username') if role != 'admin' else None
 
-        # 读取日期（YYYY-MM-DD），默认今天
+        # 日期参数
         today_str = datetime.now().strftime("%Y-%m-%d")
         start_date_str = request.args.get('start_date') or today_str
         end_date_str   = request.args.get('end_date')   or today_str
-
         try:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end_date   = datetime.strptime(end_date_str,   "%Y-%m-%d").date()
@@ -234,11 +233,11 @@ def create_app() -> Flask:
             start_date = end_date = datetime.now().date()
             start_date_str = end_date_str = today_str
 
-        # ====== 口径修正：按“开奖期号 code 的日期”统计 ======
+        # 口径：按开奖 code 的日期
         bet_date_col = func.to_date(func.substr(Bet2D.code, 1, 8), 'YYYYMMDD')
         win_date_col = func.to_date(func.substr(WinningRecord2D.code, 1, 8), 'YYYYMMDD')
 
-        # ====== 营业额（含市场数量倍数） ======
+        # 营业额（金额合计 × 市场数），market 为逗号分隔 "MGV21,UCA68"
         base_amount = (
             func.coalesce(Bet2D.amount_n1, 0) +
             func.coalesce(Bet2D.amount_n,  0) +
@@ -247,9 +246,7 @@ def create_app() -> Flask:
             func.coalesce(Bet2D.amount_ds, 0) +
             func.coalesce(Bet2D.amount_ss, 0)
         )
-        # 市场数量：market 是已去重合并的字符串，例如 "MPT" => 3
         market_field = func.coalesce(Bet2D.market, "")
-        market_count = func.nullif(market_field, "")  # 非空才计数
         market_count = func.coalesce(
             (func.length(market_field) - func.length(func.replace(market_field, ",", "")) + 1),
             0
@@ -257,26 +254,24 @@ def create_app() -> Flask:
 
         sales_q = (
             db.session.query(
-                Bet2D.agent_id.label('agent_id'),
+                Bet2D.agent_id.label('agent_id'),  # 这里就是“用户名”
                 func.coalesce(func.sum(base_amount * market_count), 0).label('sales')
             )
             .filter(
-                Bet2D.status != 'delete',        # 排除删除单
+                Bet2D.status != 'delete',
                 bet_date_col >= start_date,
                 bet_date_col <= end_date
             )
             .group_by(Bet2D.agent_id)
         )
-        if role != 'admin' and current_agent_id:
-            sales_q = sales_q.filter(Bet2D.agent_id == current_agent_id)
+        if role != 'admin' and current_agent_name:
+            sales_q = sales_q.filter(Bet2D.agent_id == current_agent_name)
+        sales_by_agent = {row.agent_id: Decimal(row.sales or 0) for row in sales_q.all()}
 
-        sales_rows = sales_q.all()
-        sales_by_agent = {row.agent_id: Decimal(row.sales or 0) for row in sales_rows}
-
-        # ====== 中奖金额（含本金）：直接用 stake * odds 聚合 ======
+        # 中奖金额（含本金）
         win_q = (
             db.session.query(
-                WinningRecord2D.agent_id.label('agent_id'),
+                WinningRecord2D.agent_id.label('agent_id'),  # 这里同样是“用户名”
                 func.coalesce(
                     func.sum(
                         func.coalesce(WinningRecord2D.stake, 0) *
@@ -290,31 +285,23 @@ def create_app() -> Flask:
             )
             .group_by(WinningRecord2D.agent_id)
         )
-        if role != 'admin' and current_agent_id:
-            win_q = win_q.filter(WinningRecord2D.agent_id == current_agent_id)
+        if role != 'admin' and current_agent_name:
+            win_q = win_q.filter(WinningRecord2D.agent_id == current_agent_name)
+        wins_by_agent = {row.agent_id: Decimal(row.win_amount or 0) for row in win_q.all()}
 
-        win_rows = win_q.all()
-        wins_by_agent = {row.agent_id: Decimal(row.win_amount or 0) for row in win_rows}
+        # 参与统计的代理名集合（都是用户名字符串）
+        agent_keys = sorted(set(sales_by_agent.keys()) | set(wins_by_agent.keys()))
+        if role != 'admin' and current_agent_name and not agent_keys:
+            agent_keys = [current_agent_name]
 
-        # ====== 代理名映射（用于前端显示） ======
-        agent_ids = sorted(set(sales_by_agent.keys()) | set(wins_by_agent.keys()))
-        if role != 'admin' and current_agent_id and not agent_ids:
-            agent_ids = [int(current_agent_id)]
-        if agent_ids:
-            agents = Agent.query.filter(Agent.id.in_(agent_ids)).all()
-        else:
-            agents = []
-        agent_name_map = {a.id: a.username for a in agents}
+        # 汇总
+        COMMISSION_RATE = Decimal('0.10')
+        result_rows, totals = [], {'sales': Decimal('0'), 'commission': Decimal('0'),
+                                   'win': Decimal('0'), 'net': Decimal('0')}
 
-        # ====== 汇总 ======
-        COMMISSION_RATE = Decimal('0.10')  # 佣金 10%
-        result_rows = []
-        totals = {'sales': Decimal('0'), 'commission': Decimal('0'),
-                  'win': Decimal('0'), 'net': Decimal('0')}
-
-        for aid in agent_ids:
-            sales = sales_by_agent.get(aid, Decimal('0'))          # 已乘市场数
-            win   = wins_by_agent.get(aid,  Decimal('0'))          # 含本金
+        for agent_name in agent_keys:
+            sales = sales_by_agent.get(agent_name, Decimal('0'))
+            win   = wins_by_agent.get(agent_name,  Decimal('0'))
             commission = (sales * COMMISSION_RATE).quantize(Decimal('0.01'))
             net = (sales - commission - win).quantize(Decimal('0.01'))
 
@@ -324,7 +311,7 @@ def create_app() -> Flask:
             totals['net']        += net
 
             result_rows.append({
-                'agent_id':agent_name,
+                'agent_id': agent_name,   # 现在就直接显示用户名
                 'agent_name': agent_name,
                 'sales': float(sales),
                 'commission': float(commission),
@@ -474,13 +461,17 @@ def create_app() -> Flask:
     @app.route("/2d/bet", methods=["GET", "POST"])
     @login_required
     def bet_2d_view():
-        # —— 确定本次下注使用的 agent_id
+        # —— 本次下注的“代理名（用户名）”与“（仅供管理员选择用的）代理ID”
         if g.role == "agent" and g.user_id:
             agent_name = (g.username or "").strip()
-            agents_for_select = None  # 代理不显示选择
+            agents_for_select = None
+            selected_agent_id = None
         else:
-            agent_row = Agent.query.get(int((request.form.get("agent_id") or "1").strip()))
-            agent_name = (agent_row.username if agent_row else "").strip() or "#unknown"
+            # 管理员：下拉仍按 ID 选，但真正入库用用户名
+            agents_for_select = Agent.query.order_by(Agent.username.asc()).all()
+            selected_agent_id = int((request.values.get("agent_id") or "1").strip())
+            picked = Agent.query.get(selected_agent_id)
+            agent_name = (picked.username if picked else "").strip() or "#unknown"
 
         date_str = request.args.get("date") or datetime.now(MY_TZ).strftime("%Y-%m-%d")
         try:
@@ -492,11 +483,13 @@ def create_app() -> Flask:
         slots = list_slots_for_day(day)
 
         if request.method == "POST":
-            # 再次确认 agent_id（代理强制自己，管理员可选）
+            # 再确认“本次入库用的代理名”
             if g.role == "agent" and g.user_id:
-                agent_id = int(g.user_id)
+                agent_name = (g.username or "").strip()
             else:
-                agent_id = int((request.form.get("agent_id") or "1").strip())
+                selected_agent_id = int((request.form.get("agent_id") or "1").strip())
+                picked = Agent.query.get(selected_agent_id)
+                agent_name = (picked.username if picked else "").strip() or "#unknown"
 
             form_date = request.form.get("date", date_str)
             try:
@@ -505,7 +498,7 @@ def create_app() -> Flask:
                 form_date = date_str
 
             created = 0
-            slots_today = list_slots_for_day(day)  # 用于从索引还原 code
+            slots_today = list_slots_for_day(day)
 
             def to_amt(name: str, i: int) -> Decimal:
                 try:
@@ -517,7 +510,7 @@ def create_app() -> Flask:
 
             for i in range(1, 13):
                 raw_num = (request.form.get(f"number{i}") or "").strip()
-                if not raw_num.isdigit():  # 空行或非法
+                if not raw_num.isdigit():
                     continue
                 vi = int(raw_num)
                 if vi < 0 or vi > 99:
@@ -533,19 +526,19 @@ def create_app() -> Flask:
                 if (n1 + n + bg + sm + od + ev) == 0:
                     continue
 
-                # 行内选中的时间段：slot{i}_{idx} → code
+                # 时段
                 slots_sel: list[str] = []
                 for idx, slot in enumerate(slots_today):
                     if request.form.get(f"slot{i}_{idx}") and not is_locked_for_code(slot["code"]):
                         slots_sel.append(slot["code"])
                 if not slots_sel:
-                    slots_sel = [next_slot_code()]  # 没选则默认下一期
+                    slots_sel = [next_slot_code()]
 
-                # —— 选中的市场：合并为字符串并按固定顺序排序（保证 MPT、而不是随机顺序）
+                # 市场：按 MARKETS 顺序取勾选，逗号分隔
                 markets_sel = [m for m in MARKETS if request.form.get(f"market{i}_{m}")]
                 if not markets_sel:
                     markets_sel = ["MGV21"]
-                market_str = ",".join([m for m in MARKETS if m in markets_sel])  
+                market_str = ",".join([m for m in MARKETS if m in markets_sel])
 
                 for code in slots_sel:
                     if is_locked_for_code(code):
@@ -553,14 +546,12 @@ def create_app() -> Flask:
 
                     ts = datetime.now(MY_TZ)
                     order_code = ts.strftime("%y%m%d/%H%M%S") + f"{int(ts.microsecond/1000):03d}"
-
                     lock_at = parse_code_to_hour(code).replace(minute=49, second=0, microsecond=0)
 
-                    # ✅ 一次仅写入一条 —— market 直接存 "MPT"
                     db.session.add(Bet2D(
                         order_code=order_code,
-                        agent_id=agent_name,   # ✅ 直接保存“代理ID”本身
-                        market=market_str,             # ✅ 合并后的市场字符串
+                        agent_id=agent_name,       # ⭐ 直接保存“用户名”
+                        market=market_str,
                         code=code,
                         number=number,
                         amount_n1=n1, amount_n=n,
@@ -575,16 +566,16 @@ def create_app() -> Flask:
                 if created > 0:
                     db.session.commit()
                     flash(f"已提交 {created} 条注单。", "ok")
-                    # 成功后回到本页，带 success=1 —— 前端据此弹窗；管理员保留 agent_id
+                    # 成功后回到本页；管理员保留 agent 选择
                     if g.role == "admin":
-                        return redirect(url_for("bet_2d_view", date=form_date, success=1, agent_id=agent_id))
+                        return redirect(url_for("bet_2d_view", date=form_date, success=1, agent_id=selected_agent_id))
                     return redirect(url_for("bet_2d_view", date=form_date, success=1))
                 else:
                     flash("没有有效行（或所选时间段已过锁注）。", "error")
                     return redirect(url_for("bet_2d_view", date=date_str))
             except Exception as e:
                 db.session.rollback()
-                app.logger.exception("提交下注失败")  # ⭐ 关键：打印完整 traceback
+                app.logger.exception("提交下注失败")
                 flash(f"提交失败：{e}", "error")
                 return redirect(url_for("bet_2d_view", date=date_str))
 
@@ -594,8 +585,8 @@ def create_app() -> Flask:
             date=date_str,
             slots=slots,
             markets=MARKETS,
-            agents=agents_for_select,           # 仅管理员非空
-            selected_agent_id=agent_id          # 仅管理员有用
+            agents=agents_for_select,         # 管理员非空
+            selected_agent_id=selected_agent_id
         )
 
     # -------------- 历史记录（按日期） --------------
@@ -656,11 +647,6 @@ def create_app() -> Flask:
     @app.post("/2d/history/delete")
     @login_required
     def history_2d_delete():
-        """
-        将指定 order_code 的订单标记为 delete。
-        - 管理员可删除任意“未锁注”的订单
-        - 代理只能删除自己的且“未锁注”的订单
-        """
         data = request.get_json(silent=True) or {}
         order_code = (request.form.get("order_code") or data.get("order_code") or "").strip()
         if not order_code:
@@ -670,14 +656,14 @@ def create_app() -> Flask:
             Bet2D.order_code == order_code,
             Bet2D.status != "delete"
         )
-        if g.role == "agent" and g.user_id:
-            q = q.filter(Bet2D.agent_id == int(g.user_id))
+        # 代理只能删自己的（按用户名）
+        if g.role == "agent" and g.username:
+            q = q.filter(Bet2D.agent_id == g.username)
 
         rows = q.all()
         if not rows:
             return {"ok": False, "error": "未找到该订单或无权限"}, 404
 
-        # 如果订单中任意一条已过 locked_at，则整单不可删除
         now = datetime.now(MY_TZ)
         if any(r.locked_at and now >= r.locked_at for r in rows):
             return {"ok": False, "error": "订单已锁注，不能删除"}, 400
