@@ -9,7 +9,7 @@ class Bet2D(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     order_code = db.Column(db.String(16))
     agent_id = db.Column(db.Integer, nullable=False)
-    market = db.Column(db.String(16), nullable=False)  # M/P/T/S/H/E/B/K/W
+    market = db.Column(db.String(64), nullable=False)  
     code = db.Column(db.String(13), nullable=False)   # YYYYMMDD/HHMM
     number = db.Column(db.String(2), nullable=False)  # '00'..'99'
 
