@@ -134,7 +134,9 @@ def create_app() -> Flask:
                     .filter(
                         Bet2D.status != "delete",
                         Bet2D.code == code,
-                        Bet2D.market.contains(mkt)   # 合并市场里包含当前开奖市场
+                        func.concat(',', func.coalesce(Bet2D.market, ''), ',').like(
+                            func.concat('%,', literal(mkt), ',%')
+                        )
                     )
                     .all())
 
@@ -253,7 +255,12 @@ def create_app() -> Flask:
             func.coalesce(Bet2D.amount_ss, 0)
         )
         # 市场数量：market 是已去重合并的字符串，例如 "MPT" => 3
-        market_count = func.length(func.coalesce(Bet2D.market, ""))
+        market_field = func.coalesce(Bet2D.market, "")
+        market_count = func.nullif(market_field, "")  # 非空才计数
+        market_count = func.coalesce(
+            (func.length(market_field) - func.length(func.replace(market_field, ",", "")) + 1),
+            0
+        )
 
         sales_q = (
             db.session.query(
