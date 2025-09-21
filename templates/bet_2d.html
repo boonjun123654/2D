@@ -115,17 +115,20 @@
             </div>
           </th>
         {% endfor %}
-        {% set market_order = ['M','P','T','S','B','K','W','H','E'] %}
-        {% for m in market_order %}
-          <th class="market-head {{ m }}bg">
+        {% set market_list = markets or ['MGV21','UCA68','SFC99'] %}
+        {% for m in market_list %}
+          <th class="market-head market-bg-{{ m }}" data-market="{{ m }}" data-market-idx="{{ loop.index0 }}">
             <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <label class="headbox"><input type="checkbox" id="select_market_{{ m }}" onclick="toggleColumn('market', '{{ m }}')"><span></span></label>
-              <strong style="color:#111">{{ m }}</strong>
-            </div>
-          </th>
-        {% endfor %}
-      </tr>
-    </thead>
+              <label class="headbox">
+              <input type="checkbox" id="select_market_{{ loop.index0 }}" onclick="toggleColumn('market', {{ loop.index0 }})">
+              <span></span>
+            </label>
+            <strong style="color:#111">{{ m }}</strong>
+          </div>
+        </th>
+      {% endfor %}
+    </tr>
+  </thead>
 
     <tbody>
       {% for i in range(1, 12+1) %}
@@ -149,9 +152,10 @@
           </td>
         {% endfor %}
 
-        {% for m in market_order %}
-          <td class="market-cell {{ m }}bg">
-            <input class="ck market_col_{{ m }}" type="checkbox" name="market{{ i }}_{{ m }}">
+        {% for m in market_list %}
+          <td class="market-cell market-bg-{{ m }}">
+            <input class="ck market_col_{{ loop.index0 }}" type="checkbox"
+                   name="market{{ i }}_{{ m }}" data-market="{{ m }}">
           </td>
         {% endfor %}
 
@@ -161,8 +165,12 @@
     </tbody>
 
     <tfoot>
+      {# 列数 = #、号码(2列) + 金额6列 + 时间段15列 + 市场列(=market_list|length) + 总额列1 #}
+      {% set total_cols = 2 + 6 + slots|length + market_list|length + 1 %}
       <tr>
-        <td colspan="33" style="text-align:right;font-weight:bold">总下注金额：RM <span id="grand-total">0.00</span></td>
+        <td colspan="{{ total_cols }}" style="text-align:right;font-weight:bold">
+          总下注金额：RM <span id="grand-total">0.00</span>
+        </td>
       </tr>
     </tfoot>
   </table>
@@ -194,7 +202,7 @@ function copyAmountDown(col, checked){
 function toggleColumn(type, key){
   if(type==='slot'){
     const head = document.getElementById(`select_slot_${key}`);
-    if (head && head.disabled) return; // 被禁用的整列不响应
+    if (head && head.disabled) return;
     const state = head.checked;
     document.querySelectorAll(`.slot_col_${key}`).forEach(cb=>{
       if(!cb.disabled) cb.checked = state;
@@ -314,7 +322,10 @@ function fmtNum(n){
 function buildBetPopupText(){
   const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
   const H_BASE = 9; // 09~23
-  const MARKET_ORDER = ['M','P','T','S','B','K','W','H','E'];
+
+  // 从表头收集市场（带索引），便于行内按索引 class 选择
+  const MARKET_LIST = Array.from(document.querySelectorAll('th.market-head'))
+    .map(th => ({ code: th.dataset.market, idx: parseInt(th.dataset.marketIdx, 10) }));
 
   const slotSet   = new Set();
   const marketSet = new Set();
@@ -336,12 +347,16 @@ function buildBetPopupText(){
     pushIf("SMALL","S"); pushIf("ODD","O"); pushIf("EVEN","E");
     if (!parts.length) return;
 
+    // 时间段集合
     tr.querySelectorAll('.slot-cell input[type="checkbox"]:checked').forEach(cb=>{
       const idx2 = parseInt(cb.name.split('_').pop(),10);
       if (!Number.isNaN(idx2)) slotSet.add(H_BASE + idx2);
     });
-    MARKET_ORDER.forEach(m=>{
-      if (tr.querySelector(`input[name="market${i}_${m}"]`)?.checked) marketSet.add(m);
+
+    // 市场集合：直接读每个勾选 input 的 data-market
+    tr.querySelectorAll('.market-cell input[type="checkbox"]:checked').forEach(cb=>{
+      const code = cb.dataset.market;
+      if (code) marketSet.add(code);
     });
 
     lines.push(`${number} = ${parts.join(' ')}`);
@@ -349,7 +364,7 @@ function buildBetPopupText(){
 
   const slotLine = Array.from(slotSet).sort((a,b)=>a-b)
     .map(h => String(h).padStart(2,'0')).join('-') || '-';
-  const marketLine = '*' + (MARKET_ORDER.filter(m => marketSet.has(m)).join('') || '-');
+  const marketLine = '*' + (Array.from(marketSet).join('/') || '-');
 
   const grandRaw = parseFloat(document.getElementById('grand-total')?.textContent || '0');
   const gt = fmtNum(grandRaw);
