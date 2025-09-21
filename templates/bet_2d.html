@@ -24,8 +24,10 @@
 <style>
   :root{
     --c-border:#d0d7de; --c-head:#f6f8fa;
-    --M:#ffff00; --P:#0000ff; --T:#cc0000; --S:#4c8ed1;
-    --B:#e51d20; --K:#008835; --W:#00540e; --H:#fed606; --E:#ffa500;
+    /* 自定义 3 市场的底色（随意可调） */
+    --MGV21:#ffe066;  /* 金黄 */
+    --UCA68:#8ecae6;  /* 浅蓝 */
+    --SFC99:#ffb4a2;  /* 粉橘 */
   }
   table{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--c-border);border-radius:10px;overflow:hidden}
   th,td{border:1px solid var(--c-border);padding:6px 8px;text-align:center}
@@ -38,13 +40,16 @@
   .headbox span{width:16px;height:16px;background:#fff;border:1px solid var(--c-border);border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;pointer-events:none}
   .headbox input:checked + span{box-shadow:0 0 0 2px #111 inset;background:#e8f0ff}
   .headbox input:checked + span::after{content:"✓";display:block;text-align:center;font-weight:700;font-size:12px;line-height:16px;color:#111}
-  .Mbg{background:var(--M)} .Pbg{background:var(--P)} .Tbg{background:var(--T)}
-  .Sbg{background:var(--S)} .Bbg{background:var(--B)} .Kbg{background:var(--K)}
-  .Wbg{background:var(--W)} .Hbg{background:var(--H)} .Ebg{background:var(--E)}
+
+  /* 市场底色：用 “market-bg-代号” 命名，便于长代号 */
+  .market-bg-MGV21{ background:var(--MGV21) }
+  .market-bg-UCA68{ background:var(--UCA68) }
+  .market-bg-SFC99{ background:var(--SFC99) }
+
   .num-col{width:86px}
   .amt-col{width:72px}
   .slot-head,.slot-cell{width:46px}
-  .market-head,.market-cell{width:46px}
+  .market-head,.market-cell{width:70px}
   .ck{width:18px;height:18px}
 
   /* 置灰不可用的时间段整列 */
@@ -54,7 +59,7 @@
 
   @media (max-width: 768px){
     .amt-col{width:62px}
-    .slot-head,.slot-cell,.market-head,.market-cell{width:42px}
+    .slot-head,.slot-cell,.market-head,.market-cell{width:62px}
     input.money{width:56px}
   }
 </style>
