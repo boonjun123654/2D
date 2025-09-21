@@ -4,84 +4,55 @@
 
 {% block head_extra %}
 <style>
-  .muted{color:#666}
-
-  /* 顶部筛选行：更紧凑，移动端换行 */
-  .filters{
-    margin:8px 0 10px;
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  :root{
+    --c-border:#e5e7eb; --c-muted:#6b7280; --c-bg:#ffffff; --c-chip:#f1f5f9;
+    --ok:#1a6ee8; --warn:#b76e00; --danger:#ef4444; --brand:#1b84ff;
   }
-  .filters label{white-space:nowrap}
+  /* 顶部筛选区（紧凑、适配手机） */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 10px}
+  .filters label{font-size:13px;color:#334155}
   .filters input[type="date"]{
-    height:34px; padding:4px 8px; border:1px solid #d0d7de; border-radius:8px; background:#fff;
+    height:36px;padding:6px 10px;border:1px solid var(--c-border);border-radius:10px;background:#fff
   }
   .filters button{
-    height:34px; padding:0 12px; border:1px solid #1b84ff; background:#1b84ff; color:#fff; border-radius:8px;
+    height:36px;padding:0 14px;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:10px
   }
 
-  /* 卡片整体 */
-  .card{
-    background:#fff; border:1px solid #e5e7eb; border-radius:14px;
-    box-shadow:0 8px 22px rgba(16,24,40,.06); padding:12px; margin:12px 0;
-  }
+  /* 卡片（手机优先） */
+  .card{background:var(--c-bg);border:1px solid var(--c-border);border-radius:14px;
+        box-shadow:0 8px 22px rgba(16,24,40,.06);padding:12px;margin:12px 0}
+  .row{display:flex;gap:8px;margin:2px 0;align-items:flex-start}
+  .row .label{flex:0 0 64px;color:var(--c-muted);font-size:13px;line-height:20px}
+  .row .value{flex:1;min-width:0}
 
-  /* 顶部行：左侧订单，右侧徽章+删除 */
-  .card-top{
-    display:flex; align-items:center; gap:10px; min-height:34px;
-  }
-  .card-top .left{
-    min-width:0; display:flex; align-items:center; gap:8px;
-  }
-  .card-top .label{
-    font-size:12px; color:#6b7280; letter-spacing:.02em;
-  }
-  .card-top .oc{
-    font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size:14px; background:#f6f8fa; border:1px solid #e5e7eb;
-    border-radius:8px; padding:3px 8px; white-space:nowrap; max-width:60vw; overflow:hidden; text-overflow:ellipsis;
-  }
-  .card-top .right{
-    margin-left:auto; display:flex; align-items:center; gap:8px;
-  }
+  .pill{display:inline-flex;align-items:center;justify-content:center;height:26px;
+        padding:0 10px;border-radius:999px;background:#eef2ff;color:#1e40af;border:1px solid #dbe3ff;
+        font-weight:600;font-size:12px}
+  .code{display:inline-block;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size:13px;background:#f6f8fa;border:1px solid var(--c-border);
+        padding:4px 8px;border-radius:8px;word-break:break-all}
 
-  .agent-badge{
-    display:inline-flex; align-items:center; justify-content:center;
-    height:28px; min-width:38px; padding:0 10px; border-radius:999px;
-    background:#eef2ff; color:#1e40af; border:1px solid #dbe3ff; font-weight:600; font-size:13px;
-  }
+  .market-chip{display:inline-block;background:var(--c-chip);border:1px solid var(--c-border);
+               padding:4px 8px;border-radius:999px;font-size:12px;margin-right:6px;margin-bottom:4px}
 
-  .badge{padding:2px 8px;border-radius:999px;font-size:12px;line-height:18px;color:#fff}
-  .m-MGV21{background:#1f78b4} /* 自定义颜色 */
-  .m-UCA68{background:#33a02c}
-  .m-SFC99{background:#e31a1c}
-  .state-badge{padding:2px 8px;border-radius:10px;font-size:12px;line-height:18px;border:1px solid}
-  .state-active{background:#e6f4ff;color:#1a6ee8;border-color:#b3d5ff}
-  .state-locked{background:#fff7e6;color:#b76e00;border-color:#ffd591}
+  .status{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid}
+  .status.active{background:#e6f4ff;color:var(--ok);border-color:#b3d5ff}
+  .status.locked{background:#fff7e6;color:var(--warn);border-color:#ffd591}
 
-  .btn-del{
-    height:28px; padding:0 12px; border-radius:10px;
-    background:#ef4444; color:#fff; border:1px solid #e11d48; cursor:pointer;
-  }
-  .btn-del:active{ transform:translateY(1px) }
-  .btn-del[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(20%)}
+  .bets{white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.5;margin-top:8px}
+  .total{font-weight:700;margin-top:6px}
 
-  /* 文本主体 */
-  .card-body{
-    margin-top:8px;
-    white-space:pre-wrap; word-break:break-word;
-    font-size:14px; line-height:1.55; color:#111;
-  }
+  .card-actions{display:flex;gap:10px;margin-top:10px}
+  .btn{flex:1;height:38px;border-radius:10px;border:1px solid transparent}
+  .btn.copy{background:#0ea5e9;color:#fff;border-color:#0284c7}
+  .btn.delete{background:var(--danger);color:#fff;border-color:#dc2626}
+  .btn[disabled]{opacity:.6;filter:grayscale(20%);cursor:not-allowed}
 
-  /* 空态 */
-  .empty{
-    color:#999; border:1px dashed #ddd; border-radius:12px; padding:14px; margin-top:10px;
-    background:#fff;
-  }
+  .empty{color:#999;border:1px dashed var(--c-border);border-radius:12px;padding:14px;margin-top:10px;background:#fff}
 </style>
 {% endblock %}
 
 {% block content %}
-  <div class="muted"></div>
   <form method="get" class="filters">
     <label>开始日期：</label>
     <input type="date" name="start_date" value="{{ start_date or date }}">
@@ -92,17 +63,19 @@
 
   <div id="cards"></div>
 
-  <!-- 后端传 rows_js：[{order_code, agent_id, market, code, number, amount_*, locked_at}] -->
+  <!-- 必需数据 -->
   <script id="rowsData" type="application/json">{{ rows_js|tojson if rows_js else '[]' }}</script>
-  <!-- 服务器当前时间（ISO8601）。若后端未提供 now_ts，则脚本里会回退到客户端当前时间 -->
   <script id="serverNow" type="application/json">{{ now_ts|tojson if now_ts else 'null' }}</script>
+  <!-- 可选：后端可传 {agent_id: "username"}，管理员视角显示代理名更准确 -->
+  <script id="agentNames" type="application/json">{{ agent_names|tojson if agent_names else 'null' }}</script>
 {% endblock %}
 
 {% block body_extra %}
 <script>
-/* ======== 新 3 市场配置 ======== */
-const MARKET_ORDER = ['MGV21','UCA68','SFC99'];
+/* ==== 配置 ==== */
+const KNOWN_MARKETS = ['MGV21','UCA68','SFC99'];
 
+/* ==== 工具 ==== */
 const fmt = n => {
   const v = Number(n||0);
   if (!isFinite(v)) return '0';
@@ -110,143 +83,164 @@ const fmt = n => {
   return s.replace(/\.?0+$/,'');
 };
 const SERVER_NOW = (() => {
-  try {
-    const t = JSON.parse(document.getElementById('serverNow').textContent || 'null');
-    return t ? new Date(t) : new Date();
-  } catch(e){ return new Date(); }
+  try { const t = JSON.parse(document.getElementById('serverNow').textContent||'null'); return t ? new Date(t) : new Date(); }
+  catch(_) { return new Date(); }
+})();
+const AGENT_NAMES = (() => {
+  try { return JSON.parse(document.getElementById('agentNames').textContent||'null') || {}; }
+  catch(_) { return {}; }
 })();
 
-/* 按逗号分隔，取唯一且保持预设顺序 */
-function uniqueMarkets(str){
-  const set = new Set((str||'').split(',').map(s=>s.trim()).filter(Boolean));
-  return MARKET_ORDER.filter(m => set.has(m));
-}
-/* 生成带色的市场徽章 */
-function marketBadges(list){
-  return list.map(m => `<span class="badge m-${m}">${m}</span>`).join(' ');
+/* 把 market 字段解析成有序去重数组，兼容 "A,B,C" 与 "ABC"（无分隔） */
+function parseMarkets(m) {
+  const raw = String(m||'').trim();
+  if (!raw) return [];
+  if (raw.includes(',')) {
+    const arr = raw.split(',').map(s=>s.trim()).filter(Boolean);
+    const set = new Set(arr);                       // 去重
+    return KNOWN_MARKETS.filter(x => set.has(x));   // 固定顺序
+  }
+  // 无分隔：扫描已知 token
+  const found = [];
+  for (const token of KNOWN_MARKETS) {
+    if (raw.includes(token)) found.push(token);
+  }
+  return found;
 }
 
+/* 组装一笔订单的展示文本与统计 */
+function buildOrderView(list) {
+  // 小时集合
+  const hours = new Set();
+  list.forEach(it => {
+    const part = (it.code||'').split('/')[1] || '';
+    if (part) hours.add(part.slice(0,2));
+  });
+  const slotsLine = [...hours].sort().join('-') || '-';
+
+  // 市场（订单层面合并）
+  const mset = new Set();
+  list.forEach(it => parseMarkets(it.market).forEach(x => mset.add(x)));
+  const marketsOrdered = KNOWN_MARKETS.filter(x => mset.has(x));
+  const marketLineText = marketsOrdered.join('/');
+
+  // 行去重（号码 + 六项金额）
+  const keyOf = it => [
+    it.number, fmt(it.amount_n1), fmt(it.amount_n), fmt(it.amount_b),
+    fmt(it.amount_s), fmt(it.amount_ds), fmt(it.amount_ss)
+  ].join('|');
+  const uniq = new Map();
+  list.forEach(it => { const k = keyOf(it); if (!uniq.has(k)) uniq.set(k, it); });
+
+  // 明细行：如 45=4N1 1N 1B 1S 1O 1E
+  const detailLines = [...uniq.values()].sort((a,b)=>(a.number||'').localeCompare(b.number||'')).map(it=>{
+    const parts = [];
+    const push = (v, tag) => { const n = Number(v||0); if (n>0) parts.push(`${fmt(n)}${tag}`); };
+    push(it.amount_n1,'N1'); push(it.amount_n,'N'); push(it.amount_b,'B');
+    push(it.amount_s,'S');   push(it.amount_ds,'O'); push(it.amount_ss,'E');
+    return `${it.number}=${parts.join(' ')}`;
+  });
+
+  // 订单是否锁注（任意行过锁时间即为已锁注）
+  const isLocked = list.some(it => it.locked_at && (new Date(it.locked_at) <= SERVER_NOW));
+
+  // Total = Σ(该行六项金额和 × 该行市场数)
+  let total = 0;
+  list.forEach(it=>{
+    const base = Number(it.amount_n1||0)+Number(it.amount_n||0)+Number(it.amount_b||0)+
+                 Number(it.amount_s||0)+Number(it.amount_ds||0)+Number(it.amount_ss||0);
+    const mcnt = parseMarkets(it.market).length;
+    total += base * mcnt;
+  });
+
+  return {
+    slotsLine,
+    marketLineText,
+    detailText: detailLines.join('\n'),
+    total: fmt(total),
+    marketsOrdered,
+    isLocked
+  };
+}
+
+/* ==== 渲染 ==== */
 (function(){
-  const rows = JSON.parse(document.getElementById('rowsData').textContent || '[]');
-  const cards = document.getElementById('cards');
-  if (!rows.length){ cards.innerHTML = '<div class="empty">该日期范围暂无注单。</div>'; return; }
+  const rows = JSON.parse(document.getElementById('rowsData').textContent||'[]');
+  const mount = document.getElementById('cards');
+  if (!rows.length) { mount.innerHTML = '<div class="empty">该日期范围暂无注单。</div>'; return; }
 
   // 按 order_code 分组
   const groups = new Map();
-  for(const r of rows){
-    if(!groups.has(r.order_code)) groups.set(r.order_code, []);
+  for (const r of rows) {
+    if (!groups.has(r.order_code)) groups.set(r.order_code, []);
     groups.get(r.order_code).push(r);
   }
 
-  for(const [oc, list] of groups){
-    const agentId = list[0]?.agent_id ?? '-';
+  for (const [oc, list] of groups) {
+    const agentId = list[0]?.agent_id ?? null;
+    // 代理名字获取逻辑：1) 后端字典 2) Jinja 变量 g.username（代理视角） 3) #ID
+    const fallbackName = `#${agentId ?? '-'}`;
+    const jinjaAgent = "{{ g.username or '' }}";   // 若为空字符串，前端再回退
+    const agentName = (AGENT_NAMES[String(agentId)] || jinjaAgent || fallbackName).trim() || fallbackName;
 
-    // 订单是否“已锁注”：订单内任意一条过了 locked_at 就算锁注
-    const isLockedOrder = list.some(it => {
-      if(!it.locked_at) return false;
-      const la = new Date(it.locked_at);
-      return SERVER_NOW >= la;
-    });
+    const v = buildOrderView(list);
 
-    // 时段（从 code 提取小时）
-    const hourSet = new Set();
-    for(const it of list){
-      const h = (it.code||'').split('/')[1]?.slice(0,2);
-      if (h) hourSet.add(h);
-    }
-    const slotsLine = [...hourSet].sort().join('-') || '-';
-
-    // 订单维度的“市场集合”（合并去重，按 MARKET_ORDER 排序）
-    const orderMarkets = (() => {
-      const s = new Set();
-      for(const it of list){
-        (it.market||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>s.add(x));
-      }
-      return MARKET_ORDER.filter(m => s.has(m));
-    })();
-    const marketLine = '*' + (orderMarkets.join(',') || '-');
-
-    // 行明细（号码+金额组合去重，按号码排序）
-    const keyOf = it => [
-      it.number, fmt(it.amount_n1), fmt(it.amount_n), fmt(it.amount_b),
-      fmt(it.amount_s), fmt(it.amount_ds), fmt(it.amount_ss)
-    ].join('|');
-
-    const uniq = new Map();
-    for(const it of list){ const k = keyOf(it); if(!uniq.has(k)) uniq.set(k, it); }
-    const lines = [...uniq.values()]
-      .sort((a,b)=> (a.number||'').localeCompare(b.number||''))
-      .map(it=>{
-        const parts = [];
-        if(Number(it.amount_n1)>0) parts.push(`${fmt(it.amount_n1)}N1`);
-        if(Number(it.amount_n )>0) parts.push(`${fmt(it.amount_n )}N`);
-        if(Number(it.amount_b )>0) parts.push(`${fmt(it.amount_b )}B`);
-        if(Number(it.amount_s )>0) parts.push(`${fmt(it.amount_s )}S`);
-        if(Number(it.amount_ds)>0) parts.push(`${fmt(it.amount_ds)}O`);
-        if(Number(it.amount_ss)>0) parts.push(`${fmt(it.amount_ss)}E`);
-        return `${it.number} = ${parts.join(' ')}`;
-      });
-
-    // 订单 GT：逐行 base × “该行市场数（按逗号分隔）” 累加
-    let gt = 0;
-    for(const it of list){
-      const base =
-        Number(it.amount_n1||0)+Number(it.amount_n||0)+Number(it.amount_b||0)+
-        Number(it.amount_s||0)+Number(it.amount_ds||0)+Number(it.amount_ss||0);
-      const mcnt = (it.market||'').split(',').map(s=>s.trim()).filter(Boolean).length || 0;
-      gt += base * mcnt;
-    }
-    const gtLine = `GT=${fmt(gt)}`;
-
-    // 组装文案
-    const text = [slotsLine, marketLine, ...lines, '', gtLine].join('\n');
-
-    // 渲染卡片
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.innerHTML = `
-      <div class="card-top">
-        <div class="left">
-          <span class="label">订单</span>
-          <code class="oc" title="${oc}">${oc}</code>
-        </div>
-        <div class="right">
-          <span class="agent-badge">#${agentId}</span>
-          ${marketBadges(orderMarkets)}
-          <span class="state-badge ${isLockedOrder ? 'state-locked' : 'state-active'}"
-                title="${isLockedOrder ? '该订单已过锁注时间，不可删除' : '未过锁注时间，可撤单'}">
-            ${isLockedOrder ? '已锁注' : '活跃'}
-          </span>
-          <button type="button" class="btn-del del-order" ${isLockedOrder ? 'disabled' : ''} title="${isLockedOrder ? '已锁注：不可删除' : '删除此订单'}">删除</button>
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="row"><div class="label">代理：</div><div class="value"><span class="pill">${agentName}</span></div></div>
+      <div class="row"><div class="label">订单：</div><div class="value"><span class="code">${oc}</span></div></div>
+      <div class="row"><div class="label">时段：</div><div class="value">${v.slotsLine || '-'}</div></div>
+      <div class="row">
+        <div class="label">市场：</div>
+        <div class="value">
+          ${v.marketsOrdered.map(m=>`<span class="market-chip">${m}</span>`).join('')}
         </div>
       </div>
-      <pre class="card-body"></pre>
+      <div class="row"><div class="label">状态：</div><div class="value">
+        <span class="status ${v.isLocked?'locked':'active'}">${v.isLocked?'已锁注':'活跃'}</span>
+      </div></div>
+      <div class="bets"></div>
+      <div class="total">Total=${v.total}</div>
+      <div class="card-actions">
+        <button type="button" class="btn copy">复制</button>
+        <button type="button" class="btn delete" ${v.isLocked?'disabled':''}>删除</button>
+      </div>
     `;
-    div.querySelector('.card-body').textContent = text;
-    cards.appendChild(div);
+    card.querySelector('.bets').textContent = v.detailText || '-';
+    mount.appendChild(card);
 
-    // 删除
-    const btn = div.querySelector('.del-order');
-    btn.addEventListener('click', async ()=>{
-      if (btn.disabled) return;
-      if(!confirm(`确定删除该订单？`)) return;
+    /* 复制：仅复制“市场 + 明细 + Total” */
+    const copyBtn = card.querySelector('.btn.copy');
+    copyBtn.addEventListener('click', async ()=>{
+      const text = `市场：${v.marketLineText || '-'}\n\n${v.detailText}\n\nTotal=${v.total}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = '已复制';
+        setTimeout(()=>copyBtn.textContent='复制',1200);
+      } catch (e) {
+        alert('复制失败，请手动选择文字');
+      }
+    });
+
+    /* 删除：命中后端 /2d/history/delete（整单） */
+    const delBtn = card.querySelector('.btn.delete');
+    delBtn.addEventListener('click', async ()=>{
+      if (delBtn.disabled) return;
+      if (!confirm('确定删除该订单？')) return;
       try{
         const body = new URLSearchParams({order_code: oc});
         const resp = await fetch('/2d/history/delete', {
-          method: 'POST',
-          headers: {'Content-Type':'application/x-www-form-urlencoded'},
-          body
+          method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body
         });
         const data = await resp.json().catch(()=>({}));
-        if(resp.ok && data.ok){
-          div.remove();
-          if(!cards.children.length) cards.innerHTML = '<div class="empty">暂无记录。</div>';
-        }else{
+        if (resp.ok && data.ok) {
+          card.remove();
+          if (!mount.children.length) mount.innerHTML = '<div class="empty">暂无记录。</div>';
+        } else {
           alert('删除失败：' + (data.error || resp.status));
         }
-      }catch(err){
-        alert('删除失败：' + err);
-      }
+      }catch(err){ alert('删除失败：' + err); }
     });
   }
 })();
