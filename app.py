@@ -7,7 +7,7 @@ from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, session, g
 )
-from sqlalchemy import text, func, and_, cast, Date
+from sqlalchemy import text, func, and_, cast, Date, literal
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # 确保 models.py 里包含 db = SQLAlchemy()，以及下列模型
@@ -555,7 +555,7 @@ def create_app() -> Flask:
                 markets_sel = [m for m in MARKETS if request.form.get(f"market{i}_{m}")]
                 if not markets_sel:
                     markets_sel = ["MGV21"]
-                market_str = "".join([m for m in MARKETS if m in markets_sel])  # 例如 "MPT"
+                market_str = ",".join([m for m in MARKETS if m in markets_sel])  
 
                 for code in slots_sel:
                     if is_locked_for_code(code):
