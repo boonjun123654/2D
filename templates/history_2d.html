@@ -177,11 +177,7 @@ function buildOrderView(list) {
   }
 
   for (const [oc, list] of groups) {
-    const agentId = list[0]?.agent_id ?? null;
-    // 代理名字获取逻辑：1) 后端字典 2) Jinja 变量 g.username（代理视角） 3) #ID
-    const fallbackName = `#${agentId ?? '-'}`;
-    const jinjaAgent = "{{ g.username or '' }}";   // 若为空字符串，前端再回退
-    const agentName = (AGENT_NAMES[String(agentId)] || jinjaAgent || fallbackName).trim() || fallbackName;
+    const agentName = String(list[0]?.agent_id || '-');
 
     const v = buildOrderView(list);
 
