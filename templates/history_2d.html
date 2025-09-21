@@ -50,9 +50,13 @@
     background:#eef2ff; color:#1e40af; border:1px solid #dbe3ff; font-weight:600; font-size:13px;
   }
 
-  .badge{padding:2px 8px;border-radius:999px;font-size:12px;line-height:18px}
-  .badge.active{background:#e6f4ff;color:#1a6ee8;border:1px solid #b3d5ff}
-  .badge.locked{background:#fff7e6;color:#b76e00;border:1px solid #ffd591}
+  .badge{padding:2px 8px;border-radius:999px;font-size:12px;line-height:18px;color:#fff}
+  .m-MGV21{background:#1f78b4} /* 自定义颜色 */
+  .m-UCA68{background:#33a02c}
+  .m-SFC99{background:#e31a1c}
+  .state-badge{padding:2px 8px;border-radius:10px;font-size:12px;line-height:18px;border:1px solid}
+  .state-active{background:#e6f4ff;color:#1a6ee8;border-color:#b3d5ff}
+  .state-locked{background:#fff7e6;color:#b76e00;border-color:#ffd591}
 
   .btn-del{
     height:28px; padding:0 12px; border-radius:10px;
@@ -96,7 +100,9 @@
 
 {% block body_extra %}
 <script>
-const MARKETS = ['M','P','T','S','B','K','W','H','E'];
+/* ======== 新 3 市场配置 ======== */
+const MARKET_ORDER = ['MGV21','UCA68','SFC99'];
+
 const fmt = n => {
   const v = Number(n||0);
   if (!isFinite(v)) return '0';
@@ -109,6 +115,16 @@ const SERVER_NOW = (() => {
     return t ? new Date(t) : new Date();
   } catch(e){ return new Date(); }
 })();
+
+/* 按逗号分隔，取唯一且保持预设顺序 */
+function uniqueMarkets(str){
+  const set = new Set((str||'').split(',').map(s=>s.trim()).filter(Boolean));
+  return MARKET_ORDER.filter(m => set.has(m));
+}
+/* 生成带色的市场徽章 */
+function marketBadges(list){
+  return list.map(m => `<span class="badge m-${m}">${m}</span>`).join(' ');
+}
 
 (function(){
   const rows = JSON.parse(document.getElementById('rowsData').textContent || '[]');
@@ -140,19 +156,24 @@ const SERVER_NOW = (() => {
     }
     const slotsLine = [...hourSet].sort().join('-') || '-';
 
-    // 市场（合并去重，并按固定顺序）
-    const mset = new Set();
-    for(const it of list){ (it.market||'').split('').forEach(ch=>mset.add(ch)); }
-    const marketLine = '*' + (MARKETS.filter(m => mset.has(m)).join('') || '-');
+    // 订单维度的“市场集合”（合并去重，按 MARKET_ORDER 排序）
+    const orderMarkets = (() => {
+      const s = new Set();
+      for(const it of list){
+        (it.market||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>s.add(x));
+      }
+      return MARKET_ORDER.filter(m => s.has(m));
+    })();
+    const marketLine = '*' + (orderMarkets.join(',') || '-');
 
-    // 明细行（号码+金额组合去重，按号码排序）
-    const asKey = it => [
+    // 行明细（号码+金额组合去重，按号码排序）
+    const keyOf = it => [
       it.number, fmt(it.amount_n1), fmt(it.amount_n), fmt(it.amount_b),
       fmt(it.amount_s), fmt(it.amount_ds), fmt(it.amount_ss)
     ].join('|');
 
     const uniq = new Map();
-    for(const it of list){ const k = asKey(it); if(!uniq.has(k)) uniq.set(k, it); }
+    for(const it of list){ const k = keyOf(it); if(!uniq.has(k)) uniq.set(k, it); }
     const lines = [...uniq.values()]
       .sort((a,b)=> (a.number||'').localeCompare(b.number||''))
       .map(it=>{
@@ -166,13 +187,13 @@ const SERVER_NOW = (() => {
         return `${it.number} = ${parts.join(' ')}`;
       });
 
-    // GT：base * 市场数
+    // 订单 GT：逐行 base × “该行市场数（按逗号分隔）” 累加
     let gt = 0;
     for(const it of list){
       const base =
         Number(it.amount_n1||0)+Number(it.amount_n||0)+Number(it.amount_b||0)+
         Number(it.amount_s||0)+Number(it.amount_ds||0)+Number(it.amount_ss||0);
-      const mcnt = new Set((it.market||'').split('')).size || 0;
+      const mcnt = (it.market||'').split(',').map(s=>s.trim()).filter(Boolean).length || 0;
       gt += base * mcnt;
     }
     const gtLine = `GT=${fmt(gt)}`;
@@ -191,7 +212,9 @@ const SERVER_NOW = (() => {
         </div>
         <div class="right">
           <span class="agent-badge">#${agentId}</span>
-          <span class="badge ${isLockedOrder ? 'locked' : 'active'}" title="${isLockedOrder ? '该订单已过锁注时间，不可删除' : '未过锁注时间，可撤单'}">
+          ${marketBadges(orderMarkets)}
+          <span class="state-badge ${isLockedOrder ? 'state-locked' : 'state-active'}"
+                title="${isLockedOrder ? '该订单已过锁注时间，不可删除' : '未过锁注时间，可撤单'}">
             ${isLockedOrder ? '已锁注' : '活跃'}
           </span>
           <button type="button" class="btn-del del-order" ${isLockedOrder ? 'disabled' : ''} title="${isLockedOrder ? '已锁注：不可删除' : '删除此订单'}">删除</button>
