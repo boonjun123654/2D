@@ -594,6 +594,7 @@ def create_app() -> Flask:
                     return redirect(url_for("bet_2d_view", date=date_str))
             except Exception as e:
                 db.session.rollback()
+                app.logger.exception("提交下注失败")  # ⭐ 关键：打印完整 traceback
                 flash(f"提交失败：{e}", "error")
                 return redirect(url_for("bet_2d_view", date=date_str))
 
