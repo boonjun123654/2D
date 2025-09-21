@@ -547,7 +547,7 @@ def create_app() -> Flask:
                 # —— 选中的市场：合并为字符串并按固定顺序排序（保证 MPT、而不是随机顺序）
                 markets_sel = [m for m in MARKETS if request.form.get(f"market{i}_{m}")]
                 if not markets_sel:
-                    markets_sel = ["M"]
+                    markets_sel = ["MGV21"]
                 market_str = "".join([m for m in MARKETS if m in markets_sel])  # 例如 "MPT"
 
                 for code in slots_sel:
