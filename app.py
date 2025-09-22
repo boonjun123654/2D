@@ -608,10 +608,9 @@ def create_app() -> Flask:
 
         q = (
             db.session.query(Bet2D)
-            # 只排除“删除”的，其他都展示；是否锁注由 locked_at 判断
             .filter(Bet2D.status != 'delete',
-                    cast(Bet2D.created_at, Date) >= start_date,
-                    cast(Bet2D.created_at, Date) <= end_date)
+                    code_date >= start_date,
+                    code_date <= end_date,
         )
 
         # 非管理员只看自己的：
