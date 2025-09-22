@@ -604,6 +604,8 @@ def create_app() -> Flask:
             start_date = end_date = date.today()
             start_date_str = end_date_str = today
 
+        code_date = func.to_date(func.substr(Bet2D.code, 1, 8), 'YYYYMMDD')
+
         q = (
             db.session.query(Bet2D)
             # 只排除“删除”的，其他都展示；是否锁注由 locked_at 判断
