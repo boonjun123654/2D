@@ -611,7 +611,7 @@ def create_app() -> Flask:
             .filter(Bet2D.status != 'delete',
                     code_date >= start_date,
                     code_date <= end_date,
-        )
+        ))
 
         # 非管理员只看自己的：
         if session.get('role') != 'admin':
