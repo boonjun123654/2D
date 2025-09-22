@@ -29,7 +29,7 @@ class WinningRecord2D(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     bet_id   = db.Column(db.BigInteger, db.ForeignKey('bets_2d.id', ondelete='CASCADE'), nullable=False)
     agent_id = db.Column(db.String(64), nullable=False)
-    market   = db.Column(db.String(1), nullable=False)
+    market   = db.Column(db.String(64), nullable=False)
     code     = db.Column(db.String(13), nullable=False)
     number   = db.Column(db.String(2), nullable=False)
 
@@ -44,7 +44,7 @@ class DrawResult(db.Model):
     __tablename__ = 'draw_results'
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(20), nullable=False)      # YYYYMMDD/HHMM
-    market = db.Column(db.String(1), nullable=False)
+    market = db.Column(db.String(64), nullable=False)
     head = db.Column(db.String(2), nullable=False)       # '00'..'99'
     specials = db.Column(db.String(20), nullable=False)  # '71,89,30'
     size_type = db.Column(db.String(2))                  # 大/小
