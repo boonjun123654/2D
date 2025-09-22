@@ -130,15 +130,19 @@ def create_app() -> Flask:
                 specials_set = {s.strip() for s in dr.specials.split(",") if s.strip()}
 
             # 取当期、包含该市场的注单（排除 delete）
-            bets = (db.session.query(Bet2D)
-                    .filter(
-                        Bet2D.status != "delete",
-                        Bet2D.code == code,
-                        func.concat(',', func.coalesce(Bet2D.market, ''), ',').like(
-                            func.concat('%,', literal(mkt), ',%')
-                        )
-                    )
-                    .all())
+            bets = (
+                db.session.query(Bet2D)
+                .filter(
+                    Bet2D.status != "delete",
+                    Bet2D.code == code,
+                    func.concat(
+                        ',',
+                        func.replace(func.coalesce(Bet2D.market, ''), ' ', ''),  # <-- 去空格
+                        ','
+                    ).like(func.concat('%,', literal(mkt_norm), ',%'))         # <-- 用 mkt_norm
+                )
+                .all()
+            )
 
             for b in bets:
                 # 逐类判断命中；命中则写入（先查重）
@@ -149,7 +153,7 @@ def create_app() -> Flask:
                     if Decimal(stake or 0) <= 0:
                         return
                     exists = (db.session.query(WinningRecord2D.id)
-                              .filter_by(bet_id=b.id, code=code, market=mkt, hit_type=hit_type)
+                              .filter_by(bet_id=b.id, code=code, market=mkt_norm, hit_type=hit_type)
                               .first())
                     if exists:
                         return
@@ -158,7 +162,7 @@ def create_app() -> Flask:
                     rec = WinningRecord2D(
                         bet_id=b.id,
                         agent_id=b.agent_id,
-                        market=mkt,
+                        market=mkt_norm,
                         code=code,
                         number=b.number,
                         hit_type=hit_type,
