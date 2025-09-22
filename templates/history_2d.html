@@ -209,7 +209,7 @@ function buildOrderView(list) {
     /* 复制：仅复制“市场 + 明细 + Total” */
     const copyBtn = card.querySelector('.btn.copy');
     copyBtn.addEventListener('click', async ()=>{
-      const text = `市场：${v.marketLineText || '-'}\n\n${v.detailText}\n\nTotal=${v.total}`;
+      const text = `时段：${v.slotsLine || '-'}\n市场：${v.marketLineText || '-'}\n\n${v.detailText}\n\nTotal=${v.total}`;
       try {
         await navigator.clipboard.writeText(text);
         copyBtn.textContent = '已复制';
