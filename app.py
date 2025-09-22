@@ -121,10 +121,10 @@ def create_app() -> Flask:
         inserted = 0
 
         for dr in draws:
-            code = dr.code                   # YYYYMMDD/HHMM
-            mkt  = dr.market                 # 'M' / 'P' / ...
+            code = dr.code
+            mkt_norm = (dr.market or "").replace(" ", "")
             head = (dr.head or "").strip()
-            # specials 存 "71,89,30" 这样的字符串
+           
             specials_set = set()
             if (dr.specials or "").strip():
                 specials_set = {s.strip() for s in dr.specials.split(",") if s.strip()}
