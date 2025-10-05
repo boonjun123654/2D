@@ -19,8 +19,8 @@ MARKETS = ["MGV21", "UCA68", "SFC99"]
 # ---- 首页（2D）展示用赔率（不区分市场） ----
 CATS_2D = ["N1", "N", "BIG", "SMALL", "ODD", "EVEN"]
 ODDS_2D_SIMPLE = {
-    "N1": "头奖 1:50 / 特别奖无",
-    "N":  "头奖 1:28 / 特别奖 1:7",
+    "N1": "头奖 1:62 / 特别奖无",
+    "N":  "头奖 1:40 / 特别奖 1:7",
     "BIG":   "1:1.9",
     "SMALL": "1:1.9",
     "ODD":   "1:1.9",
@@ -30,8 +30,8 @@ ODDS_2D_SIMPLE = {
 # ---- 中奖赔率（含本金倍率）用于入库 ----
 # 中奖记录里：odds 保存“含本倍率”，payout 保存“不含本实付 = stake * (odds - 1)”
 ODDS_2D_MULTIPLIER = {
-    "N1":        Decimal("50"),
-    "N_HEAD":    Decimal("28"),
+    "N1":        Decimal("62"),
+    "N_HEAD":    Decimal("40"),
     "N_SPECIAL": Decimal("7"),
     "B":         Decimal("1.9"),
     "S":         Decimal("1.9"),
