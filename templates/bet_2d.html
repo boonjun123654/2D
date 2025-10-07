@@ -219,17 +219,33 @@ function toggleColumn(type, key){
 function updateTotals(){
   let grand = 0;
   const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
+
   rows.forEach((tr, idx) => {
     const i = idx + 1;
+
+    // ① 先取号码；没有两位数字就整行不计算
+    const number = (tr.querySelector(`input[name="number${i}"]`)?.value || "").trim();
+    const hasValidNumber = /^[0-9]{2}$/.test(number);
+    if (!hasValidNumber) {
+      const cell = tr.querySelector('.row-total');
+      if (cell) cell.textContent = "0.00";
+      return; // 直接跳过该行
+    }
+
+    // ② 正常计算金额 × 勾选时段数 × 勾选市场数
     const getVal = (name) => parseFloat(tr.querySelector(`input[name="${name}${i}"]`)?.value) || 0;
     const base = getVal('N1') + getVal('N') + getVal('BIG') + getVal('SMALL') + getVal('ODD') + getVal('EVEN');
     const slotCount   = tr.querySelectorAll('.slot-cell   input[type="checkbox"]:checked').length;
     const marketCount = tr.querySelectorAll('.market-cell input[type="checkbox"]:checked').length;
+
     const rowTotal = base * slotCount * marketCount;
-    const cell = tr.querySelector('.row-total'); if (cell) cell.textContent = rowTotal.toFixed(2);
+    const cell = tr.querySelector('.row-total');
+    if (cell) cell.textContent = rowTotal.toFixed(2);
     grand += rowTotal;
   });
-  const g = document.getElementById('grand-total'); if (g) g.textContent = grand.toFixed(2);
+
+  const g = document.getElementById('grand-total');
+  if (g) g.textContent = grand.toFixed(2);
 }
 
 /**************** 提交前确认 ****************/
