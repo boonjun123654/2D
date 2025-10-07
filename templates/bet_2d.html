@@ -135,8 +135,15 @@
       <tr>
         <td>{{ i }}</td>
         <td class="num-col">
-          <input type="text" name="number{{ i }}" maxlength="2" pattern="([0-9]{2}|\\*\\*)"
-                 oninput="this.value=this.value.replace(/[^0-9\\*]/g,'').slice(0,2)" style="width:80px" placeholder="00 或 **">
+          <input
+            type="text"
+            name="number{{ i }}"
+            maxlength="2"
+            pattern="^(?:[0-9]{2}|\*\*)$"
+            title="请输入两位数字或 **"
+            oninput="this.value=this.value.replace(/[^0-9*]/g,'').slice(0,2)"
+            style="width:80px"
+            placeholder="00 或 **">
         </td>
 
         <td class="amt-col"><input class="money" type="text" name="N1{{ i }}"   inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
