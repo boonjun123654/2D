@@ -514,17 +514,12 @@ def create_app() -> Flask:
 
             for i in range(1, 13):
                 raw_num = (request.form.get(f"number{i}") or "").strip()
-                number = None
-
-                if raw_num == "**":
-                    number = "**"
-                else:
-                    if not raw_num.isdigit():
-                        continue
-                    vi = int(raw_num)
-                    if vi < 0 or vi > 99:
-                        continue
-                    number = f"{vi:02d}"
+                if not raw_num.isdigit():
+                    continue
+                vi = int(raw_num)
+                if vi < 0 or vi > 99:
+                    continue
+                number = f"{vi:02d}"
 
                 n1 = to_amt("N1", i)
                 n  = to_amt("N",  i)
@@ -532,11 +527,6 @@ def create_app() -> Flask:
                 sm = to_amt("SMALL", i)
                 od = to_amt("ODD", i)
                 ev = to_amt("EVEN", i)
-                
-                if number == "**":
-                    n1 = Decimal("0.00")
-                    n  = Decimal("0.00")
-                    
                 if (n1 + n + bg + sm + od + ev) == 0:
                     continue
 
