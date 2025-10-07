@@ -135,15 +135,8 @@
       <tr>
         <td>{{ i }}</td>
         <td class="num-col">
-          <input
-            type="text"
-            name="number{{ i }}"
-            maxlength="2"
-            pattern="^(?:[0-9]{2}|\*\*)$"
-            title=""
-            oninput="this.value=this.value.replace(/[^0-9*]/g,'').slice(0,2)"
-            style="width:80px"
-            placeholder="00 或 **">
+          <input type="text" name="number{{ i }}" maxlength="2" inputmode="numeric" pattern="[0-9]{2}"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="width:80px">
         </td>
 
         <td class="amt-col"><input class="money" type="text" name="N1{{ i }}"   inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"></td>
@@ -206,13 +199,6 @@ function copyAmountDown(col, checked){
 }
 
 /**************** 列总控：时间段/市场 ****************/
-function isValidNumberOrStar(s){
-  if(!s) return false;
-  s = s.trim();
-  if(s === '**') return true;
-  return /^[0-9]{2}$/.test(s);
-}
-
 function toggleColumn(type, key){
   if(type==='slot'){
     const head = document.getElementById(`select_slot_${key}`);
@@ -235,29 +221,10 @@ function updateTotals(){
   const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
   rows.forEach((tr, idx) => {
     const i = idx + 1;
-
-    // 校验号码（两位数字或 ** 之一）
-    const number = tr.querySelector(`input[name="number${i}"]`)?.value?.trim() || "";
-    const validNum = isValidNumberOrStar(number);
-
-    // 读取金额
     const getVal = (name) => parseFloat(tr.querySelector(`input[name="${name}${i}"]`)?.value) || 0;
-    let n1 = getVal('N1'), n = getVal('N'), b = getVal('BIG'), s = getVal('SMALL'), o = getVal('ODD'), e = getVal('EVEN');
-
-    // 若号码是 **，强制忽略 N1/N
-    if (number === '**') { n1 = 0; n = 0; }
-
-    // 若号码无效（既非 ** 也非 2位数），整行不计（即使金额/市场勾选也不计）
-    if (!validNum) {
-      const cell = tr.querySelector('.row-total'); if (cell) cell.textContent = "0.00";
-      return;
-    }
-
-    // 计算：金额和 × 勾选时段数 × 勾选市场数
-    const base = n1 + n + b + s + o + e;
+    const base = getVal('N1') + getVal('N') + getVal('BIG') + getVal('SMALL') + getVal('ODD') + getVal('EVEN');
     const slotCount   = tr.querySelectorAll('.slot-cell   input[type="checkbox"]:checked').length;
     const marketCount = tr.querySelectorAll('.market-cell input[type="checkbox"]:checked').length;
-
     const rowTotal = base * slotCount * marketCount;
     const cell = tr.querySelector('.row-total'); if (cell) cell.textContent = rowTotal.toFixed(2);
     grand += rowTotal;
@@ -356,6 +323,10 @@ function buildBetPopupText(){
   const rows = Array.from(document.querySelectorAll('#betForm tbody tr'));
   const H_BASE = 9; // 09~23
 
+  // 从表头收集市场（带索引），便于行内按索引 class 选择
+  const MARKET_LIST = Array.from(document.querySelectorAll('th.market-head'))
+    .map(th => ({ code: th.dataset.market, idx: parseInt(th.dataset.marketIdx, 10) }));
+
   const slotSet   = new Set();
   const marketSet = new Set();
   const lines     = [];
@@ -363,27 +334,17 @@ function buildBetPopupText(){
   rows.forEach((tr, idx) => {
     const i = idx + 1;
     const number = tr.querySelector(`input[name="number${i}"]`)?.value?.trim() || "";
-
-    // 号码必须是两位数字或 **；否则整行不写入弹窗
-    if (!isValidNumberOrStar(number)) return;
+    if (!number) return;
 
     const parts = [];
-    const pushIf = (key, label, allow=true) => {
-      if (!allow) return;
+    const pushIf = (key, label) => {
       const el = tr.querySelector(`input[name="${key}${i}"]`);
       if (!el) return;
       const v = parseFloat((el.value || "").trim());
       if (isFinite(v) && v > 0) parts.push(`${fmtNum(v)}${label}`);
     };
-
-    // ** 时屏蔽 N1/N；其余照常
-    const allowN = (number !== '**');
-    pushIf("N1","N1", allowN);
-    pushIf("N","N", allowN);
-    pushIf("BIG","B");
-    pushIf("SMALL","S");
-    pushIf("ODD","O");
-    pushIf("EVEN","E");
+    pushIf("N1","N1"); pushIf("N","N"); pushIf("BIG","B");
+    pushIf("SMALL","S"); pushIf("ODD","O"); pushIf("EVEN","E");
     if (!parts.length) return;
 
     // 时间段集合
@@ -392,7 +353,7 @@ function buildBetPopupText(){
       if (!Number.isNaN(idx2)) slotSet.add(H_BASE + idx2);
     });
 
-    // 市场集合
+    // 市场集合：直接读每个勾选 input 的 data-market
     tr.querySelectorAll('.market-cell input[type="checkbox"]:checked').forEach(cb=>{
       const code = cb.dataset.market;
       if (code) marketSet.add(code);
